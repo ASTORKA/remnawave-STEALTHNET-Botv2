@@ -23,6 +23,7 @@ import { MarketingPage } from "@/pages/marketing";
 import { AdminsPage } from "@/pages/admins";
 import { SalesReportPage } from "@/pages/sales-report";
 import { BackupPage } from "@/pages/backup";
+import { ContestsPage } from "@/pages/contests";
 import { AdminTicketsPage } from "@/pages/admin-tickets";
 import { BroadcastPage } from "@/pages/broadcast";
 import { AutoBroadcastPage } from "@/pages/auto-broadcast";
@@ -45,6 +46,9 @@ import { ClientExtraOptionsPage } from "@/pages/cabinet/client-extra-options";
 import { ClientProxyPage } from "@/pages/cabinet/client-proxy";
 import { ClientSingboxPage } from "@/pages/cabinet/client-singbox";
 import { ClientTicketsPage } from "@/pages/cabinet/client-tickets";
+import { ClientCustomBuildPage } from "@/pages/cabinet/client-custom-build";
+import { LandingPage } from "@/pages/landing";
+import type { PublicConfig } from "@/lib/api";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -98,6 +102,34 @@ function CabinetIndexRedirect() {
   return <Navigate to={state.token ? "/cabinet/dashboard" : "/cabinet/login"} replace />;
 }
 
+function RootRoute() {
+  const [config, setConfig] = useState<PublicConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .getPublicConfig()
+      .then((c) => setConfig(c))
+      .catch(() => setConfig(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-svh flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-background to-muted/20">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-muted-foreground">Загрузка…</p>
+      </div>
+    );
+  }
+
+  if (config?.landingEnabled && config?.landingConfig) {
+    return <LandingPage config={config} />;
+  }
+
+  return <Navigate to="/cabinet" replace />;
+}
+
 function AppRoutes() {
   const { state, refreshAccess } = useAuth();
 
@@ -109,8 +141,8 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Открытие домена → кабинет клиента */}
-      <Route path="/" element={<Navigate to="/cabinet" replace />} />
+      {/* Главная: лендинг (если включён в настройках) или редирект в кабинет */}
+      <Route path="/" element={<RootRoute />} />
 
       {/* Админка */}
       <Route path="/admin/login" element={state.accessToken ? <Navigate to="/admin" replace /> : <LoginPage />} />
@@ -152,6 +184,7 @@ function AppRoutes() {
         <Route path="proxy" element={<ForceChangePassword><ProxyPage /></ForceChangePassword>} />
         <Route path="singbox" element={<ForceChangePassword><SingboxPage /></ForceChangePassword>} />
         <Route path="backup" element={<ForceChangePassword><BackupPage /></ForceChangePassword>} />
+        <Route path="contests" element={<ForceChangePassword><ContestsPage /></ForceChangePassword>} />
         <Route path="tickets" element={<ForceChangePassword><AdminTicketsPage /></ForceChangePassword>} />
       </Route>
       {/* Онбординг — вне CabinetLayout (без навбара) */}
@@ -232,6 +265,14 @@ function AppRoutes() {
           element={
             <RequireClientAuth>
               <ClientYooMoneyPayPage />
+            </RequireClientAuth>
+          }
+        />
+        <Route
+          path="custom-build"
+          element={
+            <RequireClientAuth>
+              <ClientCustomBuildPage />
             </RequireClientAuth>
           }
         />

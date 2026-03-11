@@ -144,9 +144,8 @@ export function ClientTariffsPage() {
     setPayError(null);
     setPayLoading(true);
     try {
-      const finalPrice = promoResult ? getDiscountedPrice(tariff.price) : tariff.price;
       const res = await api.clientCreatePlategaPayment(token, {
-        amount: finalPrice,
+        amount: tariff.price,
         currency: tariff.currency,
         paymentMethod: methodId,
         description: tariff.name,
@@ -194,11 +193,11 @@ export function ClientTariffsPage() {
     setPayError(null);
     setPayLoading(true);
     try {
-      const amount = promoResult ? getDiscountedPrice(tariff.price) : tariff.price;
       const res = await api.yoomoneyCreateFormPayment(token, {
-        amount,
+        amount: tariff.price,
         paymentType: "AC",
         tariffId: tariff.id,
+        promoCode: promoResult ? promoInput.trim() : undefined,
       });
       setPayModal(null);
       setPromoInput("");
@@ -220,9 +219,8 @@ export function ClientTariffsPage() {
     setPayError(null);
     setPayLoading(true);
     try {
-      const amount = promoResult ? getDiscountedPrice(tariff.price) : tariff.price;
       const res = await api.yookassaCreatePayment(token, {
-        amount,
+        amount: tariff.price,
         currency: "RUB",
         tariffId: tariff.id,
         promoCode: promoResult ? promoInput.trim() : undefined,
@@ -243,9 +241,8 @@ export function ClientTariffsPage() {
     setPayError(null);
     setPayLoading(true);
     try {
-      const amount = promoResult ? getDiscountedPrice(tariff.price) : tariff.price;
       const res = await api.cryptopayCreatePayment(token, {
-        amount,
+        amount: tariff.price,
         currency: tariff.currency,
         tariffId: tariff.id,
         promoCode: promoResult ? promoInput.trim() : undefined,
@@ -266,9 +263,8 @@ export function ClientTariffsPage() {
     setPayError(null);
     setPayLoading(true);
     try {
-      const amount = promoResult ? getDiscountedPrice(tariff.price) : tariff.price;
       const res = await api.heleketCreatePayment(token, {
-        amount,
+        amount: tariff.price,
         currency: tariff.currency,
         tariffId: tariff.id,
         promoCode: promoResult ? promoInput.trim() : undefined,
@@ -368,6 +364,9 @@ export function ClientTariffsPage() {
           </div>
           <div className="flex gap-2 relative z-10">
             <Input
+              name="promo_code"
+              autoComplete="off"
+              inputMode="text"
               value={promoInput}
               onChange={(e) => { setPromoInput(e.target.value); if (promoResult) { setPromoResult(null); setPromoError(null); } }}
               placeholder="Введите промокод"

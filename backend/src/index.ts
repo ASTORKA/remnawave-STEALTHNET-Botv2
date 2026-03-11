@@ -4,6 +4,7 @@ import { prisma } from "./db.js";
 import { ensureFirstAdmin } from "./modules/auth/auth.service.js";
 import { ensureSystemSettings } from "./scripts/seed-system-settings.js";
 import { startAutoBroadcastScheduler, stopAutoBroadcastScheduler } from "./modules/auto-broadcast/auto-broadcast-scheduler.js";
+import { startContestDailyReminderScheduler, stopContestDailyReminderScheduler } from "./modules/contest/contest-daily-reminder-scheduler.js";
 
 async function main() {
   await prisma.$connect();
@@ -12,6 +13,7 @@ async function main() {
   await ensureSystemSettings();
 
   await startAutoBroadcastScheduler();
+  startContestDailyReminderScheduler(env.CONTEST_REMINDER_CRON ?? undefined);
 
   const server = app.listen(env.PORT, "0.0.0.0", () => {
     console.log(`STEALTHNET 3.0 API listening on port ${env.PORT}`);
@@ -19,6 +21,7 @@ async function main() {
 
   const shutdown = async () => {
     stopAutoBroadcastScheduler();
+    stopContestDailyReminderScheduler();
     server.close();
     await prisma.$disconnect();
     process.exit(0);

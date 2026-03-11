@@ -22,6 +22,8 @@ type ClientAuthValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; preferredLang?: string; preferredCurrency?: string; referralCode?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string }) => Promise<{ requiresVerification: true } | void>;
   registerByTelegram: (data: { telegramId: string; telegramUsername?: string; preferredLang?: string; preferredCurrency?: string; referralCode?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string }) => Promise<void>;
+  loginByGoogle: (idToken: string) => Promise<void>;
+  loginByApple: (idToken: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
   /** Подтвердить привязку email по токену из письма */
   verifyLinkEmail: (verificationToken: string) => Promise<void>;
@@ -172,6 +174,30 @@ export function ClientAuthProvider({ children }: { children: React.ReactNode }) 
     []
   );
 
+  const loginByGoogle = useCallback(async (idToken: string) => {
+    const res = await api.clientGoogleAuth(idToken);
+    if ("requires2FA" in res && res.requires2FA) {
+      setState((prev) => ({ ...prev, miniappAuthLoading: false, miniappAuthAttempted: true, pending2FAToken: res.tempToken }));
+      return;
+    }
+    if (isAuthResponse(res)) {
+      setState({ token: res.token, client: res.client, miniappAuthLoading: false, miniappAuthAttempted: true, pending2FAToken: null, isNewTelegramUser: false });
+      saveState(res.token, res.client);
+    }
+  }, []);
+
+  const loginByApple = useCallback(async (idToken: string) => {
+    const res = await api.clientAppleAuth(idToken);
+    if ("requires2FA" in res && res.requires2FA) {
+      setState((prev) => ({ ...prev, miniappAuthLoading: false, miniappAuthAttempted: true, pending2FAToken: res.tempToken }));
+      return;
+    }
+    if (isAuthResponse(res)) {
+      setState({ token: res.token, client: res.client, miniappAuthLoading: false, miniappAuthAttempted: true, pending2FAToken: null, isNewTelegramUser: false });
+      saveState(res.token, res.client);
+    }
+  }, []);
+
   const verifyEmail = useCallback(async (token: string) => {
     const res = await api.clientVerifyEmail(token);
     if ("requires2FA" in res && res.requires2FA) {
@@ -222,6 +248,8 @@ export function ClientAuthProvider({ children }: { children: React.ReactNode }) 
     login,
     register,
     registerByTelegram,
+    loginByGoogle,
+    loginByApple,
     verifyEmail,
     verifyLinkEmail,
     submit2FACode,

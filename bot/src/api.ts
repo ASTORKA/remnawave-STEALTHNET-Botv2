@@ -46,6 +46,28 @@ export async function linkTelegramFromBot(code: string, telegramId: number, tele
   return data as { message: string };
 }
 
+/** Активный конкурс (для меню и ежедневной рассылки) */
+export async function getActiveContest(): Promise<{
+  active: boolean;
+  contest: null | {
+    id: string;
+    name: string;
+    startAt: string;
+    endAt: string;
+    dailyMessage: string | null;
+    prize1Type: string;
+    prize1Value: string;
+    prize2Type: string;
+    prize2Value: string;
+    prize3Type: string;
+    prize3Value: string;
+    conditionsJson: string | null;
+    drawType: string;
+  };
+}> {
+  return fetchJson("/api/public/contests/active");
+}
+
 /** Публичный конфиг (тарифы, кнопки, способы оплаты, trial и т.д.) */
 export async function getPublicConfig(): Promise<{
   serviceName?: string | null;

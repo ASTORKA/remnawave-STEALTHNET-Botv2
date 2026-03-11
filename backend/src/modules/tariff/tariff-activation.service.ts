@@ -157,20 +157,15 @@ export async function activateTariffForClient(
 }
 
 /**
- * Активация тарифа по paymentId — находит клиента и тариф из Payment, вызывает activateTariffForClient.
+ * Активация тарифа по paymentId — находит клиента и тариф из Payment (или customBuild из metadata), вызывает activateTariffForClient.
  */
 export async function activateTariffByPaymentId(paymentId: string): Promise<ActivationResult> {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
-    select: { tariffId: true, clientId: true },
+    select: { tariffId: true, clientId: true, metadata: true },
   });
-  if (!payment?.tariffId) {
-    return { ok: false, error: "Тариф не привязан к платежу", status: 400 };
-  }
-
-  const tariff = await prisma.tariff.findUnique({ where: { id: payment.tariffId } });
-  if (!tariff) {
-    return { ok: false, error: "Тариф не найден", status: 404 };
+  if (!payment) {
+    return { ok: false, error: "Платёж не найден", status: 404 };
   }
 
   const client = await prisma.client.findUnique({
@@ -181,5 +176,42 @@ export async function activateTariffByPaymentId(paymentId: string): Promise<Acti
     return { ok: false, error: "Клиент не найден", status: 404 };
   }
 
-  return activateTariffForClient(client, tariff);
+  if (payment.tariffId) {
+    const tariff = await prisma.tariff.findUnique({ where: { id: payment.tariffId } });
+    if (!tariff) {
+      return { ok: false, error: "Тариф не найден", status: 404 };
+    }
+    return activateTariffForClient(client, tariff);
+  }
+
+  const customBuild = parseCustomBuildMetadata(payment.metadata);
+  if (customBuild) {
+    return activateTariffForClient(client, customBuild);
+  }
+
+  return { ok: false, error: "Тариф не привязан к платежу", status: 400 };
+}
+
+function parseCustomBuildMetadata(metadata: string | null): { durationDays: number; trafficLimitBytes: bigint | null; deviceLimit: number | null; internalSquadUuids: string[] } | null {
+  if (!metadata?.trim()) return null;
+  try {
+    const o = JSON.parse(metadata) as Record<string, unknown>;
+    const cb = o?.customBuild as Record<string, unknown> | undefined;
+    if (!cb || typeof cb !== "object") return null;
+    const durationDays = typeof cb.durationDays === "number" ? cb.durationDays : 0;
+    const deviceLimit = typeof cb.deviceLimit === "number" ? cb.deviceLimit : null;
+    const internalSquadUuids = Array.isArray(cb.internalSquadUuids)
+      ? (cb.internalSquadUuids as string[]).filter((u) => typeof u === "string" && u.trim())
+      : [];
+    const trafficLimitBytes =
+      typeof cb.trafficLimitBytes === "number" && cb.trafficLimitBytes >= 0
+        ? BigInt(Math.floor(cb.trafficLimitBytes))
+        : typeof cb.trafficLimitBytes === "string"
+          ? BigInt(cb.trafficLimitBytes)
+          : null;
+    if (durationDays < 1 || internalSquadUuids.length === 0) return null;
+    return { durationDays, trafficLimitBytes, deviceLimit, internalSquadUuids };
+  } catch {
+    return null;
+  }
 }

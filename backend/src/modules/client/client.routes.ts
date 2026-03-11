@@ -27,7 +27,7 @@ import { requireClientAuth } from "./client.middleware.js";
 import { remnaCreateUser, remnaUpdateUser, isRemnaConfigured, remnaGetUser, remnaGetUserByUsername, remnaGetUserByEmail, remnaGetUserByTelegramId, extractRemnaUuid, remnaUsernameFromClient, remnaGetUserHwidDevices, remnaDeleteUserHwidDevice } from "../remna/remna.client.js";
 import { sendVerificationEmail, sendLinkEmailVerification, isSmtpConfigured } from "../mail/mail.service.js";
 import { createPlategaTransaction, isPlategaConfigured } from "../platega/platega.service.js";
-import { activateTariffForClient } from "../tariff/tariff-activation.service.js";
+import { activateTariffForClient, activateTariffByPaymentId } from "../tariff/tariff-activation.service.js";
 import { createProxySlotsByPaymentId } from "../proxy/proxy-slots-activation.service.js";
 import { createSingboxSlotsByPaymentId } from "../singbox/singbox-slots-activation.service.js";
 import { buildSingboxSlotSubscriptionLink } from "../singbox/singbox-link.js";
@@ -521,6 +521,175 @@ function buildAuthResponse(c: { id: string; totpEnabled?: boolean } & Parameters
   }
   return { token: signClientToken(c.id), client: toClientShape(c) };
 }
+
+// ——— Google OAuth: фронтенд отправляет id_token, полученный через Sign In With Google ———
+const googleAuthSchema = z.object({ idToken: z.string().min(1) });
+clientAuthRouter.post("/google", async (req, res) => {
+  const parse = googleAuthSchema.safeParse(req.body);
+  if (!parse.success) return res.status(400).json({ message: "Invalid input" });
+  const config = await getSystemConfig();
+  if (!config.googleLoginEnabled || !config.googleClientId) {
+    return res.status(403).json({ message: "Google login is not enabled" });
+  }
+  let payload: { sub?: string; email?: string; email_verified?: boolean } | undefined;
+  try {
+    const { OAuth2Client } = await import("google-auth-library");
+    const gClient = new OAuth2Client(config.googleClientId);
+    const ticket = await gClient.verifyIdToken({
+      idToken: parse.data.idToken,
+      audience: config.googleClientId,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    console.error("[Google OAuth] verify error:", err);
+    return res.status(401).json({ message: "Invalid Google token" });
+  }
+  if (!payload?.sub) return res.status(401).json({ message: "Invalid Google token" });
+  const googleId = payload.sub;
+  const googleEmail = payload.email ?? null;
+
+  const existing = await prisma.client.findUnique({
+    where: { googleId },
+    select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true },
+  });
+  if (existing) {
+    if (existing.isBlocked) return res.status(403).json({ message: "Account is blocked" });
+    const auth = buildAuthResponse(existing);
+    return res.json(auth);
+  }
+
+  if (googleEmail) {
+    const byEmail = await prisma.client.findUnique({
+      where: { email: googleEmail },
+      select: { id: true, email: true, googleId: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true },
+    });
+    if (byEmail) {
+      if (byEmail.isBlocked) return res.status(403).json({ message: "Account is blocked" });
+      await prisma.client.update({ where: { id: byEmail.id }, data: { googleId } });
+      const auth = buildAuthResponse(byEmail);
+      return res.json(auth);
+    }
+  }
+
+  const configForDefaults = await getSystemConfig();
+  let remnawaveUuid: string | null = null;
+  if (isRemnaConfigured()) {
+    const username = remnaUsernameFromClient({ email: googleEmail });
+    const remnaRes = await remnaCreateUser({
+      username,
+      trafficLimitBytes: 0,
+      trafficLimitStrategy: "NO_RESET",
+      expireAt: new Date(Date.now() - 1000).toISOString(),
+    });
+    remnawaveUuid = extractRemnaUuid(remnaRes.data);
+    if (remnaRes.error || remnawaveUuid == null) {
+      console.error("[Remna] create user (google) failed:", { error: remnaRes.error, data: remnaRes.data });
+      return res.status(503).json({ message: "Service temporarily unavailable" });
+    }
+  }
+  const referralCode = generateReferralCode();
+  const client = await prisma.client.create({
+    data: {
+      email: googleEmail,
+      passwordHash: null,
+      remnawaveUuid,
+      referralCode,
+      referrerId: null,
+      preferredLang: configForDefaults.defaultLanguage ?? "ru",
+      preferredCurrency: configForDefaults.defaultCurrency ?? "usd",
+      telegramId: null,
+      telegramUsername: null,
+      googleId,
+    },
+  });
+  const token = signClientToken(client.id);
+  return res.status(201).json({ token, client: toClientShape(client) });
+});
+
+// ——— Apple Sign In: фронтенд отправляет id_token (JWT от Apple) ———
+const appleAuthSchema = z.object({ idToken: z.string().min(1) });
+clientAuthRouter.post("/apple", async (req, res) => {
+  const parse = appleAuthSchema.safeParse(req.body);
+  if (!parse.success) return res.status(400).json({ message: "Invalid input" });
+  const config = await getSystemConfig();
+  if (!config.appleLoginEnabled || !config.appleClientId) {
+    return res.status(403).json({ message: "Apple login is not enabled" });
+  }
+
+  let appleSub: string | null = null;
+  let appleEmail: string | null = null;
+  try {
+    const { createRemoteJWKSet, jwtVerify } = await import("jose");
+    const APPLE_JWKS = createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"));
+    const { payload: jwtPayload } = await jwtVerify(parse.data.idToken, APPLE_JWKS, {
+      issuer: "https://appleid.apple.com",
+      audience: config.appleClientId,
+    });
+    appleSub = (jwtPayload.sub as string) ?? null;
+    appleEmail = (jwtPayload as { email?: string }).email ?? null;
+  } catch (err) {
+    console.error("[Apple OAuth] verify error:", err);
+    return res.status(401).json({ message: "Invalid Apple token" });
+  }
+  if (!appleSub) return res.status(401).json({ message: "Invalid Apple token" });
+
+  const existing = await prisma.client.findUnique({
+    where: { appleId: appleSub },
+    select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true },
+  });
+  if (existing) {
+    if (existing.isBlocked) return res.status(403).json({ message: "Account is blocked" });
+    const auth = buildAuthResponse(existing);
+    return res.json(auth);
+  }
+
+  if (appleEmail) {
+    const byEmail = await prisma.client.findUnique({
+      where: { email: appleEmail },
+      select: { id: true, email: true, appleId: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true },
+    });
+    if (byEmail) {
+      if (byEmail.isBlocked) return res.status(403).json({ message: "Account is blocked" });
+      await prisma.client.update({ where: { id: byEmail.id }, data: { appleId: appleSub } });
+      const auth = buildAuthResponse(byEmail);
+      return res.json(auth);
+    }
+  }
+
+  const configForDefaults = await getSystemConfig();
+  let remnawaveUuid: string | null = null;
+  if (isRemnaConfigured()) {
+    const username = remnaUsernameFromClient({ email: appleEmail });
+    const remnaRes = await remnaCreateUser({
+      username,
+      trafficLimitBytes: 0,
+      trafficLimitStrategy: "NO_RESET",
+      expireAt: new Date(Date.now() - 1000).toISOString(),
+    });
+    remnawaveUuid = extractRemnaUuid(remnaRes.data);
+    if (remnaRes.error || remnawaveUuid == null) {
+      console.error("[Remna] create user (apple) failed:", { error: remnaRes.error, data: remnaRes.data });
+      return res.status(503).json({ message: "Service temporarily unavailable" });
+    }
+  }
+  const referralCode = generateReferralCode();
+  const client = await prisma.client.create({
+    data: {
+      email: appleEmail,
+      passwordHash: null,
+      remnawaveUuid,
+      referralCode,
+      referrerId: null,
+      preferredLang: configForDefaults.defaultLanguage ?? "ru",
+      preferredCurrency: configForDefaults.defaultCurrency ?? "usd",
+      telegramId: null,
+      telegramUsername: null,
+      appleId: appleSub,
+    },
+  });
+  const token = signClientToken(client.id);
+  return res.status(201).json({ token, client: toClientShape(client) });
+});
 
 // Единый роутер /api/client: /auth (логин, регистрация, me) + кабинет (подписка, платежи)
 export const clientRouter = Router();
@@ -1335,6 +1504,7 @@ const createPlategaPaymentSchema = z.object({
   singboxTariffId: z.string().min(1).optional(),
   promoCode: z.string().max(50).optional(),
   extraOption: z.object({ kind: z.enum(["traffic", "devices", "servers"]), productId: z.string().min(1) }).optional(),
+  customBuild: z.object({ days: z.number().int().min(1).max(360), devices: z.number().int().min(1).max(20), trafficGb: z.number().min(0).nullable().optional() }).optional(),
 });
 clientRouter.post("/payments/platega", async (req, res) => {
   const clientId = (req as unknown as { clientId: string }).clientId;
@@ -1342,7 +1512,7 @@ clientRouter.post("/payments/platega", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
   }
-  const { amount: originalAmount, currency, paymentMethod, description, tariffId, proxyTariffId, singboxTariffId, promoCode: promoCodeStr, extraOption } = parsed.data;
+  const { amount: originalAmount, currency, paymentMethod, description, tariffId, proxyTariffId, singboxTariffId, promoCode: promoCodeStr, extraOption, customBuild: customBuildBody } = parsed.data;
 
   let tariffIdToStore: string | null = null;
   let proxyTariffIdToStore: string | null = null;
@@ -1351,7 +1521,31 @@ clientRouter.post("/payments/platega", async (req, res) => {
   let currencyToUse: string;
   let metadataExtra: Record<string, unknown> | null = null;
 
-  if (extraOption) {
+  if (customBuildBody) {
+    const configForCb = await getSystemConfig();
+    const cfg = getCustomBuildConfig(configForCb);
+    if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+    let { days, devices, trafficGb } = customBuildBody;
+    if (days > cfg.maxDays || devices > cfg.maxDevices) {
+      return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+    }
+    const trafficLimitBytes =
+      cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb >= 0
+        ? Math.round(trafficGb * 1024 ** 3)
+        : null;
+    finalAmount = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+    if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) finalAmount += trafficGb * cfg.pricePerGb;
+    finalAmount = Math.round(finalAmount * 100) / 100;
+    currencyToUse = cfg.currency.toUpperCase();
+    metadataExtra = {
+      customBuild: {
+        durationDays: days,
+        deviceLimit: devices,
+        trafficLimitBytes,
+        internalSquadUuids: [cfg.squadUuid],
+      },
+    };
+  } else if (extraOption) {
     const config = await getSystemConfig();
     if (!(config as { sellOptionsEnabled?: boolean }).sellOptionsEnabled) {
       return res.status(400).json({ message: "Продажа опций отключена" });
@@ -1682,6 +1876,134 @@ clientRouter.post("/payments/balance", async (req, res) => {
   });
 });
 
+// ——— Гибкий тариф (собери сам): расчёт и оплата балансом ———
+function getCustomBuildConfig(config: Awaited<ReturnType<typeof getSystemConfig>>) {
+  const c = config as {
+    customBuildEnabled?: boolean;
+    customBuildPricePerDay?: number;
+    customBuildPricePerDevice?: number;
+    customBuildTrafficMode?: string;
+    customBuildPricePerGb?: number;
+    customBuildSquadUuid?: string | null;
+    customBuildCurrency?: string;
+    customBuildMaxDays?: number;
+    customBuildMaxDevices?: number;
+  };
+  if (!c.customBuildEnabled || !c.customBuildSquadUuid?.trim()) return null;
+  return {
+    pricePerDay: c.customBuildPricePerDay ?? 0,
+    pricePerDevice: c.customBuildPricePerDevice ?? 0,
+    trafficMode: c.customBuildTrafficMode === "per_gb" ? "per_gb" as const : "unlimited" as const,
+    pricePerGb: c.customBuildPricePerGb ?? 0,
+    squadUuid: c.customBuildSquadUuid.trim(),
+    currency: (c.customBuildCurrency || "rub").toLowerCase(),
+    maxDays: Math.min(360, Math.max(1, c.customBuildMaxDays ?? 360)),
+    maxDevices: Math.min(20, Math.max(1, c.customBuildMaxDevices ?? 10)),
+  };
+}
+
+const customBuildPayByBalanceSchema = z.object({
+  days: z.number().int().min(1).max(360),
+  devices: z.number().int().min(1).max(20),
+  trafficGb: z.number().min(0).nullable().optional(),
+  promoCode: z.string().max(50).optional(),
+});
+
+clientRouter.post("/custom-build/pay-balance", async (req, res) => {
+  const clientRaw = (req as unknown as { client: { id: string } }).client;
+  const parsed = customBuildPayByBalanceSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: "Неверные параметры", errors: parsed.error.flatten() });
+
+  const config = await getSystemConfig();
+  const cfg = getCustomBuildConfig(config);
+  if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+
+  let { days, devices, trafficGb } = parsed.data;
+  if (days > cfg.maxDays || devices > cfg.maxDevices) {
+    return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+  }
+  const trafficLimitBytes =
+    cfg.trafficMode === "per_gb"
+      ? (trafficGb != null && trafficGb >= 0 ? BigInt(Math.round(trafficGb * 1024 ** 3)) : null)
+      : null;
+
+  let amount = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+  if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) {
+    amount += trafficGb * cfg.pricePerGb;
+  }
+
+  let finalPrice = amount;
+  let promoCodeRecord: { id: string } | null = null;
+  if (parsed.data.promoCode?.trim()) {
+    const result = await validatePromoCode(parsed.data.promoCode.trim(), clientRaw.id);
+    if (!result.ok) return res.status(result.status).json({ message: result.error });
+    const promo = result.promo;
+    if (promo.type !== "DISCOUNT") return res.status(400).json({ message: "Этот промокод не даёт скидку на оплату" });
+    if (promo.discountPercent && promo.discountPercent > 0) {
+      finalPrice = Math.max(0, finalPrice - finalPrice * promo.discountPercent / 100);
+    }
+    if (promo.discountFixed && promo.discountFixed > 0) {
+      finalPrice = Math.max(0, finalPrice - promo.discountFixed);
+    }
+    finalPrice = Math.round(finalPrice * 100) / 100;
+    promoCodeRecord = promo;
+  }
+
+  const clientDb = await prisma.client.findUnique({ where: { id: clientRaw.id } });
+  if (!clientDb) return res.status(401).json({ message: "Unauthorized" });
+  if (clientDb.balance < finalPrice) {
+    return res.status(400).json({
+      message: `Недостаточно средств. Баланс: ${clientDb.balance.toFixed(2)}, нужно: ${finalPrice.toFixed(2)} ${cfg.currency.toUpperCase()}`,
+    });
+  }
+
+  const metadata = JSON.stringify({
+    customBuild: {
+      durationDays: days,
+      deviceLimit: devices,
+      trafficLimitBytes: trafficLimitBytes != null ? Number(trafficLimitBytes) : null,
+      internalSquadUuids: [cfg.squadUuid],
+    },
+    ...(promoCodeRecord && { promoCodeId: promoCodeRecord.id, originalPrice: amount }),
+  });
+
+  const orderId = randomUUID();
+  const payment = await prisma.payment.create({
+    data: {
+      clientId: clientRaw.id,
+      orderId,
+      amount: finalPrice,
+      currency: cfg.currency.toUpperCase(),
+      status: "PAID",
+      provider: "balance",
+      paidAt: new Date(),
+      metadata,
+    },
+  });
+
+  const activation = await activateTariffByPaymentId(payment.id);
+  if (!activation.ok) {
+    await prisma.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } });
+    return res.status(activation.status).json({ message: activation.error });
+  }
+
+  await prisma.client.update({
+    where: { id: clientRaw.id },
+    data: { balance: { decrement: finalPrice } },
+  });
+  if (promoCodeRecord) {
+    await prisma.promoCodeUsage.create({ data: { promoCodeId: promoCodeRecord.id, clientId: clientRaw.id } });
+  }
+  const { distributeReferralRewards } = await import("../referral/referral.service.js");
+  await distributeReferralRewards(payment.id).catch((e) => console.error("[referral] Error:", e));
+
+  return res.json({
+    message: `Подписка на ${days} дн., ${devices} ${devices === 1 ? "устройство" : "устройства"} активирована. Списано ${finalPrice.toFixed(2)} ${cfg.currency.toUpperCase()}.`,
+    paymentId: payment.id,
+    newBalance: clientDb.balance - finalPrice,
+  });
+});
+
 // ——— Оплата опции (доп. трафик/устройства/сервер) балансом ———
 const payOptionByBalanceSchema = z.object({
   extraOption: z.object({ kind: z.enum(["traffic", "devices", "servers"]), productId: z.string().min(1) }),
@@ -1893,13 +2215,15 @@ const yoomoneyFormPaymentSchema = z.object({
   tariffId: z.string().min(1).optional(),
   proxyTariffId: z.string().min(1).optional(),
   singboxTariffId: z.string().min(1).optional(),
+  promoCode: z.string().max(50).optional(),
   extraOption: z.object({ kind: z.enum(["traffic", "devices", "servers"]), productId: z.string().min(1) }).optional(),
+  customBuild: z.object({ days: z.number().int().min(1).max(360), devices: z.number().int().min(1).max(20), trafficGb: z.number().min(0).nullable().optional() }).optional(),
 });
 clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
   const clientId = (req as unknown as { clientId: string }).clientId;
   const parsed = yoomoneyFormPaymentSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: "Укажите сумму и способ оплаты", errors: parsed.error.flatten() });
-  const { amount: amountBody, paymentType, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, extraOption } = parsed.data;
+  const { amount: amountBody, paymentType, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode: promoCodeStr, extraOption, customBuild: customBuildBody } = parsed.data;
   const config = await getSystemConfig();
   const receiver = config.yoomoneyReceiverWallet?.trim();
   if (!receiver) return res.status(503).json({ message: "ЮMoney не настроен" });
@@ -1909,8 +2233,33 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
   let singboxTariffIdToStore: string | null = null;
   let amountRounded: number;
   let metadataObj: Record<string, unknown> = { paymentType };
+  let yoomoneyPromoRecord: PromoCodeRow | null = null;
+  let yoomoneyOriginalAmount: number | null = null;
 
-  if (extraOption) {
+  if (customBuildBody) {
+    const cfg = getCustomBuildConfig(config);
+    if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+    let { days, devices, trafficGb } = customBuildBody;
+    if (days > cfg.maxDays || devices > cfg.maxDevices) {
+      return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+    }
+    const trafficLimitBytes =
+      cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb >= 0
+        ? Math.round(trafficGb * 1024 ** 3)
+        : null;
+    amountRounded = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+    if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) amountRounded += trafficGb * cfg.pricePerGb;
+    amountRounded = Math.round(amountRounded * 100) / 100;
+    metadataObj = {
+      paymentType,
+      customBuild: {
+        durationDays: days,
+        deviceLimit: devices,
+        trafficLimitBytes,
+        internalSquadUuids: [cfg.squadUuid],
+      },
+    };
+  } else if (extraOption) {
     if (!(config as { sellOptionsEnabled?: boolean }).sellOptionsEnabled) {
       return res.status(400).json({ message: "Продажа опций отключена" });
     }
@@ -1949,6 +2298,17 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
       if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
       tariffIdToStore = tariffIdBody;
       amountRounded = Math.round((amountBody ?? tariff.price) * 100) / 100;
+      if (promoCodeStr?.trim()) {
+        const result = await validatePromoCode(promoCodeStr.trim(), clientId);
+        if (result.ok && result.promo.type === "DISCOUNT") {
+          const promo = result.promo;
+          yoomoneyOriginalAmount = amountRounded;
+          yoomoneyPromoRecord = promo;
+          if (promo.discountPercent && promo.discountPercent > 0) amountRounded = Math.max(0, amountRounded - amountRounded * promo.discountPercent / 100);
+          if (promo.discountFixed && promo.discountFixed > 0) amountRounded = Math.max(0, amountRounded - promo.discountFixed);
+          amountRounded = Math.round(amountRounded * 100) / 100;
+        }
+      }
     } else if (proxyTariffIdBody) {
       const proxyTariff = await prisma.proxyTariff.findUnique({ where: { id: proxyTariffIdBody } });
       if (!proxyTariff || !proxyTariff.enabled) return res.status(400).json({ message: "Прокси-тариф не найден" });
@@ -1968,6 +2328,10 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
     return res.status(400).json({ message: "Минимальная сумма платежа — 1" });
   }
 
+  if (yoomoneyPromoRecord != null && yoomoneyOriginalAmount != null) {
+    metadataObj = { ...metadataObj, promoCodeId: yoomoneyPromoRecord.id, originalAmount: yoomoneyOriginalAmount };
+  }
+
   const orderId = randomUUID();
   const payment = await prisma.payment.create({
     data: {
@@ -1984,6 +2348,10 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
     },
   });
 
+  if (yoomoneyPromoRecord) {
+    await prisma.promoCodeUsage.create({ data: { promoCodeId: yoomoneyPromoRecord.id, clientId } });
+  }
+
   const serviceName = config.serviceName?.trim() || "STEALTHNET";
   const appUrl = (config.publicAppUrl || "").replace(/\/$/, "");
   const successURL = appUrl ? `${appUrl}/cabinet?yoomoney_form=success` : "";
@@ -1993,9 +2361,11 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
       ? `Прокси ${serviceName} #${orderId}`
       : singboxTariffIdToStore
         ? `Доступы ${serviceName} #${orderId}`
-        : extraOption
-          ? `Опция ${serviceName} #${orderId}`
-          : `Пополнение баланса ${serviceName} #${orderId}`;
+        : customBuildBody
+          ? `Гибкий тариф ${serviceName} #${orderId}`
+          : extraOption
+            ? `Опция ${serviceName} #${orderId}`
+            : `Пополнение баланса ${serviceName} #${orderId}`;
   const params = new URLSearchParams({
     receiver,
     "quickpay-form": "shop",
@@ -2066,13 +2436,18 @@ const yookassaCreatePaymentSchema = z.object({
     kind: z.enum(["traffic", "devices", "servers"]),
     productId: z.string().min(1),
   }).optional(),
+  customBuild: z.object({
+    days: z.number().int().min(1).max(360),
+    devices: z.number().int().min(1).max(20),
+    trafficGb: z.number().min(0).nullable().optional(),
+  }).optional(),
 });
 clientRouter.post("/yookassa/create-payment", async (req, res) => {
   try {
     const clientId = (req as unknown as { clientId: string }).clientId;
     const parsed = yookassaCreatePaymentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Неверные параметры", errors: parsed.error.flatten() });
-    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode, extraOption } = parsed.data;
+    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode, extraOption, customBuild: customBuildBody } = parsed.data;
     const config = await getSystemConfig();
     const shopId = config.yookassaShopId?.trim();
     const secretKey = config.yookassaSecretKey?.trim();
@@ -2085,7 +2460,31 @@ clientRouter.post("/yookassa/create-payment", async (req, res) => {
     let singboxTariffIdToStore: string | null = null;
     let metadataObj: Record<string, unknown> = promoCode ? { promoCode } : {};
 
-    if (extraOption) {
+    if (customBuildBody) {
+      const cfg = getCustomBuildConfig(config);
+      if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+      let { days, devices, trafficGb } = customBuildBody;
+      if (days > cfg.maxDays || devices > cfg.maxDevices) {
+        return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+      }
+      const trafficLimitBytes =
+        cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb >= 0
+          ? Math.round(trafficGb * 1024 ** 3)
+          : null;
+      amountRounded = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+      if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) amountRounded += trafficGb * cfg.pricePerGb;
+      amountRounded = Math.round(amountRounded * 100) / 100;
+      currencyUpper = cfg.currency.toUpperCase();
+      metadataObj = {
+        customBuild: {
+          durationDays: days,
+          deviceLimit: devices,
+          trafficLimitBytes,
+          internalSquadUuids: [cfg.squadUuid],
+        },
+      };
+      if (currencyUpper !== "RUB") return res.status(400).json({ message: "ЮKassa принимает только рубли (RUB)" });
+    } else if (extraOption) {
       if (!(config as { sellOptionsEnabled?: boolean }).sellOptionsEnabled) {
         return res.status(400).json({ message: "Продажа опций отключена" });
       }
@@ -2225,6 +2624,7 @@ const cryptopayCreatePaymentSchema = z.object({
     kind: z.enum(["traffic", "devices", "servers"]),
     productId: z.string().min(1),
   }).optional(),
+  customBuild: z.object({ days: z.number().int().min(1).max(360), devices: z.number().int().min(1).max(20), trafficGb: z.number().min(0).nullable().optional() }).optional(),
 });
 clientRouter.post("/cryptopay/create-payment", async (req, res) => {
   try {
@@ -2238,7 +2638,7 @@ clientRouter.post("/cryptopay/create-payment", async (req, res) => {
     };
     if (!isCryptopayConfigured(cryptopayConfig)) return res.status(503).json({ message: "Crypto Pay не настроен" });
 
-    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode: promoCodeStr, extraOption } = parsed.data;
+    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode: promoCodeStr, extraOption, customBuild: customBuildBody } = parsed.data;
     let amountRounded: number;
     let currencyUpper: string;
     let tariffIdToStore: string | null = null;
@@ -2246,7 +2646,30 @@ clientRouter.post("/cryptopay/create-payment", async (req, res) => {
     let singboxTariffIdToStore: string | null = null;
     let metadataObj: Record<string, unknown> = promoCodeStr ? { promoCode: promoCodeStr } : {};
 
-    if (extraOption) {
+    if (customBuildBody) {
+      const cfg = getCustomBuildConfig(config);
+      if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+      let { days, devices, trafficGb } = customBuildBody;
+      if (days > cfg.maxDays || devices > cfg.maxDevices) {
+        return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+      }
+      const trafficLimitBytes =
+        cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb >= 0
+          ? Math.round(trafficGb * 1024 ** 3)
+          : null;
+      amountRounded = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+      if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) amountRounded += trafficGb * cfg.pricePerGb;
+      amountRounded = Math.round(amountRounded * 100) / 100;
+      currencyUpper = cfg.currency.toUpperCase();
+      metadataObj = {
+        customBuild: {
+          durationDays: days,
+          deviceLimit: devices,
+          trafficLimitBytes,
+          internalSquadUuids: [cfg.squadUuid],
+        },
+      };
+    } else if (extraOption) {
       const cfg = config as { sellOptionsEnabled?: boolean; sellOptionsTrafficEnabled?: boolean; sellOptionsTrafficProducts?: SellOptionTrafficProduct[]; sellOptionsDevicesEnabled?: boolean; sellOptionsDevicesProducts?: SellOptionDeviceProduct[]; sellOptionsServersEnabled?: boolean; sellOptionsServersProducts?: SellOptionServerProduct[] };
       if (!cfg.sellOptionsEnabled) return res.status(400).json({ message: "Продажа опций отключена" });
       if (extraOption.kind === "traffic") {
@@ -2318,9 +2741,11 @@ clientRouter.post("/cryptopay/create-payment", async (req, res) => {
         ? `Прокси ${serviceName} #${orderId}`
         : singboxTariffIdToStore
           ? `Доступы ${serviceName} #${orderId}`
-          : extraOption
-            ? `Опция ${serviceName} #${orderId}`
-            : `Пополнение баланса ${serviceName} #${orderId}`;
+          : customBuildBody
+            ? `Гибкий тариф ${serviceName} #${orderId}`
+            : extraOption
+              ? `Опция ${serviceName} #${orderId}`
+              : `Пополнение баланса ${serviceName} #${orderId}`;
 
     const result = await createCryptopayInvoice({
       config: cryptopayConfig,
@@ -2360,6 +2785,7 @@ const heleketCreatePaymentSchema = z.object({
     kind: z.enum(["traffic", "devices", "servers"]),
     productId: z.string().min(1),
   }).optional(),
+  customBuild: z.object({ days: z.number().int().min(1).max(360), devices: z.number().int().min(1).max(20), trafficGb: z.number().min(0).nullable().optional() }).optional(),
 });
 clientRouter.post("/heleket/create-payment", async (req, res) => {
   try {
@@ -2373,7 +2799,7 @@ clientRouter.post("/heleket/create-payment", async (req, res) => {
     };
     if (!isHeleketConfigured(heleketConfig)) return res.status(503).json({ message: "Heleket не настроен" });
 
-    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode: promoCodeStr, extraOption } = parsed.data;
+    const { amount: amountBody, currency: currencyBody, tariffId: tariffIdBody, proxyTariffId: proxyTariffIdBody, singboxTariffId: singboxTariffIdBody, promoCode: promoCodeStr, extraOption, customBuild: customBuildBody } = parsed.data;
     let amountRounded: number;
     let currencyUpper: string;
     let tariffIdToStore: string | null = null;
@@ -2381,7 +2807,30 @@ clientRouter.post("/heleket/create-payment", async (req, res) => {
     let singboxTariffIdToStore: string | null = null;
     let metadataObj: Record<string, unknown> = promoCodeStr ? { promoCode: promoCodeStr } : {};
 
-    if (extraOption) {
+    if (customBuildBody) {
+      const cfg = getCustomBuildConfig(config);
+      if (!cfg) return res.status(400).json({ message: "Гибкий тариф отключён" });
+      let { days, devices, trafficGb } = customBuildBody;
+      if (days > cfg.maxDays || devices > cfg.maxDevices) {
+        return res.status(400).json({ message: `Дни: 1–${cfg.maxDays}, устройств: 1–${cfg.maxDevices}` });
+      }
+      const trafficLimitBytes =
+        cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb >= 0
+          ? Math.round(trafficGb * 1024 ** 3)
+          : null;
+      amountRounded = days * cfg.pricePerDay + devices * cfg.pricePerDevice;
+      if (cfg.trafficMode === "per_gb" && trafficGb != null && trafficGb > 0) amountRounded += trafficGb * cfg.pricePerGb;
+      amountRounded = Math.round(amountRounded * 100) / 100;
+      currencyUpper = cfg.currency.toUpperCase();
+      metadataObj = {
+        customBuild: {
+          durationDays: days,
+          deviceLimit: devices,
+          trafficLimitBytes,
+          internalSquadUuids: [cfg.squadUuid],
+        },
+      };
+    } else if (extraOption) {
       const cfg = config as { sellOptionsEnabled?: boolean; sellOptionsTrafficEnabled?: boolean; sellOptionsTrafficProducts?: SellOptionTrafficProduct[]; sellOptionsDevicesEnabled?: boolean; sellOptionsDevicesProducts?: SellOptionDeviceProduct[]; sellOptionsServersEnabled?: boolean; sellOptionsServersProducts?: SellOptionServerProduct[] };
       if (!cfg.sellOptionsEnabled) return res.status(400).json({ message: "Продажа опций отключена" });
       if (extraOption.kind === "traffic") {

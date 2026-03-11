@@ -7,10 +7,11 @@ import { useIsMiniapp } from "@/hooks/use-is-miniapp";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { GlassSelect } from "@/components/ui/glass-select";
-import { LayoutDashboard, Package, User, LogOut, Shield, Users, Sun, Moon, PlusCircle, Globe, KeyRound, MessageSquare, Palette, Monitor, Check, Loader2, Settings } from "lucide-react";
+import { LayoutDashboard, Package, User, LogOut, Shield, Users, Sun, Moon, PlusCircle, Globe, KeyRound, MessageSquare, Palette, Monitor, Check, Loader2, Settings, Layers, MoreHorizontal, ChevronDown } from "lucide-react";
 import { useTheme, ACCENT_PALETTES, type ThemeMode, type ThemeAccent } from "@/contexts/theme";
 import { cn } from "@/lib/utils";
 import { FloatingChat } from "@/components/floating-chat";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function AnalyticsScripts() {
   useEffect(() => {
@@ -134,6 +135,7 @@ function Client2FAStepScreen() {
 const ALL_NAV_ITEMS = [
   { to: "/cabinet/dashboard", label: "Главная", icon: LayoutDashboard },
   { to: "/cabinet/tariffs", label: "Тарифы", icon: Package },
+  { to: "/cabinet/custom-build", label: "Гибкий тариф", icon: Layers },
   { to: "/cabinet/extra-options", label: "Опции", icon: PlusCircle },
   { to: "/cabinet/proxy", label: "Прокси", icon: Globe },
   { to: "/cabinet/singbox", label: "Доступы", icon: KeyRound },
@@ -362,24 +364,32 @@ function SettingsPopover() {
   );
 }
 
-function resolveNavItems(config: { sellOptionsEnabled?: boolean; showProxyEnabled?: boolean; showSingboxEnabled?: boolean; ticketsEnabled?: boolean } | null) {
+function resolveNavItems(config: { sellOptionsEnabled?: boolean; showProxyEnabled?: boolean; showSingboxEnabled?: boolean; ticketsEnabled?: boolean; customBuildConfig?: { enabled: true } | null } | null) {
   let items = ALL_NAV_ITEMS;
   // Убираем вкладку тикетов, так как теперь поддержка внутри виджета чата
   items = items.filter((i) => i.to !== "/cabinet/tickets");
-  
+
+  if (!config?.customBuildConfig) items = items.filter((i) => i.to !== "/cabinet/custom-build");
   if (!config?.sellOptionsEnabled) items = items.filter((i) => i.to !== "/cabinet/extra-options");
   if (!config?.showProxyEnabled) items = items.filter((i) => i.to !== "/cabinet/proxy");
   if (!config?.showSingboxEnabled) items = items.filter((i) => i.to !== "/cabinet/singbox");
-  
+
   return items;
 }
+
+const MAX_VISIBLE_NAV = 4;
+const MAX_VISIBLE_DESKTOP = 5;
 
 function MobileCabinetShell() {
   const location = useLocation();
   const { state, logout, refreshProfile } = useClientAuth();
   const config = useCabinetConfig();
-  const navItems = useMemo(() => resolveNavItems(config), [config?.sellOptionsEnabled, config?.showProxyEnabled, config?.showSingboxEnabled, config?.ticketsEnabled]);
+  const navItems = useMemo(() => resolveNavItems(config), [config?.sellOptionsEnabled, config?.showProxyEnabled, config?.showSingboxEnabled, config?.ticketsEnabled, config?.customBuildConfig]);
   const [logoError, setLogoError] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const visibleItems = navItems.slice(0, MAX_VISIBLE_NAV);
+  const hasMore = navItems.length > MAX_VISIBLE_NAV;
+
   useEffect(() => { setLogoError(false); }, [config?.logo]);
   useEffect(() => {
     if (state.token) refreshProfile().catch(() => { });
@@ -422,32 +432,66 @@ function MobileCabinetShell() {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/60 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] transition-all duration-300">
-        <div className="flex items-center w-full overflow-x-auto no-scrollbar h-[4.5rem] px-2">
-          <div className="flex items-center justify-between sm:justify-center w-full min-w-max gap-1 md:gap-2 mx-auto">
+        <div className="flex items-center justify-around w-full h-[4.5rem] px-2 gap-0">
+          {visibleItems.map(({ to, label, icon: Icon }) => {
+            const active = location.pathname === to;
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 py-1 px-1 h-14 flex-1 min-w-0 max-w-[5rem] rounded-xl transition-all duration-300",
+                  active ? "bg-primary/20 text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:scale-105"
+                )}
+              >
+                <Icon className={cn("h-5 w-5 shrink-0 transition-transform duration-300", active && "scale-110 drop-shadow-md")} />
+                <span className="text-[10px] font-medium leading-none tracking-tight truncate w-full text-center">{label}</span>
+              </Link>
+            );
+          })}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setMoreMenuOpen(true)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 py-1 px-1 h-14 flex-1 min-w-0 max-w-[5rem] rounded-xl transition-all duration-300",
+                "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:scale-105"
+              )}
+              aria-label="Ещё"
+            >
+              <MoreHorizontal className="h-5 w-5 shrink-0" />
+              <span className="text-[10px] font-medium leading-none tracking-tight">Ещё</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      <Dialog open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl" showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle>Меню</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-1 py-2">
             {navItems.map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
                 <Link
                   key={to}
                   to={to}
+                  onClick={() => setMoreMenuOpen(false)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-1 px-1 h-14 flex-1 min-w-[4.2rem] max-w-[6rem] rounded-xl transition-all duration-300",
-                    active ? "bg-primary/20 text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:scale-105"
+                    "flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors",
+                    active ? "bg-primary/20 text-primary" : "hover:bg-muted/60"
                   )}
                 >
-                  <Icon className={cn("h-5 w-5 shrink-0 transition-transform duration-300", active && "scale-110 drop-shadow-md")} />
-                  <span className="text-[10px] font-medium leading-none tracking-tight whitespace-nowrap">{label}</span>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="font-medium">{label}</span>
                 </Link>
               );
             })}
           </div>
-        </div>
-      </nav>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      ` }} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -468,11 +512,23 @@ function CabinetShell() {
   const location = useLocation();
   const { state, logout, refreshProfile } = useClientAuth();
   const config = useCabinetConfig();
-  const navItems = useMemo(() => resolveNavItems(config), [config?.sellOptionsEnabled, config?.showProxyEnabled, config?.showSingboxEnabled, config?.ticketsEnabled]);
+  const navItems = useMemo(() => resolveNavItems(config), [config?.sellOptionsEnabled, config?.showProxyEnabled, config?.showSingboxEnabled, config?.ticketsEnabled, config?.customBuildConfig]);
   const isMiniapp = useIsMiniapp();
   const isMobile = useIsMobile();
   const [logoError, setLogoError] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const visibleNav = navItems.slice(0, MAX_VISIBLE_DESKTOP);
+  const moreNav = navItems.slice(MAX_VISIBLE_DESKTOP);
+
   useEffect(() => { setLogoError(false); }, [config?.logo]);
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
   useEffect(() => {
     if (state.token) refreshProfile().catch(() => { });
   }, [state.token, refreshProfile]);
@@ -502,7 +558,7 @@ function CabinetShell() {
             {serviceName ? <span className="hidden sm:inline truncate">{serviceName}</span> : null}
           </Link>
           <nav className="flex items-center gap-1 flex-wrap justify-center flex-1">
-            {navItems.map(({ to, label, icon: Icon }) => {
+            {visibleNav.map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
                 <Link key={to} to={to}>
@@ -520,6 +576,43 @@ function CabinetShell() {
                 </Link>
               );
             })}
+            {moreNav.length > 0 && (
+              <div className="relative inline-block" ref={moreRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "inline-flex items-center gap-2 whitespace-nowrap transition-all duration-300 hover:scale-105 hover:bg-background/40",
+                    moreNav.some((i) => location.pathname === i.to) ? "bg-primary/20 text-primary" : ""
+                  )}
+                  onClick={() => setMoreOpen(!moreOpen)}
+                >
+                  Ещё
+                  <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", moreOpen && "rotate-180")} />
+                </Button>
+                {moreOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-xl border border-border bg-card py-1.5 shadow-lg">
+                    {moreNav.map(({ to, label, icon: Icon }) => {
+                      const active = location.pathname === to;
+                      return (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setMoreOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2 px-4 py-2.5 text-sm transition-colors",
+                            active ? "bg-primary/20 text-primary" : "hover:bg-muted/60"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
           <div className="flex items-center gap-1 shrink-0">
             <ThemePopover />
