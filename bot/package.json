@@ -1,6 +1,6 @@
 {
   "name": "stealthnet-bot",
-  "version": "3.2.1",
+  "version": "3.2.3",
   "description": "STEALTHNET 3.0 — Telegram-бот для продажи подписок",
   "type": "module",
   "main": "dist/index.js",

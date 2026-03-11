@@ -100,7 +100,7 @@ singboxAdminRouter.post("/nodes", asyncRoute(async (req, res) => {
 services:
   singbox-node:
     build:
-      context: https://github.com/STEALTHNET-APP/remnawave-STEALTHNET-Bot.git
+      context: https://github.com/systemmaster1200-eng/remnawave-STEALTHNET-Bot.git
       dockerfile: singbox-node/Dockerfile
     image: stealthnet/singbox-node:latest
     restart: unless-stopped

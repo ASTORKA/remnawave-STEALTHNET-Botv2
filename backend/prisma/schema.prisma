@@ -85,6 +85,8 @@ model Client {
   utmTerm          String?   @map("utm_term")
   totpSecret       String?   @map("totp_secret")
   totpEnabled      Boolean   @default(false) @map("totp_enabled")
+  googleId         String?   @unique @map("google_id")
+  appleId          String?   @unique @map("apple_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -98,6 +100,7 @@ model Client {
   proxySlots ProxySlot[]
   singboxSlots SingboxSlot[]
   tickets     Ticket[]
+  contestWinners ContestWinner[]
 
   @@index([telegramId])
   @@index([email])
@@ -566,4 +569,47 @@ model SingboxSlot {
   @@index([singboxTariffId])
   @@index([status])
   @@map("singbox_slots")
+}
+
+// ——— Конкурсы / розыгрыши ———
+model Contest {
+  id             String   @id @default(cuid())
+  name           String   @map("name")
+  startAt        DateTime @map("start_at")
+  endAt          DateTime @map("end_at")
+  prize1Type     String   @map("prize1_type")   // custom | balance | vpn_days
+  prize1Value    String   @map("prize1_value")  @db.Text // текст, сумма или кол-во дней
+  prize2Type     String   @map("prize2_type")
+  prize2Value    String   @map("prize2_value")   @db.Text
+  prize3Type     String   @map("prize3_type")
+  prize3Value    String   @map("prize3_value")  @db.Text
+  conditionsJson String?  @map("conditions_json") @db.Text // { "minTariffDays": 30, "minPaymentsCount": 1 }
+  drawType       String   @map("draw_type")     // random | by_days_bought | by_payments_count | by_referrals_count
+  status         String   @default("draft")    // draft | active | ended | drawn
+  dailyMessage   String?  @map("daily_message") @db.Text
+  startNotificationSentAt DateTime? @map("start_notification_sent_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  winners ContestWinner[]
+
+  @@map("contests")
+}
+
+model ContestWinner {
+  id         String    @id @default(cuid())
+  contestId String    @map("contest_id")
+  clientId  String    @map("client_id")
+  place     Int       // 1, 2, 3
+  prizeType String    @map("prize_type")
+  prizeValue String   @map("prize_value") @db.Text
+  appliedAt DateTime? @map("applied_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, place])
+  @@index([contestId])
+  @@map("contest_winners")
 }

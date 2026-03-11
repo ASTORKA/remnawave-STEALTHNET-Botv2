@@ -33,6 +33,7 @@ export const MANAGER_SECTIONS = [
   { key: "backup", label: "Бэкапы" },
   { key: "proxy", label: "Прокси" },
   { key: "singbox", label: "Sing-box" },
+  { key: "contests", label: "Конкурсы" },
   { key: "settings", label: "Настройки" },
 ] as const;
 
@@ -43,6 +44,49 @@ export interface AdminListItem {
   allowedSections: string[];
   mustChangePassword?: boolean;
   createdAt?: string;
+}
+
+export type ContestPrizeType = "custom" | "balance" | "vpn_days";
+export type ContestDrawType = "random" | "by_days_bought" | "by_payments_count" | "by_referrals_count";
+export type ContestStatus = "draft" | "active" | "ended" | "drawn";
+
+export interface ContestFormPayload {
+  name: string;
+  startAt: string;
+  endAt: string;
+  prize1Type: ContestPrizeType;
+  prize1Value: string;
+  prize2Type: ContestPrizeType;
+  prize2Value: string;
+  prize3Type: ContestPrizeType;
+  prize3Value: string;
+  conditionsJson: string | null;
+  drawType: ContestDrawType;
+  dailyMessage: string | null;
+}
+
+export interface ContestListItem {
+  id: string;
+  name: string;
+  startAt: string;
+  endAt: string;
+  prize1Type: ContestPrizeType;
+  prize1Value: string;
+  prize2Type: ContestPrizeType;
+  prize2Value: string;
+  prize3Type: ContestPrizeType;
+  prize3Value: string;
+  conditionsJson: string | null;
+  drawType: ContestDrawType;
+  dailyMessage: string | null;
+  status: ContestStatus;
+  createdAt: string;
+  updatedAt: string;
+  winners: { place: number; prizeType: string; prizeValue: string; client?: { id: string; email: string | null; telegramUsername: string | null } }[];
+}
+
+export interface ContestDetail extends ContestListItem {
+  winners: { place: number; prizeType: string; prizeValue: string; appliedAt: string | null; client?: { id: string; email: string | null; telegramId: string | null; telegramUsername: string | null } }[];
 }
 
 export interface LoginResponse {
@@ -446,6 +490,43 @@ export const api = {
     return request(`/admin/admins/${id}`, { method: "DELETE", token });
   },
 
+  /** Конкурсы: список */
+  async getContests(token: string): Promise<ContestListItem[]> {
+    return request("/admin/contests", { token });
+  },
+  /** Конкурсы: один */
+  async getContest(token: string, id: string): Promise<ContestDetail> {
+    return request(`/admin/contests/${id}`, { token });
+  },
+  /** Конкурсы: создать */
+  async createContest(token: string, data: ContestFormPayload): Promise<ContestDetail> {
+    return request("/admin/contests", { method: "POST", body: JSON.stringify(data), token });
+  },
+  /** Конкурсы: обновить */
+  async updateContest(token: string, id: string, data: Partial<ContestFormPayload>): Promise<ContestDetail> {
+    return request(`/admin/contests/${id}`, { method: "PATCH", body: JSON.stringify(data), token });
+  },
+  /** Конкурсы: сменить статус */
+  async patchContestStatus(token: string, id: string, status: "draft" | "active" | "ended"): Promise<ContestDetail> {
+    return request(`/admin/contests/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }), token });
+  },
+  /** Конкурсы: превью участников */
+  async getContestParticipantsPreview(token: string, id: string): Promise<{ total: number; participants: { clientId: string; totalDaysBought: number; paymentsCount: number; referralsCount?: number }[] }> {
+    return request(`/admin/contests/${id}/participants-preview`, { token });
+  },
+  /** Конкурсы: запустить (отправить уведомление всем и выставить статус «Активен») */
+  async launchContest(token: string, id: string): Promise<{ message: string; sent?: number; errors?: number }> {
+    return request(`/admin/contests/${id}/launch`, { method: "POST", token });
+  },
+  /** Конкурсы: провести розыгрыш */
+  async runContestDraw(token: string, id: string): Promise<{ message: string; winners: unknown[] }> {
+    return request(`/admin/contests/${id}/draw`, { method: "POST", token });
+  },
+  /** Конкурсы: удалить */
+  async deleteContest(token: string, id: string): Promise<void> {
+    return request(`/admin/contests/${id}`, { method: "DELETE", token });
+  },
+
   /** Базовый конфиг страницы подписки для визуального редактора (subpage-*.json) */
   async getDefaultSubscriptionPageConfig(token: string): Promise<SubscriptionPageConfig | null> {
     return request("/admin/default-subscription-page-config", { token });
@@ -727,6 +808,20 @@ export const api = {
       body: JSON.stringify({ initData }),
     });
   },
+  async clientGoogleAuth(idToken: string): Promise<ClientAuthResponse | ClientAuthRequires2FA> {
+    return request("/client/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  },
+
+  async clientAppleAuth(idToken: string): Promise<ClientAuthResponse | ClientAuthRequires2FA> {
+    return request("/client/auth/apple", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  },
+
   /** Обмен временного токена (после пароля/Telegram) на полный токен по коду 2FA */
   async client2FALogin(tempToken: string, code: string): Promise<ClientAuthResponse> {
     return request("/client/auth/2fa-login", {
@@ -772,7 +867,18 @@ export const api = {
 
   async clientCreatePlategaPayment(
     token: string,
-    data: { amount?: number; currency?: string; paymentMethod: number; description?: string; tariffId?: string; proxyTariffId?: string; singboxTariffId?: string; promoCode?: string; extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string } }
+    data: {
+      amount?: number;
+      currency?: string;
+      paymentMethod: number;
+      description?: string;
+      tariffId?: string;
+      proxyTariffId?: string;
+      singboxTariffId?: string;
+      promoCode?: string;
+      extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string };
+      customBuild?: { days: number; devices: number; trafficGb?: number };
+    }
   ): Promise<{ paymentUrl: string; orderId: string; paymentId: string; discountApplied?: boolean; finalAmount?: number }> {
     return request("/client/payments/platega", { method: "POST", body: JSON.stringify(data), token });
   },
@@ -833,13 +939,30 @@ export const api = {
     return request("/client/payments/balance/option", { method: "POST", body: JSON.stringify(data), token });
   },
 
+  /** Оплата гибкого тарифа (собери сам) с баланса */
+  async customBuildPayBalance(
+    token: string,
+    data: { days: number; devices: number; trafficGb?: number; promoCode?: string }
+  ): Promise<{ message: string; paymentId: string; newBalance: number }> {
+    return request("/client/custom-build/pay-balance", { method: "POST", body: JSON.stringify(data), token });
+  },
+
   async getYoomoneyAuthUrl(token: string): Promise<{ url: string }> {
     return request("/client/yoomoney/auth-url", { token });
   },
-  /** Форма перевода ЮMoney (оплата картой). Пополнение баланса, тариф, прокси, доступы или опция. */
+  /** Форма перевода ЮMoney (оплата картой). Пополнение баланса, тариф, прокси, доступы, опция или гибкий тариф. */
   async yoomoneyCreateFormPayment(
     token: string,
-    data: { amount?: number; paymentType: "PC" | "AC"; tariffId?: string; proxyTariffId?: string; singboxTariffId?: string; extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string } }
+    data: {
+      amount?: number;
+      paymentType: "PC" | "AC";
+      tariffId?: string;
+      proxyTariffId?: string;
+      singboxTariffId?: string;
+      promoCode?: string;
+      extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string };
+      customBuild?: { days: number; devices: number; trafficGb?: number };
+    }
   ): Promise<{ paymentId: string; paymentUrl: string; form: { receiver: string; sum: number; label: string; paymentType: string; successURL: string }; successURL: string }> {
     return request("/client/yoomoney/create-form-payment", { method: "POST", body: JSON.stringify(data), token });
   },
@@ -856,10 +979,19 @@ export const api = {
     return request("/client/yoomoney/process-payment", { method: "POST", body: JSON.stringify(data), token });
   },
 
-  /** ЮKassa API: создание платежа (тариф, прокси или пополнение), возвращает confirmationUrl для редиректа. */
+  /** ЮKassa API: создание платежа (тариф, прокси, гибкий тариф или пополнение), возвращает confirmationUrl для редиректа. */
   async yookassaCreatePayment(
     token: string,
-    data: { amount?: number; currency?: string; tariffId?: string; proxyTariffId?: string; singboxTariffId?: string; promoCode?: string; extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string } }
+    data: {
+      amount?: number;
+      currency?: string;
+      tariffId?: string;
+      proxyTariffId?: string;
+      singboxTariffId?: string;
+      promoCode?: string;
+      extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string };
+      customBuild?: { days: number; devices: number; trafficGb?: number };
+    }
   ): Promise<{ paymentId: string; confirmationUrl: string; yookassaPaymentId: string }> {
     return request("/client/yookassa/create-payment", { method: "POST", body: JSON.stringify(data), token });
   },
@@ -867,7 +999,16 @@ export const api = {
   /** Crypto Pay (Crypto Bot) — создание инвойса, возвращает ссылку на оплату */
   async cryptopayCreatePayment(
     token: string,
-    data: { amount?: number; currency?: string; tariffId?: string; proxyTariffId?: string; singboxTariffId?: string; promoCode?: string; extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string } }
+    data: {
+      amount?: number;
+      currency?: string;
+      tariffId?: string;
+      proxyTariffId?: string;
+      singboxTariffId?: string;
+      promoCode?: string;
+      extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string };
+      customBuild?: { days: number; devices: number; trafficGb?: number };
+    }
   ): Promise<{ paymentId: string; payUrl: string; miniAppPayUrl?: string; webAppPayUrl?: string }> {
     return request("/client/cryptopay/create-payment", { method: "POST", body: JSON.stringify(data), token });
   },
@@ -875,7 +1016,16 @@ export const api = {
   /** Heleket — создание инвойса (крипто), возвращает ссылку на оплату */
   async heleketCreatePayment(
     token: string,
-    data: { amount?: number; currency?: string; tariffId?: string; proxyTariffId?: string; singboxTariffId?: string; promoCode?: string; extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string } }
+    data: {
+      amount?: number;
+      currency?: string;
+      tariffId?: string;
+      proxyTariffId?: string;
+      singboxTariffId?: string;
+      promoCode?: string;
+      extraOption?: { kind: "traffic" | "devices" | "servers"; productId: string };
+      customBuild?: { days: number; devices: number; trafficGb?: number };
+    }
   ): Promise<{ paymentId: string; payUrl: string }> {
     return request("/client/heleket/create-payment", { method: "POST", body: JSON.stringify(data), token });
   },
@@ -1183,6 +1333,114 @@ export type UpdateSettingsPayload = {
   skipEmailVerification?: boolean;
   useRemnaSubscriptionPage?: boolean;
   aiChatEnabled?: boolean;
+  customBuildEnabled?: boolean;
+  customBuildPricePerDay?: number;
+  customBuildPricePerDevice?: number;
+  customBuildTrafficMode?: "unlimited" | "per_gb";
+  customBuildPricePerGb?: number;
+  customBuildSquadUuid?: string | null;
+  customBuildCurrency?: string;
+  customBuildMaxDays?: number;
+  customBuildMaxDevices?: number;
+  googleLoginEnabled?: boolean;
+  googleClientId?: string | null;
+  googleClientSecret?: string | null;
+  appleLoginEnabled?: boolean;
+  appleClientId?: string | null;
+  appleTeamId?: string | null;
+  appleKeyId?: string | null;
+  applePrivateKey?: string | null;
+  landingEnabled?: boolean;
+  landingHeroTitle?: string | null;
+  landingHeroSubtitle?: string | null;
+  landingHeroCtaText?: string | null;
+  landingShowTariffs?: boolean;
+  landingContacts?: string | null;
+  landingOfferLink?: string | null;
+  landingPrivacyLink?: string | null;
+  landingFooterText?: string | null;
+  landingHeroBadge?: string | null;
+  landingHeroHint?: string | null;
+  landingFeature1Label?: string | null;
+  landingFeature1Sub?: string | null;
+  landingFeature2Label?: string | null;
+  landingFeature2Sub?: string | null;
+  landingFeature3Label?: string | null;
+  landingFeature3Sub?: string | null;
+  landingFeature4Label?: string | null;
+  landingFeature4Sub?: string | null;
+  landingFeature5Label?: string | null;
+  landingFeature5Sub?: string | null;
+  landingBenefitsTitle?: string | null;
+  landingBenefitsSubtitle?: string | null;
+  landingBenefit1Title?: string | null;
+  landingBenefit1Desc?: string | null;
+  landingBenefit2Title?: string | null;
+  landingBenefit2Desc?: string | null;
+  landingBenefit3Title?: string | null;
+  landingBenefit3Desc?: string | null;
+  landingBenefit4Title?: string | null;
+  landingBenefit4Desc?: string | null;
+  landingBenefit5Title?: string | null;
+  landingBenefit5Desc?: string | null;
+  landingBenefit6Title?: string | null;
+  landingBenefit6Desc?: string | null;
+  landingTariffsTitle?: string | null;
+  landingTariffsSubtitle?: string | null;
+  landingDevicesTitle?: string | null;
+  landingDevicesSubtitle?: string | null;
+  landingFaqTitle?: string | null;
+  landingFaqJson?: string | null;
+  landingHeroHeadline1?: string | null;
+  landingHeroHeadline2?: string | null;
+  landingHeaderBadge?: string | null;
+  landingButtonLogin?: string | null;
+  landingButtonLoginCabinet?: string | null;
+  landingNavBenefits?: string | null;
+  landingNavTariffs?: string | null;
+  landingNavDevices?: string | null;
+  landingNavFaq?: string | null;
+  landingBenefitsBadge?: string | null;
+  landingDefaultPaymentText?: string | null;
+  landingButtonChooseTariff?: string | null;
+  landingNoTariffsMessage?: string | null;
+  landingButtonWatchTariffs?: string | null;
+  landingButtonStart?: string | null;
+  landingButtonOpenCabinet?: string | null;
+  landingJourneyStepsJson?: string | null;
+  landingSignalCardsJson?: string | null;
+  landingTrustPointsJson?: string | null;
+  landingExperiencePanelsJson?: string | null;
+  landingDevicesListJson?: string | null;
+  landingQuickStartJson?: string | null;
+  landingInfraTitle?: string | null;
+  landingNetworkCockpitText?: string | null;
+  landingPulseTitle?: string | null;
+  landingComfortTitle?: string | null;
+  landingComfortBadge?: string | null;
+  landingPrinciplesTitle?: string | null;
+  landingTechTitle?: string | null;
+  landingTechDesc?: string | null;
+  landingCategorySubtitle?: string | null;
+  landingTariffDefaultDesc?: string | null;
+  landingTariffBullet1?: string | null;
+  landingTariffBullet2?: string | null;
+  landingTariffBullet3?: string | null;
+  landingLowestTariffDesc?: string | null;
+  landingDevicesCockpitText?: string | null;
+  landingUniversalityTitle?: string | null;
+  landingUniversalityDesc?: string | null;
+  landingQuickSetupTitle?: string | null;
+  landingQuickSetupDesc?: string | null;
+  landingPremiumServiceTitle?: string | null;
+  landingPremiumServicePara1?: string | null;
+  landingPremiumServicePara2?: string | null;
+  landingHowItWorksTitle?: string | null;
+  landingHowItWorksDesc?: string | null;
+  landingStatsPlatforms?: string | null;
+  landingStatsTariffsLabel?: string | null;
+  landingStatsAccessLabel?: string | null;
+  landingStatsPaymentMethods?: string | null;
 };
 
 export interface ClientRecord {
@@ -1333,6 +1591,117 @@ export interface AdminSettings {
   useRemnaSubscriptionPage?: boolean;
   /** AI-чат в кабинете включён */
   aiChatEnabled?: boolean;
+  /** Гибкий тариф (собери сам) */
+  customBuildEnabled?: boolean;
+  customBuildPricePerDay?: number;
+  customBuildPricePerDevice?: number;
+  customBuildTrafficMode?: "unlimited" | "per_gb";
+  customBuildPricePerGb?: number;
+  customBuildSquadUuid?: string | null;
+  customBuildCurrency?: string;
+  customBuildMaxDays?: number;
+  customBuildMaxDevices?: number;
+  /** OAuth */
+  googleLoginEnabled?: boolean;
+  googleClientId?: string | null;
+  googleClientSecret?: string | null;
+  appleLoginEnabled?: boolean;
+  appleClientId?: string | null;
+  appleTeamId?: string | null;
+  appleKeyId?: string | null;
+  applePrivateKey?: string | null;
+  /** Лендинг на главной (/) */
+  landingEnabled?: boolean;
+  landingHeroTitle?: string | null;
+  landingHeroSubtitle?: string | null;
+  landingHeroCtaText?: string | null;
+  landingShowTariffs?: boolean;
+  landingContacts?: string | null;
+  landingOfferLink?: string | null;
+  landingPrivacyLink?: string | null;
+  landingFooterText?: string | null;
+  landingHeroBadge?: string | null;
+  landingHeroHint?: string | null;
+  landingFeature1Label?: string | null;
+  landingFeature1Sub?: string | null;
+  landingFeature2Label?: string | null;
+  landingFeature2Sub?: string | null;
+  landingFeature3Label?: string | null;
+  landingFeature3Sub?: string | null;
+  landingFeature4Label?: string | null;
+  landingFeature4Sub?: string | null;
+  landingFeature5Label?: string | null;
+  landingFeature5Sub?: string | null;
+  landingBenefitsTitle?: string | null;
+  landingBenefitsSubtitle?: string | null;
+  landingBenefit1Title?: string | null;
+  landingBenefit1Desc?: string | null;
+  landingBenefit2Title?: string | null;
+  landingBenefit2Desc?: string | null;
+  landingBenefit3Title?: string | null;
+  landingBenefit3Desc?: string | null;
+  landingBenefit4Title?: string | null;
+  landingBenefit4Desc?: string | null;
+  landingBenefit5Title?: string | null;
+  landingBenefit5Desc?: string | null;
+  landingBenefit6Title?: string | null;
+  landingBenefit6Desc?: string | null;
+  landingTariffsTitle?: string | null;
+  landingTariffsSubtitle?: string | null;
+  landingDevicesTitle?: string | null;
+  landingDevicesSubtitle?: string | null;
+  landingFaqTitle?: string | null;
+  landingFaqJson?: string | null;
+  landingHeroHeadline1?: string | null;
+  landingHeroHeadline2?: string | null;
+  landingHeaderBadge?: string | null;
+  landingButtonLogin?: string | null;
+  landingButtonLoginCabinet?: string | null;
+  landingNavBenefits?: string | null;
+  landingNavTariffs?: string | null;
+  landingNavDevices?: string | null;
+  landingNavFaq?: string | null;
+  landingBenefitsBadge?: string | null;
+  landingDefaultPaymentText?: string | null;
+  landingButtonChooseTariff?: string | null;
+  landingNoTariffsMessage?: string | null;
+  landingButtonWatchTariffs?: string | null;
+  landingButtonStart?: string | null;
+  landingButtonOpenCabinet?: string | null;
+  landingJourneyStepsJson?: string | null;
+  landingSignalCardsJson?: string | null;
+  landingTrustPointsJson?: string | null;
+  landingExperiencePanelsJson?: string | null;
+  landingDevicesListJson?: string | null;
+  landingQuickStartJson?: string | null;
+  landingInfraTitle?: string | null;
+  landingNetworkCockpitText?: string | null;
+  landingPulseTitle?: string | null;
+  landingComfortTitle?: string | null;
+  landingComfortBadge?: string | null;
+  landingPrinciplesTitle?: string | null;
+  landingTechTitle?: string | null;
+  landingTechDesc?: string | null;
+  landingCategorySubtitle?: string | null;
+  landingTariffDefaultDesc?: string | null;
+  landingTariffBullet1?: string | null;
+  landingTariffBullet2?: string | null;
+  landingTariffBullet3?: string | null;
+  landingLowestTariffDesc?: string | null;
+  landingDevicesCockpitText?: string | null;
+  landingUniversalityTitle?: string | null;
+  landingUniversalityDesc?: string | null;
+  landingQuickSetupTitle?: string | null;
+  landingQuickSetupDesc?: string | null;
+  landingPremiumServiceTitle?: string | null;
+  landingPremiumServicePara1?: string | null;
+  landingPremiumServicePara2?: string | null;
+  landingHowItWorksTitle?: string | null;
+  landingHowItWorksDesc?: string | null;
+  landingStatsPlatforms?: string | null;
+  landingStatsTariffsLabel?: string | null;
+  landingStatsAccessLabel?: string | null;
+  landingStatsPaymentMethods?: string | null;
 }
 
 /** Конфиг страницы подписки (формат как sub.stealthnet.app) */
@@ -1834,4 +2203,42 @@ export interface PublicConfig {
   skipEmailVerification?: boolean;
   useRemnaSubscriptionPage?: boolean;
   aiChatEnabled?: boolean;
+  customBuildConfig?: {
+    enabled: true;
+    pricePerDay: number;
+    pricePerDevice: number;
+    trafficMode: "unlimited" | "per_gb";
+    pricePerGb: number;
+    squadUuid: string;
+    currency: string;
+    maxDays: number;
+    maxDevices: number;
+  } | null;
+  googleLoginEnabled?: boolean;
+  googleClientId?: string | null;
+  appleLoginEnabled?: boolean;
+  appleClientId?: string | null;
+  landingEnabled?: boolean;
+  landingConfig?: {
+    heroTitle: string;
+    heroSubtitle: string | null;
+    heroCtaText: string;
+    heroBadge: string | null;
+    heroHint: string | null;
+    showTariffs: boolean;
+    contacts: string | null;
+    offerLink: string | null;
+    privacyLink: string | null;
+    footerText: string | null;
+    features: { label: string; sub: string }[] | null;
+    benefitsTitle: string | null;
+    benefitsSubtitle: string | null;
+    benefits: { title: string; desc: string }[] | null;
+    tariffsTitle: string | null;
+    tariffsSubtitle: string | null;
+    devicesTitle: string | null;
+    devicesSubtitle: string | null;
+    faqTitle: string | null;
+    faq: { q: string; a: string }[] | null;
+  } | null;
 }

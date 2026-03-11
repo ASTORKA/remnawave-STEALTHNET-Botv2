@@ -17,6 +17,8 @@ import { yookassaWebhooksRouter } from "./modules/webhooks/yookassa.webhooks.rou
 import { cryptopayWebhooksRouter } from "./modules/webhooks/cryptopay.webhooks.routes.js";
 import { heleketWebhooksRouter } from "./modules/webhooks/heleket.webhooks.routes.js";
 import { botAdminRouter } from "./modules/bot-admin/bot-admin.routes.js";
+import { contestAdminRouter } from "./modules/contest/contest.admin.routes.js";
+import { contestPublicRouter } from "./modules/contest/contest.public.routes.js";
 
 const app = express();
 
@@ -76,6 +78,17 @@ const clientTelegramMiniappLimiter = rateLimit({
 });
 app.use("/api/client/auth/telegram-miniapp", clientTelegramMiniappLimiter);
 
+// Клиент: OAuth (Google, Apple) — ограничение от перебора
+const clientOAuthLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: dev ? 1000 : 300,
+  message: { message: "Too many OAuth attempts. Try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/client/auth/google", clientOAuthLimiter);
+app.use("/api/client/auth/apple", clientOAuthLimiter);
+
 // Клиент: все auth-эндпоинты (логин, verify-email, 2fa и т.д.) — общий лимит
 const clientAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -102,12 +115,14 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/admin/contests", contestAdminRouter);
 app.use("/api/admin/proxy", proxyAdminRouter);
 app.use("/api/admin/singbox", singboxAdminRouter);
 app.use("/api/proxy-nodes", proxyAgentRouter);
 app.use("/api/singbox-nodes", singboxAgentRouter);
 app.use("/api/client", clientRouter);
 app.use("/api/public", publicConfigRouter);
+app.use("/api/public", contestPublicRouter);
 app.use("/api/bot-admin", botAdminRouter);
 app.use("/api/webhooks", remnaWebhooksRouter);
 app.use("/api/webhooks", plategaWebhooksRouter);

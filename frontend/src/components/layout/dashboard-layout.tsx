@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, LayoutDashboard, Users, CreditCard, Settings, LogOut, KeyRound,
   Megaphone, Tag, BarChart3, FileText, ExternalLink, Sun, Moon, Monitor,
-  Palette, Menu, X, Database, Target, UserCog, Send, CalendarClock, Globe, Server, MessageSquare,
+  Palette, Menu, X, Database, Target, UserCog, Send, CalendarClock, Globe, Server, MessageSquare, Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useTheme, ACCENT_PALETTES, type ThemeMode, type ThemeAccent } from "@/contexts/theme";
@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { api, type AdminNotificationCounters } from "@/lib/api";
 
-const PANEL_VERSION = "3.2.1";
-const GITHUB_URL = "https://github.com/STEALTHNET-APP/remnawave-STEALTHNET-Bot";
+const PANEL_VERSION = "3.2.3";
+const GITHUB_URL = "https://github.com/systemmaster1200-eng/remnawave-STEALTHNET-Bot";
 
 const navWithSections: { to: string; label: string; icon: typeof LayoutDashboard; section: string }[] = [
   { to: "/admin", label: "Дашборд", icon: LayoutDashboard, section: "dashboard" },
@@ -29,6 +29,7 @@ const navWithSections: { to: string; label: string; icon: typeof LayoutDashboard
   { to: "/admin/broadcast", label: "Рассылка", icon: Send, section: "broadcast" },
   { to: "/admin/auto-broadcast", label: "Авто-рассылка", icon: CalendarClock, section: "auto-broadcast" },
   { to: "/admin/backup", label: "Бэкапы", icon: Database, section: "backup" },
+  { to: "/admin/contests", label: "Конкурсы", icon: Trophy, section: "contests" },
   { to: "/admin/tickets", label: "Тикеты", icon: MessageSquare, section: "tickets" },
   { to: "/admin/settings", label: "Настройки", icon: Settings, section: "settings" },
   { to: "/admin/admins", label: "Менеджеры", icon: UserCog, section: "admins" },
