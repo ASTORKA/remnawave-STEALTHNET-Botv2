@@ -1517,7 +1517,7 @@ export interface AdminSettings {
   notificationTelegramGroupId?: string | null;
   plategaMerchantId?: string | null;
   plategaSecret?: string | null;
-  plategaMethods?: { id: number; enabled: boolean; label: string }[];
+  plategaMethods?: { id: number; enabled: boolean; label: string; emojiId?: string | null }[];
   yoomoneyClientId?: string | null;
   yoomoneyClientSecret?: string | null;
   yoomoneyReceiverWallet?: string | null;
@@ -2185,7 +2185,7 @@ export interface PublicConfig {
   remnaClientUrl?: string | null;
   publicAppUrl?: string | null;
   telegramBotUsername?: string | null;
-  plategaMethods?: { id: number; label: string }[];
+  plategaMethods?: { id: number; label: string; emojiId?: string }[];
   yoomoneyEnabled?: boolean;
   yookassaEnabled?: boolean;
   cryptopayEnabled?: boolean;

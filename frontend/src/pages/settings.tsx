@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 const ALLOWED_LANGS = ["ru", "en"];
 const ALLOWED_CURRENCIES = ["usd", "rub"];
 
-const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string }[] = [
+const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string; emojiId?: string | null }[] = [
   { id: 2, enabled: true, label: "СПБ" },
   { id: 11, enabled: false, label: "Карты" },
   { id: 12, enabled: false, label: "Международный" },
@@ -1442,7 +1442,7 @@ export function SettingsPage() {
                   <CollapsibleContent>
                     <div className="pt-3 space-y-3 border-t mt-3">
                       <p className="text-xs text-muted-foreground">
-                        Подписи и фразы главного меню бота. Чтобы подставлять эмодзи из блока «Эмодзи (текст и кнопки)», используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{BALANCE}}'}</code>, <code className="rounded bg-muted px-1">{'{{STATUS}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRIAL}}'}</code>, <code className="rounded bg-muted px-1">{'{{LINK}}'}</code>, <code className="rounded bg-muted px-1">{'{{DATE}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRAFFIC}}'}</code> и др. (ключи как в списке эмодзи выше, например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>). Unicode подставится автоматически; TG ID используется для премиум-эмодзи в тексте и кнопках.
+                        Подписи и фразы главного меню бота. Чтобы подставлять эмодзи из блока «Эмодзи (текст и кнопки)», используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{BALANCE}}'}</code>, <code className="rounded bg-muted px-1">{'{{STATUS}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRIAL}}'}</code>, <code className="rounded bg-muted px-1">{'{{LINK}}'}</code>, <code className="rounded bg-muted px-1">{'{{DATE}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRAFFIC}}'}</code> и др. (ключи как в списке эмодзи выше, например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>). Unicode подставится автоматически; TG ID используется для премиум-эмодзи в тексте и кнопках. Для <b>жирного текста</b> используйте теги <code className="rounded bg-muted px-1">{'<b> </b>'}</code>.
                       </p>
                       <div className="space-y-2 rounded-lg border p-3 bg-background/60">
                         <div className="flex items-center justify-between gap-2">
@@ -1904,10 +1904,10 @@ export function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Методы оплаты</Label>
-                      <p className="text-xs text-muted-foreground">Включите нужные и задайте подпись на кнопке для клиентов</p>
+                      <p className="text-xs text-muted-foreground">Включите нужные, задайте подпись и при необходимости ID TG премиум-смайлика. Кнопка в боте покажет смайлик и текст.</p>
                       <div className="rounded-md border divide-y">
                         {(settings.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((m) => (
-                          <div key={m.id} className="flex items-center gap-4 p-3">
+                          <div key={m.id} className="flex flex-wrap items-center gap-3 p-3">
                             <Switch
                               id={`platega-method-${m.id}`}
                               checked={m.enabled}
@@ -1928,7 +1928,7 @@ export function SettingsPage() {
                               {m.id}
                             </Label>
                             <Input
-                              className="flex-1"
+                              className="flex-1 min-w-[120px]"
                               value={m.label}
                               onChange={(e) =>
                                 setSettings((s) =>
@@ -1944,6 +1944,32 @@ export function SettingsPage() {
                               }
                               placeholder="Подпись на кнопке"
                             />
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Label htmlFor={`platega-emoji-${m.id}`} className="text-xs text-muted-foreground whitespace-nowrap">ID TG смайлика</Label>
+                              <Input
+                                id={`platega-emoji-${m.id}`}
+                                className="w-28 font-mono text-sm"
+                                value={m.emojiId ?? ""}
+                                onChange={(e) =>
+                                  setSettings((s) =>
+                                    s
+                                      ? {
+                                          ...s,
+                                          plategaMethods: (s.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((x) =>
+                                            x.id === m.id ? { ...x, emojiId: e.target.value.trim() || null } : x
+                                          ),
+                                        }
+                                      : s
+                                  )
+                                }
+                                placeholder="1234567890"
+                              />
+                            </div>
+                            {(m.emojiId ?? m.label) && (
+                              <span className="text-xs text-muted-foreground border rounded px-2 py-1 bg-muted/50">
+                                Кнопка: {m.emojiId ? `[emoji:${m.emojiId}] ` : ""}{m.label || "—"}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

@@ -356,6 +356,37 @@ function t(texts: Record<string, string> | null | undefined, key: string): strin
 }
 
 type CustomEmojiEntity = { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string };
+type BoldEntity = { type: "bold"; offset: number; length: number };
+/** Entities for menu text: custom emoji and bold (from <b> </b> tags) */
+type MenuTextEntity = CustomEmojiEntity | BoldEntity;
+
+/** Strip <b> </b> tags and return cleaned text plus bold ranges (offset/length in cleaned text). */
+function parseBoldTags(text: string): { text: string; boldRanges: { offset: number; length: number }[] } {
+  const boldRanges: { offset: number; length: number }[] = [];
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    if (text.slice(i, i + 3) === "<b>") {
+      i += 3;
+      const start = result.length;
+      const endTag = text.indexOf("</b>", i);
+      if (endTag === -1) {
+        result += "<b>";
+        i -= 3;
+        i++;
+        continue;
+      }
+      const content = text.slice(i, endTag);
+      result += content;
+      boldRanges.push({ offset: start, length: content.length });
+      i = endTag + 4;
+    } else {
+      result += text[i];
+      i++;
+    }
+  }
+  return { text: result, boldRanges };
+}
 
 /** Длина первого символа в UTF-16 (для entity) */
 function firstCharLengthUtf16(s: string): number {
@@ -480,7 +511,7 @@ function titleWithOptionalEmoji(
   return titleWithEmojiAndCustomEmojis(emojiKey, rest, botEmojis);
 }
 
-/** Полный текст главного меню + entities для премиум-эмодзи в тексте (владелец бота должен иметь Telegram Premium). */
+/** Полный текст главного меню + entities для премиум-эмодзи в тексте (владелец бота должен иметь Telegram Premium). Поддержка жирного текста: теги <b> </b>. */
 function buildMainMenuText(opts: {
   serviceName: string;
   balance: number;
@@ -492,20 +523,23 @@ function buildMainMenuText(opts: {
   menuLineVisibility?: Record<string, boolean> | null;
   menuTextCustomEmojiIds?: Record<string, string> | null;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
-}): { text: string; entities: CustomEmojiEntity[] } {
+}): { text: string; entities: MenuTextEntity[] } {
   const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis } = opts;
   const name = serviceName.trim() || "Кабинет";
   const balanceStr = formatMoney(balance, currency);
   const lines: string[] = [];
   const lineStartKeys: (string | null)[] = [];
   const lineEntitiesByIndex: CustomEmojiEntity[][] = [];
+  const lineBoldRangesByIndex: { offset: number; length: number }[][] = [];
   const shouldShow = (key: string) => menuLineVisibility?.[key] !== false;
   const pushLine = (key: string, text: string) => {
     if (!shouldShow(key)) return;
     const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis);
-    lines.push(processed);
+    const { text: cleaned, boldRanges } = parseBoldTags(processed);
+    lines.push(cleaned);
     lineStartKeys.push(key);
     lineEntitiesByIndex.push(entities);
+    lineBoldRangesByIndex.push(boldRanges);
   };
 
   pushLine("welcomeGreeting", t(menuTexts, "welcomeGreeting"));
@@ -575,22 +609,28 @@ function buildMainMenuText(opts: {
     }
     if (url) {
       if (shouldShow("linkLabel")) {
-        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        const { text: labelRaw, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        const { text: label, boldRanges: labelBold } = parseBoldTags(labelRaw);
         lines.push(label, url);
         lineStartKeys.push("linkLabel", null);
         lineEntitiesByIndex.push(entities, []);
+        lineBoldRangesByIndex.push(labelBold, []);
       }
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
   }
 
   const text = lines.join("\n");
-  const entities: CustomEmojiEntity[] = [];
+  const entities: MenuTextEntity[] = [];
   let offset = 0;
   for (let i = 0; i < lines.length; i++) {
     const lineEntities = lineEntitiesByIndex[i] ?? [];
     for (const e of lineEntities) {
       entities.push({ ...e, offset: e.offset + offset });
+    }
+    const boldRanges = lineBoldRangesByIndex[i] ?? [];
+    for (const r of boldRanges) {
+      entities.push({ type: "bold", offset: offset + r.offset, length: r.length });
     }
     const key = lineStartKeys[i];
     if (key && menuTextCustomEmojiIds?.[key] && !lineEntities.some((e) => e.offset === 0)) {
@@ -636,12 +676,12 @@ function logoToMediaSource(logo: string | null | undefined): { source: InputFile
   return null;
 }
 
-/** Редактировать сообщение: текст и клавиатура (если с фото/анимацией — caption, иначе text) */
+/** Редактировать сообщение: текст и клавиатура (если с фото/анимацией — caption, иначе text). entities: custom_emoji и bold. */
 async function editMessageContent(ctx: {
-  editMessageCaption: (opts: { caption: string; caption_entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
-  editMessageText: (text: string, opts?: { entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+  editMessageCaption: (opts: { caption: string; caption_entities?: MenuTextEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+  editMessageText: (text: string, opts?: { entities?: MenuTextEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
   callbackQuery?: { message?: { photo?: unknown[]; animation?: unknown } };
-}, text: string, reply_markup: InlineMarkup, entities?: CustomEmojiEntity[]): Promise<unknown> {
+}, text: string, reply_markup: InlineMarkup, entities?: MenuTextEntity[]): Promise<unknown> {
   const msg = ctx.callbackQuery?.message;
   const hasPhoto = msg && typeof msg === "object" && "photo" in msg && Array.isArray((msg as { photo: unknown[] }).photo) && (msg as { photo: unknown[] }).photo.length > 0;
   const hasAnimation = msg && typeof msg === "object" && "animation" in msg && (msg as { animation: unknown }).animation != null;

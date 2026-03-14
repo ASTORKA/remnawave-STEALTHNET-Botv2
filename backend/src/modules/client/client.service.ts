@@ -632,7 +632,7 @@ function parseCategoryEmojis(raw: string | undefined): CategoryEmojis {
   }
 }
 
-export type PlategaMethodConfig = { id: number; enabled: boolean; label: string };
+export type PlategaMethodConfig = { id: number; enabled: boolean; label: string; emojiId?: string | null };
 const DEFAULT_PLATEGA_METHODS: PlategaMethodConfig[] = [
   { id: 2, enabled: true, label: "СПБ" },
   { id: 11, enabled: false, label: "Карты" },
@@ -647,10 +647,12 @@ function parsePlategaMethods(raw: string | undefined): PlategaMethodConfig[] {
     if (!Array.isArray(parsed)) return DEFAULT_PLATEGA_METHODS;
     return parsed.map((m: unknown) => {
       const x = m as Record<string, unknown>;
+      const emojiId = x.emojiId;
       return {
         id: typeof x.id === "number" ? x.id : Number(x.id) || 2,
         enabled: Boolean(x.enabled),
         label: typeof x.label === "string" ? x.label : String(x.id),
+        emojiId: emojiId == null || emojiId === "" ? undefined : String(emojiId).trim() || undefined,
       };
     });
   } catch {
@@ -839,7 +841,7 @@ export async function getPublicConfig() {
     publicAppUrl: full.publicAppUrl,
     telegramBotUsername: full.telegramBotUsername,
     botAdminTelegramIds: full.botAdminTelegramIds ?? [],
-    plategaMethods: full.plategaMethods.filter((m) => m.enabled).map((m) => ({ id: m.id, label: m.label })),
+    plategaMethods: full.plategaMethods.filter((m) => m.enabled).map((m) => ({ id: m.id, label: m.label, emojiId: m.emojiId ?? undefined })),
     yoomoneyEnabled: Boolean(full.yoomoneyReceiverWallet?.trim()),
     yookassaEnabled: Boolean(full.yookassaShopId?.trim() && full.yookassaSecretKey?.trim()),
     cryptopayEnabled: Boolean((full as { cryptopayApiToken?: string | null }).cryptopayApiToken?.trim()),

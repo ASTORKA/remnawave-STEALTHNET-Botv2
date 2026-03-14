@@ -92,6 +92,9 @@ export type InnerEmojiIds = {
   connect?: string;
 };
 
+/** Platega method: id, label, optional TG premium emoji id for button icon */
+export type PlategaMethod = { id: number; label: string; emojiId?: string };
+
 /** Главное меню: кнопки из конфига. Эмодзи в label (Unicode) и/или icon_custom_emoji_id (премиум). Поддержка показывается только если задана хотя бы одна ссылка. Тикеты — Web App при включённой тикет-системе. buttonsPerRow: 1 или 2. */
 export function mainMenu(opts: {
   showTrial: boolean;
@@ -345,7 +348,7 @@ export function tariffPayButtons(
 /** Кнопки выбора способа оплаты (СПБ, Карты и т.д. из админки) для тарифа + баланс + ЮMoney */
 export function tariffPaymentMethodButtons(
   tariffId: string,
-  methods: { id: number; label: string }[],
+  methods: PlategaMethod[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -375,7 +378,7 @@ export function tariffPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, cardId)]);
   }
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, m.emojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:tariffs", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -439,7 +442,7 @@ export function proxyTariffPayButtons(
 /** Кнопки способа оплаты для прокси-тарифа */
 export function proxyPaymentMethodButtons(
   proxyTariffId: string,
-  methods: { id: number; label: string }[],
+  methods: PlategaMethod[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -462,7 +465,7 @@ export function proxyPaymentMethodButtons(
   }
   if (cryptopayEnabled) rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_proxy_cryptopay:${proxyTariffId}`, undefined, cardId)]);
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_proxy:${proxyTariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_proxy:${proxyTariffId}:${m.id}`, undefined, m.emojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:proxy", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -526,7 +529,7 @@ export function singboxTariffPayButtons(
 /** Кнопки способа оплаты для тарифа Sing-box */
 export function singboxPaymentMethodButtons(
   singboxTariffId: string,
-  methods: { id: number; label: string }[],
+  methods: PlategaMethod[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -549,7 +552,7 @@ export function singboxPaymentMethodButtons(
   }
   if (cryptopayEnabled) rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_singbox_cryptopay:${singboxTariffId}`, undefined, cardId)]);
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_singbox:${singboxTariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_singbox:${singboxTariffId}:${m.id}`, undefined, m.emojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:singbox", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -558,7 +561,7 @@ export function singboxPaymentMethodButtons(
 /** Кнопки выбора способа оплаты для пополнения на сумму + ЮMoney */
 export function topupPaymentMethodButtons(
   amount: string,
-  methods: { id: number; label: string }[],
+  methods: PlategaMethod[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -580,7 +583,7 @@ export function topupPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `topup_cryptopay:${amount}`, "primary", cardId)]);
   }
   for (const m of methods) {
-    rows.push([btn(m.label, `topup:${amount}:${m.id}`, "primary", cardId)]);
+    rows.push([btn(m.label, `topup:${amount}:${m.id}`, "primary", m.emojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:topup", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -617,7 +620,7 @@ export function optionPaymentMethodButtons(
   backLabel: string | null,
   innerStyles?: InnerButtonStyles,
   emojiIds?: InnerEmojiIds,
-  plategaMethods: { id: number; label: string }[] = [],
+  plategaMethods: PlategaMethod[] = [],
   yoomoneyEnabled?: boolean,
   yookassaEnabled?: boolean,
   cryptopayEnabled?: boolean,
@@ -639,7 +642,7 @@ export function optionPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_option_cryptopay:${option.kind}:${option.id}`, undefined, cardId)]);
   }
   for (const m of plategaMethods) {
-    rows.push([btn(m.label, `pay_option_platega:${option.kind}:${option.id}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_option_platega:${option.kind}:${option.id}:${m.id}`, undefined, m.emojiId ?? cardId)]);
   }
   if (rows.length === 0) {
     rows.push([btn("💳 Оплата (ЮKassa)", `pay_option_yookassa:${option.kind}:${option.id}`, undefined, cardId)]);
