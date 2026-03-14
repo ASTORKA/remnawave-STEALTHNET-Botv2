@@ -704,16 +704,16 @@ async function editMessageContent(ctx: {
   return ctx.editMessageText(text, { entities: entities?.length ? entities : undefined, reply_markup });
 }
 
-const REDIRECT_TO_PAYMENT_TEXT = "Переход к оплате…";
-
-/** Open payment URL in browser and edit message to short text with Back (skip intermediate "Оплатить" screen). */
-async function redirectToPayment(
-  ctx: Parameters<typeof editMessageContent>[0] & { answerCallbackQuery: (opts?: { url?: string }) => Promise<unknown> },
+/** Show payment screen: short text + "Оплатить" (url) + "Назад". Link opens only when user taps the button (answerCallbackQuery url works only for games/bot deep links). */
+async function showPaymentScreen(
+  ctx: Parameters<typeof editMessageContent>[0] & { answerCallbackQuery: (opts?: object) => Promise<unknown> },
   paymentUrl: string,
-  backMarkup: InlineMarkup
+  backLabel: string | null,
+  backStyle: string | undefined,
+  emojiIds: InnerEmojiIds | undefined
 ): Promise<void> {
-  await ctx.answerCallbackQuery({ url: paymentUrl }).catch(() => {});
-  await editMessageContent(ctx, REDIRECT_TO_PAYMENT_TEXT, backMarkup);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await editMessageContent(ctx, "Нажмите кнопку «Оплатить» — откроется страница оплаты.", payUrlMarkup(paymentUrl, backLabel, backStyle, emojiIds));
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -1677,7 +1677,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createYoomoneyPayment(token, { amount: tariff.price, paymentType: "AC", proxyTariffId });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1699,7 +1699,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createYookassaPayment(token, { amount: tariff.price, currency: "RUB", proxyTariffId });
-        await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1717,7 +1717,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, proxyTariffId });
-        await redirectToPayment(ctx, payment.payUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1748,7 +1748,7 @@ bot.on("callback_query:data", async (ctx) => {
             description: `Прокси: ${tariff.name}`,
             proxyTariffId: tariff.id,
           });
-          await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+          await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1800,7 +1800,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createYoomoneyPayment(token, { amount: tariff.price, paymentType: "AC", singboxTariffId });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1822,7 +1822,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createYookassaPayment(token, { amount: tariff.price, currency: "RUB", singboxTariffId });
-        await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1840,7 +1840,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, singboxTariffId });
-        await redirectToPayment(ctx, payment.payUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1871,7 +1871,7 @@ bot.on("callback_query:data", async (ctx) => {
             description: `Доступы: ${tariff.name}`,
             singboxTariffId: tariff.id,
           });
-          await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+          await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1932,7 +1932,7 @@ bot.on("callback_query:data", async (ctx) => {
           promoCode,
         });
         if (promoCode) activeDiscountCode.delete(userId);
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1961,7 +1961,7 @@ bot.on("callback_query:data", async (ctx) => {
           promoCode,
         });
         if (promoCode) activeDiscountCode.delete(userId);
-        await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -1981,7 +1981,7 @@ bot.on("callback_query:data", async (ctx) => {
         const promoCode = activeDiscountCode.get(userId);
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, tariffId: tariff.id, promoCode });
         if (promoCode) activeDiscountCode.delete(userId);
-        await redirectToPayment(ctx, payment.payUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2034,7 +2034,7 @@ bot.on("callback_query:data", async (ctx) => {
         const payment = await api.createYookassaPayment(token, {
           extraOption: { kind: option.kind, productId: option.id },
         });
-        await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         const isAuthError = /401|unauthorized|истек|авториз|токен/i.test(msg);
@@ -2056,7 +2056,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       try {
         const payment = await api.createCryptopayPayment(token, { extraOption: { kind: option.kind, productId: option.id } });
-        await redirectToPayment(ctx, payment.payUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         const isAuthError = /401|unauthorized|истек|авториз|токен/i.test(msg);
@@ -2082,7 +2082,7 @@ bot.on("callback_query:data", async (ctx) => {
           paymentType: "AC",
           extraOption: { kind: option.kind, productId: option.id },
         });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2113,7 +2113,7 @@ bot.on("callback_query:data", async (ctx) => {
           description: option.name || `${option.kind} ${option.id}`,
           extraOption: { kind: option.kind, productId: option.id },
         });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2182,7 +2182,7 @@ bot.on("callback_query:data", async (ctx) => {
           description: `Тариф: ${tariff.name}`,
           tariffId: tariff.id,
         });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         return;
       }
       // Показываем способы оплаты (всегда, чтобы была кнопка баланса)
@@ -2333,7 +2333,7 @@ bot.on("callback_query:data", async (ctx) => {
           amount,
           paymentType: "AC",
         });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2351,7 +2351,7 @@ bot.on("callback_query:data", async (ctx) => {
       const client = await api.getMe(token);
       try {
         const payment = await api.createYookassaPayment(token, { amount, currency: "RUB" });
-        await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2369,7 +2369,7 @@ bot.on("callback_query:data", async (ctx) => {
       const client = await api.getMe(token);
       try {
         const payment = await api.createCryptopayPayment(token, { amount, currency: client.preferredCurrency ?? "RUB" });
-        await redirectToPayment(ctx, payment.payUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа Crypto Bot";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2396,7 +2396,7 @@ bot.on("callback_query:data", async (ctx) => {
           paymentMethod: methodIdFromBtn,
           description: "Пополнение баланса",
         });
-        await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+        await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         return;
       }
       const yooEnabled = !!config?.yoomoneyEnabled;
@@ -2411,7 +2411,7 @@ bot.on("callback_query:data", async (ctx) => {
       if (methods.length === 0 && yooEnabled && !yookassaEnabled) {
         try {
           const payment = await api.createYoomoneyPayment(token, { amount, paymentType: "AC" });
-          await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+          await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2422,7 +2422,7 @@ bot.on("callback_query:data", async (ctx) => {
       if (methods.length === 0 && yookassaEnabled) {
         try {
           const payment = await api.createYookassaPayment(token, { amount, currency: "RUB" });
-          await redirectToPayment(ctx, payment.confirmationUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+          await showPaymentScreen(ctx, payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2436,7 +2436,7 @@ bot.on("callback_query:data", async (ctx) => {
         paymentMethod: methodId,
         description: "Пополнение баланса",
       });
-      await redirectToPayment(ctx, payment.paymentUrl, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
+      await showPaymentScreen(ctx, payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds);
       return;
     }
 
