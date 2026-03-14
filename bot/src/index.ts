@@ -777,9 +777,11 @@ async function showPaymentScreen(
   const payButtonText = (config as { botPayScreenButtonText?: string | null })?.botPayScreenButtonText?.trim();
   const payEmojiKey = (config as { botPayScreenButtonEmojiKey?: string | null })?.botPayScreenButtonEmojiKey?.trim();
   const payButtonEmojiId = payEmojiKey && config?.botEmojis?.[payEmojiKey]?.tgEmojiId ? config.botEmojis[payEmojiKey].tgEmojiId : undefined;
+  const backEmojiId = config?.botEmojis?.BACK?.tgEmojiId ?? undefined;
   const markup = payUrlMarkup(paymentUrl, backLabel, backStyle, emojiIds, {
     payButtonText: payButtonText || undefined,
     payButtonEmojiId: payButtonEmojiId ?? undefined,
+    backEmojiId,
   });
   await editMessageContent(ctx, messageText, markup);
 }

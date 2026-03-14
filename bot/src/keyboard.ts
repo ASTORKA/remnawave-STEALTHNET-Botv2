@@ -214,7 +214,7 @@ export function backToMenu(backLabel?: string | null, backStyle?: string, emojiI
   return { inline_keyboard: [[btn(text, "menu:main", resolveStyle(toStyle(backStyle), "danger"), emojiIds?.back)]] };
 }
 
-/** Кнопка «Оплатить» (открывает paymentUrl) + «В меню» */
+/** Кнопка «Оплатить» (открывает paymentUrl) + «В меню». backEmojiId — только для «Назад», чтобы не подставлялся эмодзи кнопки «Оплатить». */
 export function payUrlMarkup(
   paymentUrl: string,
   backLabel?: string | null,
@@ -223,18 +223,22 @@ export function payUrlMarkup(
   opts?: {
     payButtonText?: string | null;
     payButtonEmojiId?: string | null;
+    /** Explicit emoji for Back button only (e.g. botEmojis.BACK) so Pay emoji never leaks to Back */
+    backEmojiId?: string | null;
   }
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
-  const payLabel = (opts?.payButtonText && opts.payButtonText.trim()) || "💳 Оплатить";
+  const payHasIcon = !!(opts?.payButtonEmojiId ?? emojiIds?.card);
+  const payLabel = (opts?.payButtonText && opts.payButtonText.trim()) || (payHasIcon ? "Оплатить" : "💳 Оплатить");
   const payBtn: UrlButton = { text: payLabel, url: paymentUrl };
   if (opts?.payButtonEmojiId) payBtn.icon_custom_emoji_id = opts.payButtonEmojiId;
   else if (emojiIds?.card) payBtn.icon_custom_emoji_id = emojiIds.card;
+  const backIconId = opts?.backEmojiId !== undefined ? opts.backEmojiId : emojiIds?.back;
   return {
     inline_keyboard: [
       [payBtn],
-      [btn(back, "menu:main", backSty, emojiIds?.back)],
+      [btn(back, "menu:main", backSty, backIconId ?? undefined)],
     ],
   };
 }
