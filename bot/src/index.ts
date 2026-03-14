@@ -752,7 +752,7 @@ async function editMessageContent(ctx: {
   return ctx.editMessageText(text, { entities: entities?.length ? entities : undefined, reply_markup });
 }
 
-/** Show payment screen: configurable text + "Оплатить" (url) + optional Mini App button + "Назад". */
+/** Show payment screen: configurable text + "Оплатить" (url) + "Назад". */
 async function showPaymentScreen(
   ctx: Parameters<typeof editMessageContent>[0] & { answerCallbackQuery: (opts?: object) => Promise<unknown> },
   paymentUrl: string,
@@ -777,9 +777,7 @@ async function showPaymentScreen(
   const payButtonText = (config as { botPayScreenButtonText?: string | null })?.botPayScreenButtonText?.trim();
   const payEmojiKey = (config as { botPayScreenButtonEmojiKey?: string | null })?.botPayScreenButtonEmojiKey?.trim();
   const payButtonEmojiId = payEmojiKey && config?.botEmojis?.[payEmojiKey]?.tgEmojiId ? config.botEmojis[payEmojiKey].tgEmojiId : undefined;
-  const appUrl = config?.publicAppUrl?.replace(/\/$/, "") ?? null;
   const markup = payUrlMarkup(paymentUrl, backLabel, backStyle, emojiIds, {
-    appUrl: appUrl || undefined,
     payButtonText: payButtonText || undefined,
     payButtonEmojiId: payButtonEmojiId ?? undefined,
   });

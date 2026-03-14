@@ -1668,51 +1668,46 @@ export function SettingsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+                <div className="space-y-3 rounded-lg border p-4 bg-muted/20 border-primary/30">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-primary" />
-                    <Label className="text-base font-medium">Экран перехода к оплате</Label>
+                    <div>
+                      <Label className="text-base font-medium">Окно «Нажмите кнопку «Оплатить» — откроется страница оплаты»</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Последний экран перед переходом по ссылке оплаты. Настраиваются текст сообщения и кнопка «Оплатить».
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Текст и кнопки окна «Нажмите кнопку «Оплатить» — откроется страница оплаты.» (после выбора способа оплаты). Слева от кнопки «Оплатить» в боте показывается кнопка «В приложении» (Mini App), если указан URL приложения во вкладке «Общие».
-                  </p>
-                  <div className="flex gap-2 items-start">
-                    <Button type="button" variant="outline" size="sm" className="shrink-0" asChild>
-                      <a href={((settings.publicAppUrl ?? "").replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "")) + "/cabinet"} target="_blank" rel="noopener noreferrer">
-                        Открыть в приложении
-                      </a>
-                    </Button>
-                    <div className="flex-1 space-y-2">
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Текст сообщения</Label>
+                      <Input
+                        value={settings.botPayScreenText ?? ""}
+                        onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenText: e.target.value.trim() || null } : s))}
+                        placeholder={DEFAULT_BOT_PAY_SCREEN_TEXT}
+                      />
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <Label className="text-xs">Текст сообщения</Label>
+                        <Label className="text-xs">Текст кнопки «Оплатить»</Label>
                         <Input
-                          value={settings.botPayScreenText ?? ""}
-                          onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenText: e.target.value.trim() || null } : s))}
-                          placeholder={DEFAULT_BOT_PAY_SCREEN_TEXT}
+                          value={settings.botPayScreenButtonText ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonText: e.target.value.trim() || null } : s))}
+                          placeholder={DEFAULT_BOT_PAY_SCREEN_BUTTON_TEXT}
                         />
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Текст кнопки «Оплатить»</Label>
-                          <Input
-                            value={settings.botPayScreenButtonText ?? ""}
-                            onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonText: e.target.value.trim() || null } : s))}
-                            placeholder={DEFAULT_BOT_PAY_SCREEN_BUTTON_TEXT}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Смайлик кнопки (ключ эмодзи)</Label>
-                          <select
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                            value={settings.botPayScreenButtonEmojiKey ?? ""}
-                            onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonEmojiKey: e.target.value.trim() || null } : s))}
-                          >
-                            <option value="">По умолчанию (💳)</option>
-                            {BOT_EMOJI_KEYS.map((k) => (
-                              <option key={k} value={k}>{k}</option>
-                            ))}
-                          </select>
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Смайлик кнопки (ключ эмодзи)</Label>
+                        <select
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                          value={settings.botPayScreenButtonEmojiKey ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonEmojiKey: e.target.value.trim() || null } : s))}
+                        >
+                          <option value="">По умолчанию (💳)</option>
+                          {BOT_EMOJI_KEYS.map((k) => (
+                            <option key={k} value={k}>{k}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
