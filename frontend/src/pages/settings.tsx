@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 const ALLOWED_LANGS = ["ru", "en"];
 const ALLOWED_CURRENCIES = ["usd", "rub"];
 
-const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string }[] = [
+const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string; unicode?: string; tgEmojiId?: string }[] = [
   { id: 2, enabled: true, label: "СПБ" },
   { id: 11, enabled: false, label: "Карты" },
   { id: 12, enabled: false, label: "Международный" },
@@ -71,16 +71,6 @@ const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
 const DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE = "{{name}} — {{price}} {{currency}}";
-
-const BOT_PAYMENT_BUTTON_EMOJI_KEYS = ["balance", "yoomoney", "yookassa", "cryptopay", "back", "card"] as const;
-const BOT_PAYMENT_BUTTON_EMOJI_LABELS: Record<string, string> = {
-  balance: "Оплата балансом",
-  yoomoney: "ЮMoney",
-  yookassa: "ЮKassa",
-  cryptopay: "Crypto Bot",
-  back: "Кнопка «Назад»",
-  card: "Карта / способы оплаты",
-};
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -235,7 +225,6 @@ export function SettingsPage() {
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
         botTariffButtonTemplate: (data as AdminSettings).botTariffButtonTemplate ?? DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE,
-        botPaymentButtonEmojis: (data as AdminSettings).botPaymentButtonEmojis ?? undefined,
         botMenuTextIndent: (data as AdminSettings).botMenuTextIndent ?? undefined,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
@@ -550,7 +539,6 @@ export function SettingsPage() {
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
         botTariffButtonTemplate: settings.botTariffButtonTemplate ?? undefined,
-        botPaymentButtonEmojis: settings.botPaymentButtonEmojis != null ? settings.botPaymentButtonEmojis : undefined,
         botMenuTextIndent: settings.botMenuTextIndent != null && Object.keys(settings.botMenuTextIndent).length > 0 ? settings.botMenuTextIndent : undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
@@ -1530,15 +1518,15 @@ export function SettingsPage() {
                         ))}
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Отступ в начале строки (пробелов, 0–20)</Label>
-                        <p className="text-xs text-muted-foreground">Укажите число пробелов для каждой строки главного меню (ключ как у текста выше).</p>
+                        <Label className="text-xs">Пустые строки вокруг строки (0–10)</Label>
+                        <p className="text-xs text-muted-foreground">Число пустых строк сверху и снизу от данной строки главного меню. Например 1 — одна пустая строка сверху и одна снизу.</p>
                         <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                           {Object.keys(DEFAULT_BOT_MENU_TEXTS).map((key) => (
                             <div key={key} className="flex items-center gap-2">
                               <Input
                                 type="number"
                                 min={0}
-                                max={20}
+                                max={10}
                                 className="w-16"
                                 value={settings.botMenuTextIndent?.[key] ?? ""}
                                 onChange={(e) => {
@@ -1622,7 +1610,7 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Окно оплаты</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Поддержка HTML: <code className="rounded bg-muted px-1">{'<b>жирный</b>'}</code>.
+                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Поддержка HTML: <code className="rounded bg-muted px-1">{'<b>жирный</b>'}</code>. Смайлики для кнопок СБП/Криптовалюта и др. задаются в разделе «Платежи» → Platega.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Текст сообщения</Label>
@@ -1632,34 +1620,6 @@ export function SettingsPage() {
                       onChange={(e) => setSettings((s) => (s ? { ...s, botPaymentText: e.target.value } : s))}
                       placeholder={DEFAULT_BOT_PAYMENT_TEXT}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Стикеры (custom emoji) кнопок окна оплаты по ключу</Label>
-                    <p className="text-xs text-muted-foreground">Укажите TG custom emoji ID (премиум) для кнопок. Ключи: balance, yoomoney, yookassa, cryptopay, back, card.</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {BOT_PAYMENT_BUTTON_EMOJI_KEYS.map((key) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <Label className="text-xs w-28">{BOT_PAYMENT_BUTTON_EMOJI_LABELS[key] ?? key}</Label>
-                          <Input
-                            placeholder="tgEmojiId"
-                            value={settings.botPaymentButtonEmojis?.[key]?.tgEmojiId ?? ""}
-                            onChange={(e) =>
-                              setSettings((s) =>
-                                s
-                                  ? {
-                                      ...s,
-                                      botPaymentButtonEmojis: {
-                                        ...(s.botPaymentButtonEmojis ?? {}),
-                                        [key]: { ...(s.botPaymentButtonEmojis?.[key] ?? {}), tgEmojiId: e.target.value || undefined },
-                                      },
-                                    }
-                                  : s
-                              )
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
@@ -1984,7 +1944,7 @@ export function SettingsPage() {
                       <p className="text-xs text-muted-foreground">Включите нужные и задайте подпись на кнопке для клиентов</p>
                       <div className="rounded-md border divide-y">
                         {(settings.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((m) => (
-                          <div key={m.id} className="flex items-center gap-4 p-3">
+                          <div key={m.id} className="flex flex-wrap items-center gap-3 p-3">
                             <Switch
                               id={`platega-method-${m.id}`}
                               checked={m.enabled}
@@ -2005,7 +1965,7 @@ export function SettingsPage() {
                               {m.id}
                             </Label>
                             <Input
-                              className="flex-1"
+                              className="flex-1 min-w-[120px]"
                               value={m.label}
                               onChange={(e) =>
                                 setSettings((s) =>
@@ -2021,9 +1981,46 @@ export function SettingsPage() {
                               }
                               placeholder="Подпись на кнопке"
                             />
+                            <Input
+                              className="w-20"
+                              value={m.unicode ?? ""}
+                              onChange={(e) =>
+                                setSettings((s) =>
+                                  s
+                                    ? {
+                                        ...s,
+                                        plategaMethods: (s.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((x) =>
+                                          x.id === m.id ? { ...x, unicode: e.target.value || undefined } : x
+                                        ),
+                                      }
+                                    : s
+                                )
+                              }
+                              placeholder="Смайл"
+                              title="Unicode-эмодзи (например 💳)"
+                            />
+                            <Input
+                              className="w-36"
+                              value={m.tgEmojiId ?? ""}
+                              onChange={(e) =>
+                                setSettings((s) =>
+                                  s
+                                    ? {
+                                        ...s,
+                                        plategaMethods: (s.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((x) =>
+                                          x.id === m.id ? { ...x, tgEmojiId: e.target.value || undefined } : x
+                                        ),
+                                      }
+                                    : s
+                                )
+                              }
+                              placeholder="TG Emoji ID"
+                              title="ID кастомного эмодзи Telegram (премиум)"
+                            />
                           </div>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground">Для каждой кнопки можно указать смайл (Unicode, например 💳) и/или TG Emoji ID для премиум-эмодзи.</p>
                     </div>
                     {message && <p className="text-sm text-muted-foreground">{message}</p>}
                     <Button type="submit" disabled={saving}>

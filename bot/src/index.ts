@@ -348,7 +348,7 @@ function buildPaymentMessage(
 ): { text: string; entities: CustomEmojiEntity[] } {
   const template = (config?.botPaymentText ?? "").trim() || DEFAULT_PAYMENT_TEXT;
   const base = renderPaymentText(template, vars);
-  return applyCustomEmojiPlaceholders(base, config?.botEmojis);
+  return applyCustomEmojiPlaceholders(base, config?.botEmojis, false);
 }
 
 function t(texts: Record<string, string> | null | undefined, key: string): string {
@@ -401,7 +401,7 @@ function getMenuEmojiKey(
   return btn?.emojiKey || DEFAULT_MENU_EMOJI_KEY_BY_ID[menuId];
 }
 
-/** Заголовок с эмодзи: если в botEmojis есть tgEmojiId для ключа — добавляем entity (премиум-эмодзи в тексте). */
+/** Заголовок с эмодзи (только unicode, без custom_emoji entity — для совместимости с parse_mode HTML и чтобы не показывать 🙂). */
 function titleWithEmoji(
   emojiKey: string,
   rest: string,
@@ -411,17 +411,14 @@ function titleWithEmoji(
   const unicode = entry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[emojiKey] || "•";
   const space = rest.startsWith("\n") ? "" : " ";
   const text = unicode + space + rest;
-  const entities: CustomEmojiEntity[] = [];
-  if (entry?.tgEmojiId) {
-    const len = firstCharLengthUtf16(unicode);
-    if (len > 0) entities.push({ type: "custom_emoji", offset: 0, length: len, custom_emoji_id: entry.tgEmojiId });
-  }
-  return { text, entities };
+  return { text, entities: [] };
 }
 
+/** When useEntities is false (e.g. with parse_mode HTML), only substitute unicode so we never show 🙂 placeholder. */
 function applyCustomEmojiPlaceholders(
   text: string,
-  botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
+  botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null,
+  useEntities: boolean = true
 ): { text: string; entities: CustomEmojiEntity[] } {
   if (!text) return { text, entities: [] };
   const entities: CustomEmojiEntity[] = [];
@@ -434,11 +431,11 @@ function applyCustomEmojiPlaceholders(
     out += text.slice(lastIdx, match.index);
     const entry = botEmojis?.[key];
     const fallbackUnicode = DEFAULT_EMOJI_UNICODE[key];
-    const unicode = entry?.unicode?.trim() || (entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || fallbackUnicode || "";
+    const unicode = entry?.unicode?.trim() || fallbackUnicode || (useEntities && entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || "";
     if (unicode) {
       const offset = out.length;
       out += unicode;
-      if (entry?.tgEmojiId) {
+      if (useEntities && entry?.tgEmojiId) {
         entities.push({ type: "custom_emoji", offset, length: unicode.length, custom_emoji_id: entry.tgEmojiId });
       }
     } else {
@@ -459,15 +456,8 @@ function titleWithEmojiAndCustomEmojis(
   const unicode = entry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[emojiKey] || "•";
   const space = rest.startsWith("\n") ? "" : " ";
   const leading = unicode + space;
-  const { text: restText, entities: restEntities } = applyCustomEmojiPlaceholders(rest, botEmojis);
-  const entities: CustomEmojiEntity[] = [];
-  if (entry?.tgEmojiId) {
-    const len = firstCharLengthUtf16(unicode);
-    if (len > 0) entities.push({ type: "custom_emoji", offset: 0, length: len, custom_emoji_id: entry.tgEmojiId });
-  }
-  for (const e of restEntities) {
-    entities.push({ ...e, offset: e.offset + leading.length });
-  }
+  const { text: restText, entities: restEntities } = applyCustomEmojiPlaceholders(rest, botEmojis, false);
+  const entities: CustomEmojiEntity[] = restEntities.map((e) => ({ ...e, offset: e.offset + leading.length }));
   return { text: leading + restText, entities };
 }
 
@@ -476,7 +466,7 @@ function titleWithOptionalEmoji(
   rest: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
 ): { text: string; entities: CustomEmojiEntity[] } {
-  if (!emojiKey) return applyCustomEmojiPlaceholders(rest, botEmojis);
+  if (!emojiKey) return applyCustomEmojiPlaceholders(rest, botEmojis, false);
   return titleWithEmojiAndCustomEmojis(emojiKey, rest, botEmojis);
 }
 
@@ -503,12 +493,14 @@ function buildMainMenuText(opts: {
   const shouldShow = (key: string) => menuLineVisibility?.[key] !== false;
   const pushLine = (key: string, text: string) => {
     if (!shouldShow(key)) return;
-    const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis);
-    const indent = Math.min(50, Math.max(0, Math.floor(menuTextIndent?.[key] ?? 0)));
-    const indented = (indent > 0 ? " ".repeat(indent) : "") + processed;
+    const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis, false);
+    const emptyLines = Math.min(10, Math.max(0, Math.floor(menuTextIndent?.[key] ?? 0)));
+    const prefix = emptyLines > 0 ? "\n".repeat(emptyLines) : "";
+    const suffix = emptyLines > 0 ? "\n".repeat(emptyLines) : "";
+    const indented = prefix + processed + suffix;
     lines.push(indented);
     lineStartKeys.push(key);
-    lineEntitiesByIndex.push(indent > 0 ? entities.map((e) => ({ ...e, offset: e.offset + indent })) : entities);
+    lineEntitiesByIndex.push(emptyLines > 0 ? entities.map((e) => ({ ...e, offset: e.offset + prefix.length })) : entities);
   };
 
   pushLine("welcomeGreeting", t(menuTexts, "welcomeGreeting"));
@@ -579,7 +571,7 @@ function buildMainMenuText(opts: {
     }
     if (url) {
       if (shouldShow("linkLabel")) {
-        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis, false);
         lines.push(label, escapeHtml(url));
         lineStartKeys.push("linkLabel", null);
         lineEntitiesByIndex.push(entities, []);
@@ -1476,7 +1468,7 @@ bot.on("callback_query:data", async (ctx) => {
         ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
         : innerEmojiIds;
       if (items.length > 1) {
-        const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, "Тарифы\n\nВыберите категорию:", config?.botEmojis);
+        const { text, entities } = applyCustomEmojiPlaceholders("Тарифы\n\nВыберите категорию:", config?.botEmojis, false);
         await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
         return;
       }
@@ -1487,7 +1479,7 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
+      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, false);
       await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
@@ -1514,7 +1506,7 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
+      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, false);
       await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
@@ -2244,7 +2236,7 @@ bot.on("callback_query:data", async (ctx) => {
         currency: tariff.currency,
         action: "Выберите способ оплаты:",
       });
-      await editMessageContent(ctx, pay2.text, tariffPaymentMethodButtons(tariffId, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, balanceLabel, !!config?.yoomoneyEnabled, !!config?.yookassaEnabled, !!config?.cryptopayEnabled, tariff.currency, config?.botPaymentButtonEmojis ?? null), pay2.entities);
+      await editMessageContent(ctx, pay2.text, tariffPaymentMethodButtons(tariffId, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, balanceLabel, !!config?.yoomoneyEnabled, !!config?.yookassaEnabled, !!config?.cryptopayEnabled, tariff.currency), pay2.entities);
       return;
     }
 

@@ -1310,7 +1310,6 @@ export type UpdateSettingsPayload = {
   botTariffsFields?: string | null;
   botPaymentText?: string | null;
   botTariffButtonTemplate?: string | null;
-  botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
   botMenuTextIndent?: Record<string, number> | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
@@ -1559,9 +1558,7 @@ export interface AdminSettings {
   botPaymentText?: string | null;
   /** Шаблон текста кнопки тарифа: {{name}}, {{durationDays}}, {{price}}, {{currency}} */
   botTariffButtonTemplate?: string | null;
-  /** Эмодзи (стикеры) кнопок окна оплаты по ключу: balance, yoomoney, yookassa, cryptopay, back, card */
-  botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
-  /** Отступ в пробелах по ключу строки главного меню */
+  /** Отступ (пустые строки) по ключу строки главного меню */
   botMenuTextIndent?: Record<string, number> | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;

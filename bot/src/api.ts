@@ -79,7 +79,7 @@ export async function getPublicConfig(): Promise<{
   defaultCurrency?: string;
   trialEnabled?: boolean;
   trialDays?: number;
-  plategaMethods?: { id: number; label: string }[];
+  plategaMethods?: { id: number; label: string; unicode?: string; tgEmojiId?: string }[];
   yoomoneyEnabled?: boolean;
   yookassaEnabled?: boolean;
   cryptopayEnabled?: boolean;
@@ -100,7 +100,6 @@ export async function getPublicConfig(): Promise<{
   botTariffsFields?: Record<string, boolean> | null;
   botPaymentText?: string | null;
   botTariffButtonTemplate?: string | null;
-  botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }>;
   botMenuTextIndent?: Record<string, number>;
   activeLanguages?: string[];
   activeCurrencies?: string[];

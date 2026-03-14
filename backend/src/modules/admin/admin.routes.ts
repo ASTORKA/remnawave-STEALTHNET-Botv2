@@ -928,7 +928,7 @@ const updateSettingsSchema = z.object({
   notificationTelegramGroupId: z.string().max(100).nullable().optional(),
   plategaMerchantId: z.string().max(200).nullable().optional(),
   plategaSecret: z.string().max(500).nullable().optional(),
-  plategaMethods: z.string().max(2000).nullable().optional(),
+  plategaMethods: z.string().max(5000).nullable().optional(),
   yoomoneyClientId: z.string().max(200).nullable().optional(),
   yoomoneyClientSecret: z.string().max(500).nullable().optional(),
   yoomoneyReceiverWallet: z.string().max(50).nullable().optional(),
@@ -956,7 +956,6 @@ const updateSettingsSchema = z.object({
   botTariffsFields: z.union([z.string().max(2000), z.record(z.boolean())]).nullable().optional(),
   botPaymentText: z.string().max(8000).nullable().optional(),
   botTariffButtonTemplate: z.string().max(500).nullable().optional(),
-  botPaymentButtonEmojis: z.union([z.string().max(5000), z.record(z.object({ unicode: z.string().max(20).optional(), tgEmojiId: z.string().max(50).optional() }))]).nullable().optional(),
   botMenuTextIndent: z.union([z.string().max(2000), z.record(z.number().int().min(0).max(50))]).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
@@ -1449,20 +1448,6 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_tariff_button_template" },
       create: { key: "bot_tariff_button_template", value: val },
-      update: { value: val },
-    });
-  }
-  if (updates.botPaymentButtonEmojis !== undefined) {
-    const raw = updates.botPaymentButtonEmojis;
-    const val =
-      typeof raw === "string"
-        ? raw
-        : raw !== null && typeof raw === "object" && !Array.isArray(raw)
-          ? JSON.stringify(raw)
-          : "";
-    await prisma.systemSetting.upsert({
-      where: { key: "bot_payment_button_emojis" },
-      create: { key: "bot_payment_button_emojis", value: val },
       update: { value: val },
     });
   }

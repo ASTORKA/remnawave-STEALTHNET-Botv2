@@ -74,8 +74,7 @@ const SYSTEM_CONFIG_KEYS = [
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
   "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text",
   "bot_tariff_button_template", // Template for tariff button label: {{name}}, {{durationDays}}, {{price}}, {{currency}}
-  "bot_payment_button_emojis", // JSON: key -> { unicode?, tgEmojiId? } for payment window buttons (balance, yoomoney, yookassa, cryptopay, back, card)
-  "bot_menu_text_indent", // JSON: key -> number of leading spaces per main menu line
+  "bot_menu_text_indent", // JSON: key -> number of empty lines above/below per main menu line
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -325,27 +324,6 @@ function parseBotTariffButtonTemplate(raw: string | undefined): string {
   return raw.trim();
 }
 
-function parseBotPaymentButtonEmojis(raw: string | undefined): Record<string, { unicode?: string; tgEmojiId?: string }> {
-  if (!raw || !raw.trim()) return {};
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return {};
-    const out: Record<string, { unicode?: string; tgEmojiId?: string }> = {};
-    for (const [key, val] of Object.entries(parsed)) {
-      if (val == null) continue;
-      if (typeof val === "object") {
-        const v = val as Record<string, unknown>;
-        const unicode = typeof v.unicode === "string" ? v.unicode.trim() : undefined;
-        const tgEmojiId = typeof v.tgEmojiId === "string" ? v.tgEmojiId.trim() : (typeof v.tgEmojiId === "number" ? String(v.tgEmojiId) : undefined);
-        if (unicode || tgEmojiId) out[key] = { unicode, tgEmojiId };
-      }
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
 function parseBotMenuTextIndent(raw: string | undefined): Record<string, number> {
   if (!raw || !raw.trim()) return {};
   try {
@@ -537,7 +515,6 @@ export async function getSystemConfig() {
     botTariffsFields: parseBotTariffLineFields(map.bot_tariffs_fields),
     botPaymentText: parseBotPaymentText(map.bot_payment_text),
     botTariffButtonTemplate: parseBotTariffButtonTemplate(map.bot_tariff_button_template),
-    botPaymentButtonEmojis: parseBotPaymentButtonEmojis(map.bot_payment_button_emojis),
     botMenuTextIndent: parseBotMenuTextIndent(map.bot_menu_text_indent),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
@@ -685,7 +662,7 @@ function parseCategoryEmojis(raw: string | undefined): CategoryEmojis {
   }
 }
 
-export type PlategaMethodConfig = { id: number; enabled: boolean; label: string };
+export type PlategaMethodConfig = { id: number; enabled: boolean; label: string; unicode?: string; tgEmojiId?: string };
 const DEFAULT_PLATEGA_METHODS: PlategaMethodConfig[] = [
   { id: 2, enabled: true, label: "СПБ" },
   { id: 11, enabled: false, label: "Карты" },
@@ -700,10 +677,13 @@ function parsePlategaMethods(raw: string | undefined): PlategaMethodConfig[] {
     if (!Array.isArray(parsed)) return DEFAULT_PLATEGA_METHODS;
     return parsed.map((m: unknown) => {
       const x = m as Record<string, unknown>;
+      const unicode = typeof x.unicode === "string" ? x.unicode.trim() : undefined;
+      const tgEmojiId = typeof x.tgEmojiId === "string" ? x.tgEmojiId.trim() : (typeof x.tgEmojiId === "number" ? String(x.tgEmojiId) : undefined);
       return {
         id: typeof x.id === "number" ? x.id : Number(x.id) || 2,
         enabled: Boolean(x.enabled),
         label: typeof x.label === "string" ? x.label : String(x.id),
+        ...(unicode || tgEmojiId ? { unicode: unicode || undefined, tgEmojiId: tgEmojiId || undefined } : {}),
       };
     });
   } catch {
@@ -892,7 +872,7 @@ export async function getPublicConfig() {
     publicAppUrl: full.publicAppUrl,
     telegramBotUsername: full.telegramBotUsername,
     botAdminTelegramIds: full.botAdminTelegramIds ?? [],
-    plategaMethods: full.plategaMethods.filter((m) => m.enabled).map((m) => ({ id: m.id, label: m.label })),
+    plategaMethods: full.plategaMethods.filter((m) => m.enabled).map((m) => ({ id: m.id, label: m.label, unicode: m.unicode ?? undefined, tgEmojiId: m.tgEmojiId ?? undefined })),
     yoomoneyEnabled: Boolean(full.yoomoneyReceiverWallet?.trim()),
     yookassaEnabled: Boolean(full.yookassaShopId?.trim() && full.yookassaSecretKey?.trim()),
     cryptopayEnabled: Boolean((full as { cryptopayApiToken?: string | null }).cryptopayApiToken?.trim()),
@@ -915,7 +895,6 @@ export async function getPublicConfig() {
     botTariffsFields: full.botTariffsFields ?? DEFAULT_BOT_TARIFF_LINE_FIELDS,
     botPaymentText: full.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
     botTariffButtonTemplate: (full as { botTariffButtonTemplate?: string }).botTariffButtonTemplate ?? DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE,
-    botPaymentButtonEmojis: (full as { botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> }).botPaymentButtonEmojis ?? {},
     botMenuTextIndent: (full as { botMenuTextIndent?: Record<string, number> }).botMenuTextIndent ?? {},
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
