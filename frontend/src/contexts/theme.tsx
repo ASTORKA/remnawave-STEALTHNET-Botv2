@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 export type ThemeMode = "light" | "dark" | "system";
 export type ThemeAccent =
   | "default" | "blue" | "violet" | "rose" | "orange" | "green" | "emerald"
-  | "cyan" | "amber" | "red" | "pink" | "indigo";
+  | "cyan" | "amber" | "red" | "pink" | "indigo" | "telegram";
 
 export interface ThemeConfig {
   mode: ThemeMode;
@@ -31,6 +31,7 @@ export const ACCENT_PALETTES: Record<ThemeAccent, AccentPalette> = {
   red: { label: "Красная", swatch: "#ef4444", light: { "--primary": "0 84.2% 60.2%", "--primary-foreground": "0 0% 100%", "--ring": "0 84.2% 60.2%" }, dark: { "--primary": "0 72.2% 50.6%", "--primary-foreground": "0 0% 100%", "--ring": "0 72.2% 50.6%" } },
   pink: { label: "Розовая", swatch: "#ec4899", light: { "--primary": "330.4 81.2% 60.4%", "--primary-foreground": "0 0% 100%", "--ring": "330.4 81.2% 60.4%" }, dark: { "--primary": "330.4 81.2% 60.4%", "--primary-foreground": "0 0% 100%", "--ring": "330.4 81.2% 60.4%" } },
   indigo: { label: "Индиго", swatch: "#6366f1", light: { "--primary": "238.7 83.5% 66.7%", "--primary-foreground": "0 0% 100%", "--ring": "238.7 83.5% 66.7%" }, dark: { "--primary": "238.7 83.5% 66.7%", "--primary-foreground": "0 0% 100%", "--ring": "238.7 83.5% 66.7%" } },
+  telegram: { label: "Как в Telegram", swatch: "#229ED9", light: { "--primary": "199 73% 49%", "--primary-foreground": "0 0% 100%", "--ring": "199 73% 49%" }, dark: { "--primary": "199 73% 49%", "--primary-foreground": "0 0% 100%", "--ring": "199 73% 49%" } },
 };
 
 interface ThemeContextValue {

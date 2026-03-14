@@ -182,6 +182,7 @@ const LANDING_ACCENT_THEMES: Record<ThemeAccent, LandingAccentTheme> = {
   red: { primary: "#ef4444", secondary: "#f97316", tertiary: "#fca5a5" },
   pink: { primary: "#ec4899", secondary: "#f43f5e", tertiary: "#f9a8d4" },
   indigo: { primary: "#6366f1", secondary: "#8b5cf6", tertiary: "#a5b4fc" },
+  telegram: { primary: "#229ED9", secondary: "#0088cc", tertiary: "#54b8e8" },
 };
 
 function hexToRgb(hex: string): [number, number, number] {
