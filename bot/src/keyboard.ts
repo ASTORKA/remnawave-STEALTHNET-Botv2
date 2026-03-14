@@ -362,7 +362,7 @@ export function tariffPayButtons(
 }
 
 /** Resolve custom emoji id for payment button by key (balance, yoomoney, yookassa, cryptopay, back, card). paymentButtonEmojiIds: key -> { tgEmojiId? }. */
-function paymentEmojiId(emojiIds?: InnerEmojiIds | null, paymentButtonEmojiIds?: Record<string, { tgEmojiId?: string }> | null, key: string): string | undefined {
+function paymentEmojiId(key: string, emojiIds?: InnerEmojiIds | null, paymentButtonEmojiIds?: Record<string, { tgEmojiId?: string }> | null): string | undefined {
   const fromPayment = paymentButtonEmojiIds?.[key]?.tgEmojiId;
   if (fromPayment) return fromPayment;
   if (key === "card") return emojiIds?.card;
@@ -386,21 +386,21 @@ export function tariffPaymentMethodButtons(
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
-  const cardId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "card");
-  const backId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "back");
-  const balanceId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "balance");
+  const cardId = paymentEmojiId("card", emojiIds, paymentButtonEmojiIds);
+  const backId = paymentEmojiId("back", emojiIds, paymentButtonEmojiIds);
+  const balanceId = paymentEmojiId("balance", emojiIds, paymentButtonEmojiIds);
   const rows: InlineButton[][] = [];
   if (balanceLabel) {
     rows.push([btn(balanceLabel, `pay_tariff_balance:${tariffId}`, undefined, balanceId || cardId)]);
   }
   if (yoomoneyEnabled && (!tariffCurrency || tariffCurrency.toUpperCase() === "RUB")) {
-    rows.push([btn("💳 ЮMoney — оплата картой", `pay_tariff_yoomoney:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "yoomoney") || cardId)]);
+    rows.push([btn("💳 ЮMoney — оплата картой", `pay_tariff_yoomoney:${tariffId}`, undefined, paymentEmojiId("yoomoney", emojiIds, paymentButtonEmojiIds) || cardId)]);
   }
   if (yookassaEnabled && (!tariffCurrency || tariffCurrency.toUpperCase() === "RUB")) {
-    rows.push([btn("💳 ЮKassa — карта / СБП", `pay_tariff_yookassa:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "yookassa") || cardId)]);
+    rows.push([btn("💳 ЮKassa — карта / СБП", `pay_tariff_yookassa:${tariffId}`, undefined, paymentEmojiId("yookassa", emojiIds, paymentButtonEmojiIds) || cardId)]);
   }
   if (cryptopayEnabled) {
-    rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "cryptopay") || cardId)]);
+    rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, paymentEmojiId("cryptopay", emojiIds, paymentButtonEmojiIds) || cardId)]);
   }
   for (const m of methods) {
     rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, cardId)]);
