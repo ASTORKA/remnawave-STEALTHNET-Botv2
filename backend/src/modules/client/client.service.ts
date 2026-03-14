@@ -809,6 +809,13 @@ export async function getPublicConfig() {
     DEVICES: "📱",
     TRAFFIC: "📈",
     LINK: "🔗",
+    NOTE: "📌",
+    STAR: "⭐",
+    CUSTOM_1: "•",
+    CUSTOM_2: "•",
+    CUSTOM_3: "•",
+    CUSTOM_4: "•",
+    CUSTOM_5: "•",
   };
   /** Ключи строк меню → ключ эмодзи в botEmojis (как в админке: HEADER, BALANCE и т.д.) */
   const menuKeyToEmojiKey: Record<string, string> = {

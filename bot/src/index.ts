@@ -370,6 +370,9 @@ const DEFAULT_EMOJI_UNICODE: Record<string, string> = {
   CHART: "📊",
   STATUS_ACTIVE: "🟡", STATUS_EXPIRED: "🔴", STATUS_INACTIVE: "🔴",
   STATUS_LIMITED: "🟡", STATUS_DISABLED: "🔴",
+  HEADER: "🛡", MAIN_MENU: "👋", BALANCE: "💰", TARIFFS: "💎",
+  DATE: "📅", TIME: "⏰", DEVICES: "📱", TRAFFIC: "📈", NOTE: "📌", STAR: "⭐",
+  CUSTOM_1: "•", CUSTOM_2: "•", CUSTOM_3: "•", CUSTOM_4: "•", CUSTOM_5: "•",
 };
 const DEFAULT_CUSTOM_EMOJI_CHAR = "🙂";
 
@@ -431,7 +434,7 @@ function applyCustomEmojiPlaceholders(
     out += text.slice(lastIdx, match.index);
     const entry = botEmojis?.[key];
     const fallbackUnicode = DEFAULT_EMOJI_UNICODE[key];
-    const unicode = entry?.unicode?.trim() || fallbackUnicode || (useEntities && entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || "";
+    const unicode = entry?.unicode?.trim() || fallbackUnicode || (useEntities && entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || "•";
     if (unicode) {
       const offset = out.length;
       out += unicode;
@@ -572,9 +575,12 @@ function buildMainMenuText(opts: {
     if (url) {
       if (shouldShow("linkLabel")) {
         const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis, false);
-        lines.push(label, escapeHtml(url));
+        const emptyLinesLink = Math.min(10, Math.max(0, Math.floor(menuTextIndent?.["linkLabel"] ?? 0)));
+        const prefixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
+        const suffixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
+        lines.push(prefixLink + label + suffixLink, escapeHtml(url));
         lineStartKeys.push("linkLabel", null);
-        lineEntitiesByIndex.push(entities, []);
+        lineEntitiesByIndex.push(emptyLinesLink > 0 ? entities.map((e) => ({ ...e, offset: e.offset + prefixLink.length })) : entities, []);
       }
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
@@ -749,7 +755,7 @@ bot.command("start", async (ctx) => {
       currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
       subscription: subRes.subscription,
       tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-      menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
+      menuTexts: config?.resolvedBotMenuTexts ?? config?.botMenuTexts ?? null,
       menuLineVisibility: config?.botMenuLineVisibility ?? null,
       menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
       menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
@@ -1400,7 +1406,7 @@ bot.on("callback_query:data", async (ctx) => {
         currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
         subscription: subRes.subscription,
         tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-        menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
+        menuTexts: config?.resolvedBotMenuTexts ?? config?.botMenuTexts ?? null,
         menuLineVisibility: config?.botMenuLineVisibility ?? null,
         menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
         menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
@@ -2550,10 +2556,12 @@ bot.on("callback_query:data", async (ctx) => {
       const useRemna = config?.useRemnaSubscriptionPage === true;
       if (useRemna) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница подключения.", config?.botEmojis);
-        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl ?? "", config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, vpnUrl), vpnTitle.entities);
+        const vpnEmojiIds = innerEmojiIds ? { ...innerEmojiIds, connect: undefined } : undefined;
+        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl ?? "", config?.botBackLabel ?? null, innerStyles?.back, vpnEmojiIds, vpnUrl), vpnTitle.entities);
       } else if (appUrl) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница с приложениями и кнопкой «Добавить подписку» (как в кабинете).", config?.botEmojis);
-        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle.entities);
+        const vpnEmojiIds = innerEmojiIds ? { ...innerEmojiIds, connect: undefined } : undefined;
+        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl, config?.botBackLabel ?? null, innerStyles?.back, vpnEmojiIds), vpnTitle.entities);
       } else {
         const vpnTitle2 = titleWithEmoji("SERVERS", `Подключиться к VPN\n\nОткройте ссылку в приложении VPN:\n${vpnUrl}`, config?.botEmojis);
         await editMessageContent(ctx, vpnTitle2.text, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle2.entities);
