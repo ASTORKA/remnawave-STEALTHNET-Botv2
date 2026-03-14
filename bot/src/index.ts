@@ -365,12 +365,12 @@ function firstCharLengthUtf16(s: string): number {
 }
 
 const DEFAULT_EMOJI_UNICODE: Record<string, string> = {
-  PACKAGE: "📦", TARIFFS: "📦", CARD: "💳", LINK: "🔗", PUZZLE: "👤", PROFILE: "👤",
+  PACKAGE: "📦", TARIFFS: "💎", CARD: "💳", LINK: "🔗", PUZZLE: "👤", PROFILE: "👤",
   TRIAL: "🎁", SERVERS: "🌐", CONNECT: "🌐",
   CHART: "📊",
   STATUS_ACTIVE: "🟡", STATUS_EXPIRED: "🔴", STATUS_INACTIVE: "🔴",
   STATUS_LIMITED: "🟡", STATUS_DISABLED: "🔴",
-  HEADER: "🛡", MAIN_MENU: "👋", BALANCE: "💰", TARIFFS: "💎",
+  HEADER: "🛡", MAIN_MENU: "👋", BALANCE: "💰",
   DATE: "📅", TIME: "⏰", DEVICES: "📱", TRAFFIC: "📈", NOTE: "📌", STAR: "⭐",
   CUSTOM_1: "•", CUSTOM_2: "•", CUSTOM_3: "•", CUSTOM_4: "•", CUSTOM_5: "•",
 };
