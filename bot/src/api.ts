@@ -99,6 +99,9 @@ export async function getPublicConfig(): Promise<{
   botTariffsText?: string | null;
   botTariffsFields?: Record<string, boolean> | null;
   botPaymentText?: string | null;
+  botTariffButtonTemplate?: string | null;
+  botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }>;
+  botMenuTextIndent?: Record<string, number>;
   activeLanguages?: string[];
   activeCurrencies?: string[];
   defaultReferralPercent?: number;

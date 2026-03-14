@@ -295,14 +295,31 @@ export function tariffCategoryButtons(
   return { inline_keyboard: rows };
 }
 
+/** Build tariff button label from template. Placeholders: {{name}}, {{durationDays}}, {{price}}, {{currency}}. */
+function formatTariffButtonLabel(
+  template: string,
+  t: { name: string; durationDays?: number; price: number; currency: string },
+  prefix: string
+): string {
+  const raw = template
+    .replace(/\{\{name\}\}/g, t.name)
+    .replace(/\{\{durationDays\}\}/g, String(t.durationDays ?? ""))
+    .replace(/\{\{price\}\}/g, String(t.price))
+    .replace(/\{\{currency\}\}/g, t.currency);
+  return (prefix + raw).trim().slice(0, 64);
+}
+
+const DEFAULT_TARIFF_BUTTON_TEMPLATE = "{{name}} — {{price}} {{currency}}";
+
 /** Кнопки тарифов одной категории. Только эмодзи категории (ordinary/premium), без общего эмодзи «Тарифы». */
 export function tariffsOfCategoryButtons(
-  category: { name: string; emoji?: string; tariffs: { id: string; name: string; price: number; currency: string }[] },
+  category: { name: string; emoji?: string; tariffs: { id: string; name: string; durationDays?: number; price: number; currency: string }[] },
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   backData: string = "menu:tariffs",
   emojiIds?: InnerEmojiIds,
-  _prefixEmoji?: string
+  _prefixEmoji?: string,
+  tariffButtonTemplate?: string | null
 ): InlineMarkup {
   const rows: InlineButton[][] = [];
   const tariffPay = resolveStyle(toStyle(innerStyles?.tariffPay), "success");
@@ -310,8 +327,9 @@ export function tariffsOfCategoryButtons(
   const backSty = resolveStyle(toStyle(innerStyles?.back), "danger");
   const prefix = (category.emoji && category.emoji.trim()) ? `${category.emoji} ` : "";
   const tariffId = emojiIds?.tariff;
+  const template = (tariffButtonTemplate && tariffButtonTemplate.trim()) || DEFAULT_TARIFF_BUTTON_TEMPLATE;
   for (const t of category.tariffs) {
-    const label = `${prefix}${t.name} — ${t.price} ${t.currency}`.slice(0, 64);
+    const label = formatTariffButtonLabel(template, t, prefix);
     rows.push([btn(label, `pay_tariff:${t.id}`, tariffPay, tariffId)]);
   }
   rows.push([btn(back, backData, backSty, emojiIds?.back)]);
@@ -324,12 +342,13 @@ export function tariffPayButtons(
     id: string;
     name: string;
     emoji?: string;
-    tariffs: { id: string; name: string; price: number; currency: string }[];
+    tariffs: { id: string; name: string; durationDays?: number; price: number; currency: string }[];
   }[],
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   emojiIds?: InnerEmojiIds,
-  prefixEmoji?: string
+  prefixEmoji?: string,
+  tariffButtonTemplate?: string | null
 ): InlineMarkup {
   if (categories.length === 0) {
     const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
@@ -337,9 +356,18 @@ export function tariffPayButtons(
     return { inline_keyboard: [[btn(back, "menu:main", backSty, emojiIds?.back)]] };
   }
   if (categories.length === 1) {
-    return tariffsOfCategoryButtons(categories[0]!, backLabel, innerStyles, "menu:main", emojiIds, prefixEmoji);
+    return tariffsOfCategoryButtons(categories[0]!, backLabel, innerStyles, "menu:main", emojiIds, prefixEmoji, tariffButtonTemplate);
   }
   return tariffCategoryButtons(categories, backLabel, innerStyles, emojiIds, prefixEmoji);
+}
+
+/** Resolve custom emoji id for payment button by key (balance, yoomoney, yookassa, cryptopay, back, card). paymentButtonEmojiIds: key -> { tgEmojiId? }. */
+function paymentEmojiId(emojiIds?: InnerEmojiIds | null, paymentButtonEmojiIds?: Record<string, { tgEmojiId?: string }> | null, key: string): string | undefined {
+  const fromPayment = paymentButtonEmojiIds?.[key]?.tgEmojiId;
+  if (fromPayment) return fromPayment;
+  if (key === "card") return emojiIds?.card;
+  if (key === "back") return emojiIds?.back;
+  return undefined;
 }
 
 /** Кнопки выбора способа оплаты (СПБ, Карты и т.д. из админки) для тарифа + баланс + ЮMoney */
@@ -354,30 +382,30 @@ export function tariffPaymentMethodButtons(
   yookassaEnabled?: boolean,
   cryptopayEnabled?: boolean,
   tariffCurrency?: string,
+  paymentButtonEmojiIds?: Record<string, { tgEmojiId?: string }> | null,
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
-  const cardId = emojiIds?.card;
+  const cardId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "card");
+  const backId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "back");
+  const balanceId = paymentEmojiId(emojiIds, paymentButtonEmojiIds, "balance");
   const rows: InlineButton[][] = [];
-  // Кнопка оплаты балансом (первая)
   if (balanceLabel) {
-    rows.push([btn(balanceLabel, `pay_tariff_balance:${tariffId}`, undefined, cardId)]);
+    rows.push([btn(balanceLabel, `pay_tariff_balance:${tariffId}`, undefined, balanceId || cardId)]);
   }
-  // ЮMoney — только для рублёвых тарифов
   if (yoomoneyEnabled && (!tariffCurrency || tariffCurrency.toUpperCase() === "RUB")) {
-    rows.push([btn("💳 ЮMoney — оплата картой", `pay_tariff_yoomoney:${tariffId}`, undefined, cardId)]);
+    rows.push([btn("💳 ЮMoney — оплата картой", `pay_tariff_yoomoney:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "yoomoney") || cardId)]);
   }
-  // ЮKassa — только RUB
   if (yookassaEnabled && (!tariffCurrency || tariffCurrency.toUpperCase() === "RUB")) {
-    rows.push([btn("💳 ЮKassa — карта / СБП", `pay_tariff_yookassa:${tariffId}`, undefined, cardId)]);
+    rows.push([btn("💳 ЮKassa — карта / СБП", `pay_tariff_yookassa:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "yookassa") || cardId)]);
   }
   if (cryptopayEnabled) {
-    rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, cardId)]);
+    rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, paymentEmojiId(emojiIds, paymentButtonEmojiIds, "cryptopay") || cardId)]);
   }
   for (const m of methods) {
     rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, cardId)]);
   }
-  rows.push([btn(back, "menu:tariffs", backSty, emojiIds?.back)]);
+  rows.push([btn(back, "menu:tariffs", backSty, backId || emojiIds?.back)]);
   return { inline_keyboard: rows };
 }
 

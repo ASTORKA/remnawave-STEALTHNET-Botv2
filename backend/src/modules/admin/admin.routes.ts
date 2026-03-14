@@ -955,6 +955,9 @@ const updateSettingsSchema = z.object({
   botTariffsText: z.string().max(8000).nullable().optional(),
   botTariffsFields: z.union([z.string().max(2000), z.record(z.boolean())]).nullable().optional(),
   botPaymentText: z.string().max(8000).nullable().optional(),
+  botTariffButtonTemplate: z.string().max(500).nullable().optional(),
+  botPaymentButtonEmojis: z.union([z.string().max(5000), z.record(z.object({ unicode: z.string().max(20).optional(), tgEmojiId: z.string().max(50).optional() }))]).nullable().optional(),
+  botMenuTextIndent: z.union([z.string().max(2000), z.record(z.number().int().min(0).max(50))]).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1438,6 +1441,42 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_payment_text" },
       create: { key: "bot_payment_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botTariffButtonTemplate !== undefined) {
+    const val = updates.botTariffButtonTemplate ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_tariff_button_template" },
+      create: { key: "bot_tariff_button_template", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPaymentButtonEmojis !== undefined) {
+    const raw = updates.botPaymentButtonEmojis;
+    const val =
+      typeof raw === "string"
+        ? raw
+        : raw !== null && typeof raw === "object" && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_payment_button_emojis" },
+      create: { key: "bot_payment_button_emojis", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botMenuTextIndent !== undefined) {
+    const raw = updates.botMenuTextIndent;
+    const val =
+      typeof raw === "string"
+        ? raw
+        : raw !== null && typeof raw === "object" && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_menu_text_indent" },
+      create: { key: "bot_menu_text_indent", value: val },
       update: { value: val },
     });
   }

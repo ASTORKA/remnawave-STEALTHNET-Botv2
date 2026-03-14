@@ -70,6 +70,17 @@ const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
 
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
+const DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE = "{{name}} — {{price}} {{currency}}";
+
+const BOT_PAYMENT_BUTTON_EMOJI_KEYS = ["balance", "yoomoney", "yookassa", "cryptopay", "back", "card"] as const;
+const BOT_PAYMENT_BUTTON_EMOJI_LABELS: Record<string, string> = {
+  balance: "Оплата балансом",
+  yoomoney: "ЮMoney",
+  yookassa: "ЮKassa",
+  cryptopay: "Crypto Bot",
+  back: "Кнопка «Назад»",
+  card: "Карта / способы оплаты",
+};
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -223,6 +234,9 @@ export function SettingsPage() {
         botTariffsText: (data as AdminSettings).botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+        botTariffButtonTemplate: (data as AdminSettings).botTariffButtonTemplate ?? DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE,
+        botPaymentButtonEmojis: (data as AdminSettings).botPaymentButtonEmojis ?? undefined,
+        botMenuTextIndent: (data as AdminSettings).botMenuTextIndent ?? undefined,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
           const loaded =
@@ -535,6 +549,9 @@ export function SettingsPage() {
         botTariffsText: settings.botTariffsText ?? undefined,
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
+        botTariffButtonTemplate: settings.botTariffButtonTemplate ?? undefined,
+        botPaymentButtonEmojis: settings.botPaymentButtonEmojis != null ? settings.botPaymentButtonEmojis : undefined,
+        botMenuTextIndent: settings.botMenuTextIndent != null && Object.keys(settings.botMenuTextIndent).length > 0 ? settings.botMenuTextIndent : undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
           ...(settings.botInnerButtonStyles ?? {}),
@@ -1442,7 +1459,7 @@ export function SettingsPage() {
                   <CollapsibleContent>
                     <div className="pt-3 space-y-3 border-t mt-3">
                       <p className="text-xs text-muted-foreground">
-                        Подписи и фразы главного меню бота. Чтобы подставлять эмодзи из блока «Эмодзи (текст и кнопки)», используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{BALANCE}}'}</code>, <code className="rounded bg-muted px-1">{'{{STATUS}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRIAL}}'}</code>, <code className="rounded bg-muted px-1">{'{{LINK}}'}</code>, <code className="rounded bg-muted px-1">{'{{DATE}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRAFFIC}}'}</code> и др. (ключи как в списке эмодзи выше, например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>). Unicode подставится автоматически; TG ID используется для премиум-эмодзи в тексте и кнопках.
+                        Подписи и фразы главного меню бота. Чтобы подставлять эмодзи из блока «Эмодзи (текст и кнопки)», используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{BALANCE}}'}</code>, <code className="rounded bg-muted px-1">{'{{STATUS}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRIAL}}'}</code>, <code className="rounded bg-muted px-1">{'{{LINK}}'}</code>, <code className="rounded bg-muted px-1">{'{{DATE}}'}</code>, <code className="rounded bg-muted px-1">{'{{TRAFFIC}}'}</code> и др. (ключи как в списке эмодзи выше, например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>). Unicode подставится автоматически; TG ID используется для премиум-эмодзи в тексте и кнопках. Для <b>жирного текста</b> используйте HTML: <code className="rounded bg-muted px-1">{'<b>текст</b>'}</code>. Для отступа в начале строки укажите число пробелов в поле «Отступ» ниже или введите пробелы в текст.
                       </p>
                       <div className="space-y-2 rounded-lg border p-3 bg-background/60">
                         <div className="flex items-center justify-between gap-2">
@@ -1512,6 +1529,29 @@ export function SettingsPage() {
                           </div>
                         ))}
                       </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Отступ в начале строки (пробелов, 0–20)</Label>
+                        <p className="text-xs text-muted-foreground">Укажите число пробелов для каждой строки главного меню (ключ как у текста выше).</p>
+                        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                          {Object.keys(DEFAULT_BOT_MENU_TEXTS).map((key) => (
+                            <div key={key} className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={0}
+                                max={20}
+                                className="w-16"
+                                value={settings.botMenuTextIndent?.[key] ?? ""}
+                                onChange={(e) => {
+                                  const v = e.target.value === "" ? 0 : Math.min(20, Math.max(0, parseInt(e.target.value, 10) || 0));
+                                  setSettings((s) => (s ? { ...s, botMenuTextIndent: { ...(s.botMenuTextIndent ?? {}), [key]: v } } : s));
+                                }}
+                                placeholder="0"
+                              />
+                              <Label className="text-xs whitespace-nowrap">{BOT_MENU_TEXT_LABELS[key] ?? key}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
@@ -1521,7 +1561,7 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Экран тарифов</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Текст, который видит пользователь в разделе «Тарифы». Используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{CATEGORY}}'}</code> — название категории, <code className="rounded bg-muted px-1">{'{{TARIFFS}}'}</code> — список тарифов. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>.
+                    Текст, который видит пользователь в разделе «Тарифы». Используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{CATEGORY}}'}</code> — название категории, <code className="rounded bg-muted px-1">{'{{TARIFFS}}'}</code> — список тарифов. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Поддержка HTML: <code className="rounded bg-muted px-1">{'<b>жирный</b>'}</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Текст сообщения</Label>
@@ -1566,6 +1606,15 @@ export function SettingsPage() {
                       </div>
                     ))}
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Шаблон текста кнопки тарифа</Label>
+                    <p className="text-xs text-muted-foreground">Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code>, <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code>, <code className="rounded bg-muted px-1">{'{{price}}'}</code>, <code className="rounded bg-muted px-1">{'{{currency}}'}</code>. Пример: «30 дней — 100 rub» → <code className="rounded bg-muted px-1">{'{{durationDays}} дней — {{price}} {{currency}}'}</code></p>
+                    <Input
+                      value={settings.botTariffButtonTemplate ?? DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE}
+                      onChange={(e) => setSettings((s) => (s ? { ...s, botTariffButtonTemplate: e.target.value || null } : s))}
+                      placeholder={DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
                   <div className="flex items-center gap-2">
@@ -1573,7 +1622,7 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Окно оплаты</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>.
+                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Поддержка HTML: <code className="rounded bg-muted px-1">{'<b>жирный</b>'}</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Текст сообщения</Label>
@@ -1583,6 +1632,34 @@ export function SettingsPage() {
                       onChange={(e) => setSettings((s) => (s ? { ...s, botPaymentText: e.target.value } : s))}
                       placeholder={DEFAULT_BOT_PAYMENT_TEXT}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Стикеры (custom emoji) кнопок окна оплаты по ключу</Label>
+                    <p className="text-xs text-muted-foreground">Укажите TG custom emoji ID (премиум) для кнопок. Ключи: balance, yoomoney, yookassa, cryptopay, back, card.</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {BOT_PAYMENT_BUTTON_EMOJI_KEYS.map((key) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Label className="text-xs w-28">{BOT_PAYMENT_BUTTON_EMOJI_LABELS[key] ?? key}</Label>
+                          <Input
+                            placeholder="tgEmojiId"
+                            value={settings.botPaymentButtonEmojis?.[key]?.tgEmojiId ?? ""}
+                            onChange={(e) =>
+                              setSettings((s) =>
+                                s
+                                  ? {
+                                      ...s,
+                                      botPaymentButtonEmojis: {
+                                        ...(s.botPaymentButtonEmojis ?? {}),
+                                        [key]: { ...(s.botPaymentButtonEmojis?.[key] ?? {}), tgEmojiId: e.target.value || undefined },
+                                      },
+                                    }
+                                  : s
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">

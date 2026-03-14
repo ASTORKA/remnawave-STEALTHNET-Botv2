@@ -73,6 +73,9 @@ const SYSTEM_CONFIG_KEYS = [
   "groq_api_key", "groq_model", "groq_fallback_1", "groq_fallback_2", "groq_fallback_3", "ai_system_prompt",
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
   "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text",
+  "bot_tariff_button_template", // Template for tariff button label: {{name}}, {{durationDays}}, {{price}}, {{currency}}
+  "bot_payment_button_emojis", // JSON: key -> { unicode?, tgEmojiId? } for payment window buttons (balance, yoomoney, yookassa, cryptopay, back, card)
+  "bot_menu_text_indent", // JSON: key -> number of leading spaces per main menu line
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -315,6 +318,53 @@ function parseBotPaymentText(raw: string | undefined): string {
   return raw;
 }
 
+const DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE = "{{name}} — {{price}} {{currency}}";
+
+function parseBotTariffButtonTemplate(raw: string | undefined): string {
+  if (!raw || !raw.trim()) return DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE;
+  return raw.trim();
+}
+
+function parseBotPaymentButtonEmojis(raw: string | undefined): Record<string, { unicode?: string; tgEmojiId?: string }> {
+  if (!raw || !raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, { unicode?: string; tgEmojiId?: string }> = {};
+    for (const [key, val] of Object.entries(parsed)) {
+      if (val == null) continue;
+      if (typeof val === "object") {
+        const v = val as Record<string, unknown>;
+        const unicode = typeof v.unicode === "string" ? v.unicode.trim() : undefined;
+        const tgEmojiId = typeof v.tgEmojiId === "string" ? v.tgEmojiId.trim() : (typeof v.tgEmojiId === "number" ? String(v.tgEmojiId) : undefined);
+        if (unicode || tgEmojiId) out[key] = { unicode, tgEmojiId };
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function parseBotMenuTextIndent(raw: string | undefined): Record<string, number> {
+  if (!raw || !raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, number> = {};
+    for (const [key, val] of Object.entries(parsed)) {
+      if (typeof val === "number" && val >= 0 && val <= 50) out[key] = Math.round(val);
+      else if (typeof val === "string") {
+        const n = parseInt(val, 10);
+        if (!Number.isNaN(n) && n >= 0 && n <= 50) out[key] = n;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 function parseBotTariffLineFields(raw: string | undefined): Required<BotTariffLineFields> {
   if (!raw || !raw.trim()) return { ...DEFAULT_BOT_TARIFF_LINE_FIELDS };
   try {
@@ -486,6 +536,9 @@ export async function getSystemConfig() {
     botTariffsText: parseBotTariffsText(map.bot_tariffs_text),
     botTariffsFields: parseBotTariffLineFields(map.bot_tariffs_fields),
     botPaymentText: parseBotPaymentText(map.bot_payment_text),
+    botTariffButtonTemplate: parseBotTariffButtonTemplate(map.bot_tariff_button_template),
+    botPaymentButtonEmojis: parseBotPaymentButtonEmojis(map.bot_payment_button_emojis),
+    botMenuTextIndent: parseBotMenuTextIndent(map.bot_menu_text_indent),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
     supportLink: (map.support_link ?? "").trim() || null,
@@ -861,6 +914,9 @@ export async function getPublicConfig() {
     botTariffsText: full.botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
     botTariffsFields: full.botTariffsFields ?? DEFAULT_BOT_TARIFF_LINE_FIELDS,
     botPaymentText: full.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+    botTariffButtonTemplate: (full as { botTariffButtonTemplate?: string }).botTariffButtonTemplate ?? DEFAULT_BOT_TARIFF_BUTTON_TEMPLATE,
+    botPaymentButtonEmojis: (full as { botPaymentButtonEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> }).botPaymentButtonEmojis ?? {},
+    botMenuTextIndent: (full as { botMenuTextIndent?: Record<string, number> }).botMenuTextIndent ?? {},
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,

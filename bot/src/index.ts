@@ -326,8 +326,8 @@ function formatTariffLine(tariff: TariffItem, fields: Required<BotTariffLineFiel
 
 function renderTariffsText(template: string, category: string, tariffLines: string): string {
   return template
-    .split("{{CATEGORY}}").join(category)
-    .split("{{TARIFFS}}").join(tariffLines);
+    .split("{{CATEGORY}}").join(escapeHtml(category))
+    .split("{{TARIFFS}}").join(escapeHtml(tariffLines));
 }
 
 function renderPaymentText(
@@ -335,11 +335,11 @@ function renderPaymentText(
   vars: { name: string; price: string; amount: string; currency: string; action: string }
 ): string {
   return template
-    .split("{{NAME}}").join(vars.name)
-    .split("{{PRICE}}").join(vars.price)
-    .split("{{AMOUNT}}").join(vars.amount)
-    .split("{{CURRENCY}}").join(vars.currency)
-    .split("{{ACTION}}").join(vars.action);
+    .split("{{NAME}}").join(escapeHtml(vars.name))
+    .split("{{PRICE}}").join(escapeHtml(vars.price))
+    .split("{{AMOUNT}}").join(escapeHtml(vars.amount))
+    .split("{{CURRENCY}}").join(escapeHtml(vars.currency))
+    .split("{{ACTION}}").join(escapeHtml(vars.action));
 }
 
 function buildPaymentMessage(
@@ -480,7 +480,7 @@ function titleWithOptionalEmoji(
   return titleWithEmojiAndCustomEmojis(emojiKey, rest, botEmojis);
 }
 
-/** Полный текст главного меню + entities для премиум-эмодзи в тексте (владелец бота должен иметь Telegram Premium). */
+/** Полный текст главного меню + entities для премиум-эмодзи в тексте (владелец бота должен иметь Telegram Premium). Supports HTML in menuTexts; dynamic values are escaped. */
 function buildMainMenuText(opts: {
   serviceName: string;
   balance: number;
@@ -491,9 +491,10 @@ function buildMainMenuText(opts: {
   menuTexts?: Record<string, string> | null;
   menuLineVisibility?: Record<string, boolean> | null;
   menuTextCustomEmojiIds?: Record<string, string> | null;
+  menuTextIndent?: Record<string, number> | null;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
 }): { text: string; entities: CustomEmojiEntity[] } {
-  const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis } = opts;
+  const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, menuTextIndent, botEmojis } = opts;
   const name = serviceName.trim() || "Кабинет";
   const balanceStr = formatMoney(balance, currency);
   const lines: string[] = [];
@@ -503,19 +504,21 @@ function buildMainMenuText(opts: {
   const pushLine = (key: string, text: string) => {
     if (!shouldShow(key)) return;
     const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis);
-    lines.push(processed);
+    const indent = Math.min(50, Math.max(0, Math.floor(menuTextIndent?.[key] ?? 0)));
+    const indented = (indent > 0 ? " ".repeat(indent) : "") + processed;
+    lines.push(indented);
     lineStartKeys.push(key);
-    lineEntitiesByIndex.push(entities);
+    lineEntitiesByIndex.push(indent > 0 ? entities.map((e) => ({ ...e, offset: e.offset + indent })) : entities);
   };
 
   pushLine("welcomeGreeting", t(menuTexts, "welcomeGreeting"));
-  pushLine("welcomeTitlePrefix", t(menuTexts, "welcomeTitlePrefix") + name);
-  pushLine("balancePrefix", t(menuTexts, "balancePrefix") + balanceStr);
+  pushLine("welcomeTitlePrefix", t(menuTexts, "welcomeTitlePrefix") + escapeHtml(name));
+  pushLine("balancePrefix", t(menuTexts, "balancePrefix") + escapeHtml(balanceStr));
 
   const user = getSubUser(subscription);
   const url = getSubscriptionUrl(subscription);
   const tariffName = (tariffDisplayName && tariffDisplayName.trim()) || "Тариф не выбран";
-  pushLine("tariffPrefix", t(menuTexts, "tariffPrefix") + tariffName);
+  pushLine("tariffPrefix", t(menuTexts, "tariffPrefix") + escapeHtml(tariffName));
 
   if (!user && !url) {
     pushLine("subscriptionPrefix", t(menuTexts, "subscriptionPrefix") + t(menuTexts, "statusInactive"));
@@ -535,6 +538,7 @@ function buildMainMenuText(opts: {
       : status === "LIMITED" ? t(menuTexts, "statusLimited")
       : status === "DISABLED" ? t(menuTexts, "statusDisabled")
       : `🟡 ${status}`;
+    const statusLabelSafe = ["ACTIVE", "EXPIRED", "LIMITED", "DISABLED"].includes(status) ? statusLabel : "🟡 " + escapeHtml(status);
     const expireStr = expireDate
       ? expireDate.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
       : "—";
@@ -543,10 +547,10 @@ function buildMainMenuText(opts: {
         ? Math.max(0, Math.ceil((expireDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
         : null;
 
-    pushLine("subscriptionPrefix", t(menuTexts, "subscriptionPrefix") + statusLabel);
-    pushLine("expirePrefix", t(menuTexts, "expirePrefix") + expireStr);
+    pushLine("subscriptionPrefix", t(menuTexts, "subscriptionPrefix") + statusLabelSafe);
+    pushLine("expirePrefix", t(menuTexts, "expirePrefix") + escapeHtml(expireStr));
     if (daysLeft != null) {
-      pushLine("daysLeftPrefix", t(menuTexts, "daysLeftPrefix") + `${daysLeft} ${daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}`);
+      pushLine("daysLeftPrefix", t(menuTexts, "daysLeftPrefix") + escapeHtml(`${daysLeft} ${daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}`));
     }
     const deviceLimit = user?.hwidDeviceLimit ?? user?.deviceLimit ?? user?.device_limit;
     const devicesUsed = user?.devicesUsed ?? user?.devices_used;
@@ -576,7 +580,7 @@ function buildMainMenuText(opts: {
     if (url) {
       if (shouldShow("linkLabel")) {
         const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
-        lines.push(label, url);
+        lines.push(label, escapeHtml(url));
         lineStartKeys.push("linkLabel", null);
         lineEntitiesByIndex.push(entities, []);
       }
@@ -636,10 +640,10 @@ function logoToMediaSource(logo: string | null | undefined): { source: InputFile
   return null;
 }
 
-/** Редактировать сообщение: текст и клавиатура (если с фото/анимацией — caption, иначе text) */
+/** Редактировать сообщение: текст и клавиатура (если с фото/анимацией — caption, иначе text). Uses parse_mode HTML for bold/formatting. */
 async function editMessageContent(ctx: {
-  editMessageCaption: (opts: { caption: string; caption_entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
-  editMessageText: (text: string, opts?: { entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+  editMessageCaption: (opts: { caption: string; parse_mode?: "HTML"; caption_entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+  editMessageText: (text: string, opts?: { parse_mode?: "HTML"; entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
   callbackQuery?: { message?: { photo?: unknown[]; animation?: unknown } };
 }, text: string, reply_markup: InlineMarkup, entities?: CustomEmojiEntity[]): Promise<unknown> {
   const msg = ctx.callbackQuery?.message;
@@ -648,14 +652,23 @@ async function editMessageContent(ctx: {
   const hasMediaWithCaption = hasPhoto || hasAnimation;
   const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
   const truncatedEntities = text.length > TELEGRAM_CAPTION_MAX && entities ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
-  if (hasMediaWithCaption) return ctx.editMessageCaption({ caption, caption_entities: truncatedEntities?.length ? truncatedEntities : undefined, reply_markup });
-  return ctx.editMessageText(text, { entities: entities?.length ? entities : undefined, reply_markup });
+  const parseMode = "HTML" as const;
+  if (hasMediaWithCaption) return ctx.editMessageCaption({ caption, parse_mode: parseMode, caption_entities: truncatedEntities?.length ? truncatedEntities : undefined, reply_markup });
+  return ctx.editMessageText(text, { parse_mode: parseMode, entities: entities?.length ? entities : undefined, reply_markup });
 }
 
 function formatMoney(amount: number, currency: string): string {
   const c = currency.toUpperCase();
   const sym = c === "RUB" ? "₽" : c === "USD" ? "$" : "₴";
   return `${amount} ${sym}`;
+}
+
+/** Escape for Telegram HTML parse_mode: & < > */
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /** Парсинг start-параметра: ref_CODE, c_SOURCE_CAMPAIGN или c_SOURCE_MEDIUM_CAMPAIGN, можно комбинировать ref_ABC_c_facebook_summer */
@@ -747,6 +760,7 @@ bot.command("start", async (ctx) => {
       menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
       menuLineVisibility: config?.botMenuLineVisibility ?? null,
       menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
+      menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
       botEmojis: config?.botEmojis ?? null,
     });
     const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
@@ -772,15 +786,16 @@ bot.command("start", async (ctx) => {
     }
 
     const media = logoToMediaSource(config?.logoBot);
+    const parseMode = "HTML" as const;
     if (media) {
-      const opts = { caption, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: markup };
+      const opts = { caption, parse_mode: parseMode, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: markup };
       if (media.isGif) {
         await ctx.replyWithAnimation(media.source, opts);
       } else {
         await ctx.replyWithPhoto(media.source, opts);
       }
     } else {
-      await ctx.reply(text, { entities: entities.length ? entities : undefined, reply_markup: markup });
+      await ctx.reply(text, { parse_mode: parseMode, entities: entities.length ? entities : undefined, reply_markup: markup });
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Ошибка входа";
@@ -1396,6 +1411,7 @@ bot.on("callback_query:data", async (ctx) => {
         menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
         menuLineVisibility: config?.botMenuLineVisibility ?? null,
         menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
+        menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
         botEmojis: config?.botEmojis ?? null,
       });
       const hasSupportLinks = !!(config?.supportLink || config?.agreementLink || config?.offerLink || config?.instructionsLink);
@@ -1461,7 +1477,7 @@ bot.on("callback_query:data", async (ctx) => {
         : innerEmojiIds;
       if (items.length > 1) {
         const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, "Тарифы\n\nВыберите категорию:", config?.botEmojis);
-        await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+        await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
         return;
       }
       const cat = items[0]!;
@@ -1472,7 +1488,7 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
       const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
 
@@ -1499,7 +1515,7 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
       const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
 
@@ -2228,7 +2244,7 @@ bot.on("callback_query:data", async (ctx) => {
         currency: tariff.currency,
         action: "Выберите способ оплаты:",
       });
-      await editMessageContent(ctx, pay2.text, tariffPaymentMethodButtons(tariffId, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, balanceLabel, !!config?.yoomoneyEnabled, !!config?.yookassaEnabled, !!config?.cryptopayEnabled, tariff.currency), pay2.entities);
+      await editMessageContent(ctx, pay2.text, tariffPaymentMethodButtons(tariffId, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, balanceLabel, !!config?.yoomoneyEnabled, !!config?.yookassaEnabled, !!config?.cryptopayEnabled, tariff.currency, config?.botPaymentButtonEmojis ?? null), pay2.entities);
       return;
     }
 
