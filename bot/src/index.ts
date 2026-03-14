@@ -330,6 +330,18 @@ function renderTariffsText(template: string, category: string, tariffLines: stri
     .split("{{TARIFFS}}").join(tariffLines);
 }
 
+const DEFAULT_TARIFF_BUTTON_TEMPLATE = "{{name}} — {{price}} {{currency}}";
+
+/** Render one tariff row button label from template. Placeholders: {{name}}, {{price}}, {{currency}}, {{durationDays}}. */
+function renderTariffButtonLabel(template: string, tariff: TariffItem): string {
+  const t = (template || DEFAULT_TARIFF_BUTTON_TEMPLATE).trim();
+  return t
+    .split("{{name}}").join(tariff.name ?? "")
+    .split("{{price}}").join(String(tariff.price ?? ""))
+    .split("{{currency}}").join((tariff.currency ?? "").toUpperCase())
+    .split("{{durationDays}}").join(String(tariff.durationDays ?? ""));
+}
+
 function renderPaymentText(
   template: string,
   vars: { name: string; price: string; amount: string; currency: string; action: string }
@@ -1491,17 +1503,10 @@ bot.on("callback_query:data", async (ctx) => {
         await editMessageContent(ctx, "Тарифы пока не настроены.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
         return;
       }
-      const tariffsEmojiKey = getMenuEmojiKey(config, "tariffs");
-      const tariffsEmojiEntry = tariffsEmojiKey ? config?.botEmojis?.[tariffsEmojiKey] : undefined;
-      const tariffsEmojiUnicode = tariffsEmojiKey && !tariffsEmojiEntry?.tgEmojiId
-        ? (tariffsEmojiEntry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[tariffsEmojiKey])
-        : undefined;
-      const tariffsEmojiIds = innerEmojiIds && tariffsEmojiEntry?.tgEmojiId
-        ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
-        : innerEmojiIds;
+      // No "Tariffs" button emoji on this screen: text and buttons stay without it
       if (items.length > 1) {
-        const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, "Тарифы\n\nВыберите категорию:", config?.botEmojis);
-        await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+        const body = "Тарифы\n\nВыберите категорию:";
+        await editMessageContent(ctx, body, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, innerEmojiIds, undefined), undefined);
         return;
       }
       const cat = items[0]!;
@@ -1511,8 +1516,11 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      const btnTemplate = (config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim() || null;
+      const btnEmojiKey = (config as { botTariffButtonEmojiKey?: string | null })?.botTariffButtonEmojiKey?.trim() || null;
+      const tariffRowLabels = btnTemplate ? cat.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t)) : undefined;
+      const tariffRowEmojiId = btnEmojiKey && config?.botEmojis?.[btnEmojiKey]?.tgEmojiId ? config.botEmojis[btnEmojiKey].tgEmojiId : undefined;
+      await editMessageContent(ctx, body, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), undefined);
       return;
     }
 
@@ -1526,20 +1534,15 @@ bot.on("callback_query:data", async (ctx) => {
       }
       const nameOnly = (category.name || "").replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "").trim() || category.name || "";
       const head = (category.emoji && category.emoji.trim() ? category.emoji + " " : "") + nameOnly;
-      const tariffsEmojiKey = getMenuEmojiKey(config, "tariffs");
-      const tariffsEmojiEntry = tariffsEmojiKey ? config?.botEmojis?.[tariffsEmojiKey] : undefined;
-      const tariffsEmojiUnicode = tariffsEmojiKey && !tariffsEmojiEntry?.tgEmojiId
-        ? (tariffsEmojiEntry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[tariffsEmojiKey])
-        : undefined;
-      const tariffsEmojiIds = innerEmojiIds && tariffsEmojiEntry?.tgEmojiId
-        ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
-        : innerEmojiIds;
       const tariffFields = { ...DEFAULT_TARIFF_LINE_FIELDS, ...(config?.botTariffsFields ?? {}) };
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      const btnTemplate = (config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim() || null;
+      const btnEmojiKey = (config as { botTariffButtonEmojiKey?: string | null })?.botTariffButtonEmojiKey?.trim() || null;
+      const tariffRowLabels = btnTemplate ? category.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t)) : undefined;
+      const tariffRowEmojiId = btnEmojiKey && config?.botEmojis?.[btnEmojiKey]?.tgEmojiId ? config.botEmojis[btnEmojiKey].tgEmojiId : undefined;
+      await editMessageContent(ctx, body, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), undefined);
       return;
     }
 

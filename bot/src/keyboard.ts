@@ -298,30 +298,35 @@ export function tariffCategoryButtons(
   return { inline_keyboard: rows };
 }
 
-/** Кнопки тарифов одной категории. Только эмодзи категории (ordinary/premium), без общего эмодзи «Тарифы». */
+/** Кнопки тарифов одной категории. Если переданы tariffRowLabels (длина = category.tariffs), они используются как подписи; иначе подпись = prefix + name — price currency. tariffRowEmojiId — иконка на кнопках тарифов. */
 export function tariffsOfCategoryButtons(
   category: { name: string; emoji?: string; tariffs: { id: string; name: string; price: number; currency: string }[] },
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   backData: string = "menu:tariffs",
   emojiIds?: InnerEmojiIds,
-  _prefixEmoji?: string
+  _prefixEmoji?: string,
+  tariffRowLabels?: string[],
+  tariffRowEmojiId?: string
 ): InlineMarkup {
   const rows: InlineButton[][] = [];
   const tariffPay = resolveStyle(toStyle(innerStyles?.tariffPay), "success");
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = resolveStyle(toStyle(innerStyles?.back), "danger");
   const prefix = (category.emoji && category.emoji.trim()) ? `${category.emoji} ` : "";
-  const tariffId = emojiIds?.tariff;
-  for (const t of category.tariffs) {
-    const label = `${prefix}${t.name} — ${t.price} ${t.currency}`.slice(0, 64);
-    rows.push([btn(label, `pay_tariff:${t.id}`, tariffPay, tariffId)]);
+  const iconId = tariffRowEmojiId ?? emojiIds?.tariff;
+  for (let i = 0; i < category.tariffs.length; i++) {
+    const t = category.tariffs[i]!;
+    const label = (tariffRowLabels && tariffRowLabels[i] !== undefined)
+      ? String(tariffRowLabels[i]).slice(0, 64)
+      : `${prefix}${t.name} — ${t.price} ${t.currency}`.slice(0, 64);
+    rows.push([btn(label, `pay_tariff:${t.id}`, tariffPay, iconId)]);
   }
   rows.push([btn(back, backData, backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
 }
 
-/** Все тарифы списком (одна категория — без экрана выбора категории) */
+/** Все тарифы списком (одна категория — без экрана выбора категории). tariffRowLabels и tariffRowEmojiId передаются в tariffsOfCategoryButtons при одной категории. */
 export function tariffPayButtons(
   categories: {
     id: string;
@@ -332,7 +337,9 @@ export function tariffPayButtons(
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   emojiIds?: InnerEmojiIds,
-  prefixEmoji?: string
+  prefixEmoji?: string,
+  tariffRowLabels?: string[],
+  tariffRowEmojiId?: string
 ): InlineMarkup {
   if (categories.length === 0) {
     const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
@@ -340,7 +347,7 @@ export function tariffPayButtons(
     return { inline_keyboard: [[btn(back, "menu:main", backSty, emojiIds?.back)]] };
   }
   if (categories.length === 1) {
-    return tariffsOfCategoryButtons(categories[0]!, backLabel, innerStyles, "menu:main", emojiIds, prefixEmoji);
+    return tariffsOfCategoryButtons(categories[0]!, backLabel, innerStyles, "menu:main", emojiIds, prefixEmoji, tariffRowLabels, tariffRowEmojiId);
   }
   return tariffCategoryButtons(categories, backLabel, innerStyles, emojiIds, prefixEmoji);
 }

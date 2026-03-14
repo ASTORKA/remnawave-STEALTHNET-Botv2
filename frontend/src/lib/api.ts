@@ -1308,6 +1308,8 @@ export type UpdateSettingsPayload = {
   botInnerButtonStyles?: string | null;
   botTariffsText?: string | null;
   botTariffsFields?: string | null;
+  botTariffButtonText?: string | null;
+  botTariffButtonEmojiKey?: string | null;
   botPaymentText?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
@@ -1552,6 +1554,10 @@ export interface AdminSettings {
   botTariffsText?: string | null;
   /** Какие поля показывать в строке тарифа */
   botTariffsFields?: Record<string, boolean> | null;
+  /** Шаблон подписи кнопки тарифа ({{name}}, {{price}}, {{currency}}, {{durationDays}}) */
+  botTariffButtonText?: string | null;
+  /** Ключ эмодзи для кнопок тарифов (из блока эмодзи) */
+  botTariffButtonEmojiKey?: string | null;
   /** Текст окна оплаты в боте */
   botPaymentText?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */

@@ -72,7 +72,7 @@ const SYSTEM_CONFIG_KEYS = [
   "heleket_merchant_id", "heleket_api_key",
   "groq_api_key", "groq_model", "groq_fallback_1", "groq_fallback_2", "groq_fallback_3", "ai_system_prompt",
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
-  "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text",
+  "bot_tariffs_text", "bot_tariffs_fields", "bot_tariff_button_text", "bot_tariff_button_emoji_key", "bot_payment_text",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -485,6 +485,8 @@ export async function getSystemConfig() {
     botInnerButtonStyles: parseBotInnerButtonStyles(map.bot_inner_button_styles),
     botTariffsText: parseBotTariffsText(map.bot_tariffs_text),
     botTariffsFields: parseBotTariffLineFields(map.bot_tariffs_fields),
+    botTariffButtonText: (map.bot_tariff_button_text ?? "").trim() || null,
+    botTariffButtonEmojiKey: (map.bot_tariff_button_emoji_key ?? "").trim() || null,
     botPaymentText: parseBotPaymentText(map.bot_payment_text),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
@@ -862,6 +864,8 @@ export async function getPublicConfig() {
     botInnerButtonStyles: full.botInnerButtonStyles ?? DEFAULT_BOT_INNER_BUTTON_STYLES,
     botTariffsText: full.botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
     botTariffsFields: full.botTariffsFields ?? DEFAULT_BOT_TARIFF_LINE_FIELDS,
+    botTariffButtonText: (full as { botTariffButtonText?: string | null }).botTariffButtonText ?? null,
+    botTariffButtonEmojiKey: (full as { botTariffButtonEmojiKey?: string | null }).botTariffButtonEmojiKey ?? null,
     botPaymentText: full.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,

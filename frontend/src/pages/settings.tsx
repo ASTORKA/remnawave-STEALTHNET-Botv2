@@ -222,6 +222,8 @@ export function SettingsPage() {
         botMenuLineVisibility: { ...DEFAULT_BOT_MENU_LINE_VISIBILITY, ...((data as AdminSettings).botMenuLineVisibility ?? {}) },
         botTariffsText: (data as AdminSettings).botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
+        botTariffButtonText: (data as AdminSettings).botTariffButtonText ?? null,
+        botTariffButtonEmojiKey: (data as AdminSettings).botTariffButtonEmojiKey ?? null,
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
@@ -534,6 +536,8 @@ export function SettingsPage() {
         botMenuLineVisibility: settings.botMenuLineVisibility != null ? JSON.stringify(settings.botMenuLineVisibility) : undefined,
         botTariffsText: settings.botTariffsText ?? undefined,
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
+        botTariffButtonText: settings.botTariffButtonText ?? undefined,
+        botTariffButtonEmojiKey: settings.botTariffButtonEmojiKey ?? undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
@@ -1565,6 +1569,35 @@ export function SettingsPage() {
                         <Label className="text-xs">{BOT_TARIFF_FIELD_LABELS[key] ?? key}</Label>
                       </div>
                     ))}
+                  </div>
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="text-sm">Кнопки тарифов (30 дней — 100 ₽)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Подпись и смайлик на кнопках выбора тарифа. Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code>, <code className="rounded bg-muted px-1">{'{{price}}'}</code>, <code className="rounded bg-muted px-1">{'{{currency}}'}</code>, <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code>. Эмодзи — ключ из блока «Эмодзи (текст и кнопки)».
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Текст кнопки</Label>
+                        <Input
+                          value={settings.botTariffButtonText ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botTariffButtonText: e.target.value.trim() || null } : s))}
+                          placeholder="{{name}} — {{price}} {{currency}}"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Смайлик кнопки (ключ эмодзи)</Label>
+                        <select
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                          value={settings.botTariffButtonEmojiKey ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botTariffButtonEmojiKey: e.target.value.trim() || null } : s))}
+                        >
+                          <option value="">Без смайлика</option>
+                          {BOT_EMOJI_KEYS.map((k) => (
+                            <option key={k} value={k}>{k}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
