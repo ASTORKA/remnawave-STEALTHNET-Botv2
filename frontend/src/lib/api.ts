@@ -1310,7 +1310,8 @@ export type UpdateSettingsPayload = {
   botTariffsFields?: string | null;
   botTariffButtonText?: string | null;
   botTariffButtonEmojiKey?: string | null;
-  botTariffCurrencyLabels?: Record<string, string> | null;
+  /** JSON string for backend (e.g. {"RUB":"руб","USD":"долл"}) */
+  botTariffCurrencyLabels?: string | null;
   botPaymentText?: string | null;
   botPayScreenText?: string | null;
   botPayScreenButtonText?: string | null;
@@ -1562,8 +1563,16 @@ export interface AdminSettings {
   botTariffButtonText?: string | null;
   /** Ключ эмодзи для кнопок тарифов (из блока эмодзи) */
   botTariffButtonEmojiKey?: string | null;
+  /** Подписи валют в кнопках тарифов (RUB → руб, USD → долл) */
+  botTariffCurrencyLabels?: Record<string, string> | null;
   /** Текст окна оплаты в боте */
   botPaymentText?: string | null;
+  /** Текст экрана перехода к оплате («Нажмите кнопку «Оплатить»…») */
+  botPayScreenText?: string | null;
+  /** Текст кнопки «Оплатить» на экране перехода к оплате */
+  botPayScreenButtonText?: string | null;
+  /** Ключ эмодзи кнопки «Оплатить» на экране перехода к оплате */
+  botPayScreenButtonEmojiKey?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */
