@@ -348,7 +348,7 @@ function buildPaymentMessage(
 ): { text: string; entities: CustomEmojiEntity[] } {
   const template = (config?.botPaymentText ?? "").trim() || DEFAULT_PAYMENT_TEXT;
   const base = renderPaymentText(template, vars);
-  return applyCustomEmojiPlaceholders(base, config?.botEmojis, false);
+  return applyCustomEmojiPlaceholders(base, config?.botEmojis, true);
 }
 
 function t(texts: Record<string, string> | null | undefined, key: string): string {
@@ -459,7 +459,7 @@ function titleWithEmojiAndCustomEmojis(
   const unicode = entry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[emojiKey] || "•";
   const space = rest.startsWith("\n") ? "" : " ";
   const leading = unicode + space;
-  const { text: restText, entities: restEntities } = applyCustomEmojiPlaceholders(rest, botEmojis, false);
+  const { text: restText, entities: restEntities } = applyCustomEmojiPlaceholders(rest, botEmojis, true);
   const entities: CustomEmojiEntity[] = restEntities.map((e) => ({ ...e, offset: e.offset + leading.length }));
   return { text: leading + restText, entities };
 }
@@ -469,7 +469,7 @@ function titleWithOptionalEmoji(
   rest: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
 ): { text: string; entities: CustomEmojiEntity[] } {
-  if (!emojiKey) return applyCustomEmojiPlaceholders(rest, botEmojis, false);
+  if (!emojiKey) return applyCustomEmojiPlaceholders(rest, botEmojis, true);
   return titleWithEmojiAndCustomEmojis(emojiKey, rest, botEmojis);
 }
 
@@ -496,7 +496,7 @@ function buildMainMenuText(opts: {
   const shouldShow = (key: string) => menuLineVisibility?.[key] !== false;
   const pushLine = (key: string, text: string) => {
     if (!shouldShow(key)) return;
-    const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis, false);
+    const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis, true);
     const emptyLines = Math.min(10, Math.max(0, Math.floor(menuTextIndent?.[key] ?? 0)));
     const prefix = emptyLines > 0 ? "\n".repeat(emptyLines) : "";
     const suffix = emptyLines > 0 ? "\n".repeat(emptyLines) : "";
@@ -574,13 +574,13 @@ function buildMainMenuText(opts: {
     }
     if (url) {
       if (shouldShow("linkLabel")) {
-        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis, false);
+        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis, true);
         const emptyLinesLink = Math.min(10, Math.max(0, Math.floor(menuTextIndent?.["linkLabel"] ?? 0)));
         const prefixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
         const suffixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
-        lines.push(prefixLink + label + suffixLink, escapeHtml(url));
-        lineStartKeys.push("linkLabel", null);
-        lineEntitiesByIndex.push(emptyLinesLink > 0 ? entities.map((e) => ({ ...e, offset: e.offset + prefixLink.length })) : entities, []);
+        lines.push(prefixLink + label + suffixLink + "\n" + escapeHtml(url));
+        lineStartKeys.push("linkLabel");
+        lineEntitiesByIndex.push(emptyLinesLink > 0 ? entities.map((e) => ({ ...e, offset: e.offset + prefixLink.length })) : entities);
       }
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
@@ -1474,7 +1474,7 @@ bot.on("callback_query:data", async (ctx) => {
         ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
         : innerEmojiIds;
       if (items.length > 1) {
-        const { text, entities } = applyCustomEmojiPlaceholders("Тарифы\n\nВыберите категорию:", config?.botEmojis, false);
+        const { text, entities } = applyCustomEmojiPlaceholders("Тарифы\n\nВыберите категорию:", config?.botEmojis, true);
         await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
         return;
       }
@@ -1485,7 +1485,7 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, false);
+      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, true);
       await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
@@ -1512,7 +1512,7 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, false);
+      const { text, entities } = applyCustomEmojiPlaceholders(body, config?.botEmojis, true);
       await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode, config?.botTariffButtonTemplate ?? null), entities);
       return;
     }
@@ -2556,11 +2556,11 @@ bot.on("callback_query:data", async (ctx) => {
       const useRemna = config?.useRemnaSubscriptionPage === true;
       if (useRemna) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница подключения.", config?.botEmojis);
-        const vpnEmojiIds = innerEmojiIds ? { ...innerEmojiIds, connect: undefined } : undefined;
+        const vpnEmojiIds = innerEmojiIds ? { back: innerEmojiIds.back } : undefined;
         await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl ?? "", config?.botBackLabel ?? null, innerStyles?.back, vpnEmojiIds, vpnUrl), vpnTitle.entities);
       } else if (appUrl) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница с приложениями и кнопкой «Добавить подписку» (как в кабинете).", config?.botEmojis);
-        const vpnEmojiIds = innerEmojiIds ? { ...innerEmojiIds, connect: undefined } : undefined;
+        const vpnEmojiIds = innerEmojiIds ? { back: innerEmojiIds.back } : undefined;
         await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl, config?.botBackLabel ?? null, innerStyles?.back, vpnEmojiIds), vpnTitle.entities);
       } else {
         const vpnTitle2 = titleWithEmoji("SERVERS", `Подключиться к VPN\n\nОткройте ссылку в приложении VPN:\n${vpnUrl}`, config?.botEmojis);
