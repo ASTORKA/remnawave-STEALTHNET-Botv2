@@ -214,20 +214,37 @@ export function backToMenu(backLabel?: string | null, backStyle?: string, emojiI
   return { inline_keyboard: [[btn(text, "menu:main", resolveStyle(toStyle(backStyle), "danger"), emojiIds?.back)]] };
 }
 
-/** Кнопка «Оплатить» (открывает paymentUrl) + «В меню» */
+/** Кнопка «Оплатить» (открывает paymentUrl) + опционально Mini App слева + «В меню» */
 export function payUrlMarkup(
   paymentUrl: string,
   backLabel?: string | null,
   backStyle?: string,
-  emojiIds?: InnerEmojiIds
+  emojiIds?: InnerEmojiIds,
+  opts?: {
+    appUrl?: string | null;
+    miniAppButtonLabel?: string | null;
+    payButtonText?: string | null;
+    payButtonEmojiId?: string | null;
+  }
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
-  const payBtn: UrlButton = { text: "💳 Оплатить", url: paymentUrl };
-  if (emojiIds?.card) payBtn.icon_custom_emoji_id = emojiIds.card;
+  const payLabel = (opts?.payButtonText && opts.payButtonText.trim()) || "💳 Оплатить";
+  const payBtn: UrlButton = { text: payLabel, url: paymentUrl };
+  if (opts?.payButtonEmojiId) payBtn.icon_custom_emoji_id = opts.payButtonEmojiId;
+  else if (emojiIds?.card) payBtn.icon_custom_emoji_id = emojiIds.card;
+  const base = (opts?.appUrl ?? "").replace(/\/$/, "");
+  const miniAppLabel = (opts?.miniAppButtonLabel && opts.miniAppButtonLabel.trim()) || "📲 В приложении";
+  const firstRow: (UrlButton | WebAppButton)[] =
+    base
+      ? [
+          { text: miniAppLabel, web_app: { url: `${base}/cabinet` } },
+          payBtn,
+        ]
+      : [payBtn];
   return {
     inline_keyboard: [
-      [payBtn],
+      firstRow,
       [btn(back, "menu:main", backSty, emojiIds?.back)],
     ],
   };

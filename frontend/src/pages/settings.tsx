@@ -70,6 +70,8 @@ const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
 
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
+const DEFAULT_BOT_PAY_SCREEN_TEXT = "Нажмите кнопку «Оплатить» — откроется страница оплаты.";
+const DEFAULT_BOT_PAY_SCREEN_BUTTON_TEXT = "Оплатить";
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -224,7 +226,11 @@ export function SettingsPage() {
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botTariffButtonText: (data as AdminSettings).botTariffButtonText ?? null,
         botTariffButtonEmojiKey: (data as AdminSettings).botTariffButtonEmojiKey ?? null,
+        botTariffCurrencyLabels: (data as AdminSettings).botTariffCurrencyLabels ?? null,
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+        botPayScreenText: (data as AdminSettings).botPayScreenText ?? null,
+        botPayScreenButtonText: (data as AdminSettings).botPayScreenButtonText ?? null,
+        botPayScreenButtonEmojiKey: (data as AdminSettings).botPayScreenButtonEmojiKey ?? null,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
           const loaded =
@@ -538,7 +544,15 @@ export function SettingsPage() {
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botTariffButtonText: settings.botTariffButtonText ?? undefined,
         botTariffButtonEmojiKey: settings.botTariffButtonEmojiKey ?? undefined,
+        botTariffCurrencyLabels: (() => {
+          const o = settings.botTariffCurrencyLabels ?? {};
+          const filtered = Object.fromEntries(Object.entries(o).filter(([, v]) => typeof v === "string" && (v as string).trim() !== ""));
+          return Object.keys(filtered).length ? JSON.stringify(filtered) : undefined;
+        })(),
         botPaymentText: settings.botPaymentText ?? undefined,
+        botPayScreenText: settings.botPayScreenText ?? undefined,
+        botPayScreenButtonText: settings.botPayScreenButtonText ?? undefined,
+        botPayScreenButtonEmojiKey: settings.botPayScreenButtonEmojiKey ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
           ...(settings.botInnerButtonStyles ?? {}),
@@ -1527,14 +1541,24 @@ export function SettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     Текст, который видит пользователь в разделе «Тарифы». Используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{CATEGORY}}'}</code> — название категории, <code className="rounded bg-muted px-1">{'{{TARIFFS}}'}</code> — список тарифов. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Для выделения текста жирным используйте теги <code className="rounded bg-muted px-1">{'<b> </b>'}</code>.
                   </p>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Текст сообщения</Label>
-                    <Textarea
-                      rows={6}
-                      value={settings.botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT}
-                      onChange={(e) => setSettings((s) => (s ? { ...s, botTariffsText: e.target.value } : s))}
-                      placeholder={DEFAULT_BOT_TARIFFS_TEXT}
-                    />
+                  <div className="flex items-start gap-2">
+                    {(settings.publicAppUrl ?? "").trim() ? (
+                      <Button type="button" variant="outline" size="sm" className="shrink-0" asChild>
+                        <a href={`${(settings.publicAppUrl ?? "").replace(/\/$/, "")}/cabinet`} target="_blank" rel="noopener noreferrer">
+                          <Link2 className="h-4 w-4 mr-1" />
+                          В приложении
+                        </a>
+                      </Button>
+                    ) : null}
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <Label className="text-xs">Текст сообщения</Label>
+                      <Textarea
+                        rows={6}
+                        value={settings.botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT}
+                        onChange={(e) => setSettings((s) => (s ? { ...s, botTariffsText: e.target.value } : s))}
+                        placeholder={DEFAULT_BOT_TARIFFS_TEXT}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-sm">Что показывать в строке тарифа</Label>
@@ -1571,9 +1595,9 @@ export function SettingsPage() {
                     ))}
                   </div>
                   <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-sm font-medium">Текст кнопок выбора тарифа</Label>
+                    <Label className="text-sm font-medium">Текст кнопок выбора тарифа (30 дней — 100 руб)</Label>
                     <p className="text-xs text-muted-foreground">
-                      Настраиваемый текст кнопок вида «30 дней — 100 RUB» на экране выбора тарифа. Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code> — название, <code className="rounded bg-muted px-1">{'{{price}}'}</code> — цена, <code className="rounded bg-muted px-1">{'{{currency}}'}</code> — валюта (RUB/USD), <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code> — число дней. Если поле пусто — используется шаблон по умолчанию.
+                      Настраиваемый текст кнопок на экране выбора тарифа. Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code> — название, <code className="rounded bg-muted px-1">{'{{price}}'}</code> — цена, <code className="rounded bg-muted px-1">{'{{currency}}'}</code> — валюта (подставляется код или подпись ниже), <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code> — число дней. Если шаблон пуст — используется шаблон по умолчанию.
                     </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1">
@@ -1599,6 +1623,24 @@ export function SettingsPage() {
                         </select>
                       </div>
                     </div>
+                    <div className="grid gap-2 sm:grid-cols-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Подпись валюты RUB (например: руб)</Label>
+                        <Input
+                          value={settings.botTariffCurrencyLabels?.RUB ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botTariffCurrencyLabels: { ...(s.botTariffCurrencyLabels ?? {}), RUB: e.target.value.trim() } } : s))}
+                          placeholder="руб"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Подпись валюты USD (например: долл)</Label>
+                        <Input
+                          value={settings.botTariffCurrencyLabels?.USD ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botTariffCurrencyLabels: { ...(s.botTariffCurrencyLabels ?? {}), USD: e.target.value.trim() } } : s))}
+                          placeholder="долл"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
@@ -1609,14 +1651,70 @@ export function SettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Для выделения текста жирным используйте теги <code className="rounded bg-muted px-1">{'<b> </b>'}</code>.
                   </p>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Текст сообщения</Label>
-                    <Textarea
-                      rows={5}
-                      value={settings.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT}
-                      onChange={(e) => setSettings((s) => (s ? { ...s, botPaymentText: e.target.value } : s))}
-                      placeholder={DEFAULT_BOT_PAYMENT_TEXT}
-                    />
+                  <div className="flex gap-2 items-start">
+                    <Button type="button" variant="outline" size="sm" className="shrink-0" asChild>
+                      <a href={((settings.publicAppUrl ?? "").replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "")) + "/cabinet"} target="_blank" rel="noopener noreferrer">
+                        Открыть в приложении
+                      </a>
+                    </Button>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Текст сообщения</Label>
+                      <Textarea
+                        rows={5}
+                        value={settings.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT}
+                        onChange={(e) => setSettings((s) => (s ? { ...s, botPaymentText: e.target.value } : s))}
+                        placeholder={DEFAULT_BOT_PAYMENT_TEXT}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <Label className="text-base font-medium">Экран перехода к оплате</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Текст и кнопки окна «Нажмите кнопку «Оплатить» — откроется страница оплаты.» (после выбора способа оплаты). Слева от кнопки «Оплатить» в боте показывается кнопка «В приложении» (Mini App), если указан URL приложения во вкладке «Общие».
+                  </p>
+                  <div className="flex gap-2 items-start">
+                    <Button type="button" variant="outline" size="sm" className="shrink-0" asChild>
+                      <a href={((settings.publicAppUrl ?? "").replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "")) + "/cabinet"} target="_blank" rel="noopener noreferrer">
+                        Открыть в приложении
+                      </a>
+                    </Button>
+                    <div className="flex-1 space-y-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Текст сообщения</Label>
+                        <Input
+                          value={settings.botPayScreenText ?? ""}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenText: e.target.value.trim() || null } : s))}
+                          placeholder={DEFAULT_BOT_PAY_SCREEN_TEXT}
+                        />
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Текст кнопки «Оплатить»</Label>
+                          <Input
+                            value={settings.botPayScreenButtonText ?? ""}
+                            onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonText: e.target.value.trim() || null } : s))}
+                            placeholder={DEFAULT_BOT_PAY_SCREEN_BUTTON_TEXT}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Смайлик кнопки (ключ эмодзи)</Label>
+                          <select
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                            value={settings.botPayScreenButtonEmojiKey ?? ""}
+                            onChange={(e) => setSettings((s) => (s ? { ...s, botPayScreenButtonEmojiKey: e.target.value.trim() || null } : s))}
+                          >
+                            <option value="">По умолчанию (💳)</option>
+                            {BOT_EMOJI_KEYS.map((k) => (
+                              <option key={k} value={k}>{k}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">

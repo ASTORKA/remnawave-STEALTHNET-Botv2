@@ -72,7 +72,8 @@ const SYSTEM_CONFIG_KEYS = [
   "heleket_merchant_id", "heleket_api_key",
   "groq_api_key", "groq_model", "groq_fallback_1", "groq_fallback_2", "groq_fallback_3", "ai_system_prompt",
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
-  "bot_tariffs_text", "bot_tariffs_fields", "bot_tariff_button_text", "bot_tariff_button_emoji_key", "bot_payment_text",
+  "bot_tariffs_text", "bot_tariffs_fields", "bot_tariff_button_text", "bot_tariff_button_emoji_key", "bot_tariff_currency_labels", "bot_payment_text",
+  "bot_pay_screen_text", "bot_pay_screen_button_text", "bot_pay_screen_button_emoji_key",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -315,6 +316,21 @@ function parseBotPaymentText(raw: string | undefined): string {
   return raw;
 }
 
+function parseBotTariffCurrencyLabels(raw: string | undefined): Record<string, string> | null {
+  if (!raw || !raw.trim()) return null;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object") return null;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === "string" && k.trim()) out[k.trim().toUpperCase()] = v;
+    }
+    return Object.keys(out).length ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseBotTariffLineFields(raw: string | undefined): Required<BotTariffLineFields> {
   if (!raw || !raw.trim()) return { ...DEFAULT_BOT_TARIFF_LINE_FIELDS };
   try {
@@ -487,7 +503,11 @@ export async function getSystemConfig() {
     botTariffsFields: parseBotTariffLineFields(map.bot_tariffs_fields),
     botTariffButtonText: (map.bot_tariff_button_text ?? "").trim() || null,
     botTariffButtonEmojiKey: (map.bot_tariff_button_emoji_key ?? "").trim() || null,
+    botTariffCurrencyLabels: parseBotTariffCurrencyLabels(map.bot_tariff_currency_labels),
     botPaymentText: parseBotPaymentText(map.bot_payment_text),
+    botPayScreenText: (map.bot_pay_screen_text ?? "").trim() || null,
+    botPayScreenButtonText: (map.bot_pay_screen_button_text ?? "").trim() || null,
+    botPayScreenButtonEmojiKey: (map.bot_pay_screen_button_emoji_key ?? "").trim() || null,
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
     supportLink: (map.support_link ?? "").trim() || null,
@@ -866,7 +886,11 @@ export async function getPublicConfig() {
     botTariffsFields: full.botTariffsFields ?? DEFAULT_BOT_TARIFF_LINE_FIELDS,
     botTariffButtonText: (full as { botTariffButtonText?: string | null }).botTariffButtonText ?? null,
     botTariffButtonEmojiKey: (full as { botTariffButtonEmojiKey?: string | null }).botTariffButtonEmojiKey ?? null,
+    botTariffCurrencyLabels: (full as { botTariffCurrencyLabels?: Record<string, string> | null }).botTariffCurrencyLabels ?? null,
     botPaymentText: full.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+    botPayScreenText: (full as { botPayScreenText?: string | null }).botPayScreenText ?? null,
+    botPayScreenButtonText: (full as { botPayScreenButtonText?: string | null }).botPayScreenButtonText ?? null,
+    botPayScreenButtonEmojiKey: (full as { botPayScreenButtonEmojiKey?: string | null }).botPayScreenButtonEmojiKey ?? null,
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,

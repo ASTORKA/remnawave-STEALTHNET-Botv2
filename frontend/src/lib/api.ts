@@ -1310,7 +1310,11 @@ export type UpdateSettingsPayload = {
   botTariffsFields?: string | null;
   botTariffButtonText?: string | null;
   botTariffButtonEmojiKey?: string | null;
+  botTariffCurrencyLabels?: Record<string, string> | null;
   botPaymentText?: string | null;
+  botPayScreenText?: string | null;
+  botPayScreenButtonText?: string | null;
+  botPayScreenButtonEmojiKey?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;

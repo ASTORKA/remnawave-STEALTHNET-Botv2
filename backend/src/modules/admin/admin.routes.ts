@@ -956,7 +956,11 @@ const updateSettingsSchema = z.object({
   botTariffsFields: z.union([z.string().max(2000), z.record(z.boolean())]).nullable().optional(),
   botTariffButtonText: z.string().max(500).nullable().optional(),
   botTariffButtonEmojiKey: z.string().max(50).nullable().optional(),
+  botTariffCurrencyLabels: z.union([z.string().max(2000), z.record(z.string().max(20))]).nullable().optional(),
   botPaymentText: z.string().max(8000).nullable().optional(),
+  botPayScreenText: z.string().max(2000).nullable().optional(),
+  botPayScreenButtonText: z.string().max(200).nullable().optional(),
+  botPayScreenButtonEmojiKey: z.string().max(50).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1448,6 +1452,44 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_tariff_button_emoji_key" },
       create: { key: "bot_tariff_button_emoji_key", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botTariffCurrencyLabels !== undefined) {
+    const raw = updates.botTariffCurrencyLabels;
+    const val =
+      typeof raw === "string"
+        ? raw
+        : raw !== null && typeof raw === "object" && !Array.isArray(raw)
+          ? JSON.stringify(raw)
+          : "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_tariff_currency_labels" },
+      create: { key: "bot_tariff_currency_labels", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPayScreenText !== undefined) {
+    const val = updates.botPayScreenText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_pay_screen_text" },
+      create: { key: "bot_pay_screen_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPayScreenButtonText !== undefined) {
+    const val = updates.botPayScreenButtonText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_pay_screen_button_text" },
+      create: { key: "bot_pay_screen_button_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPayScreenButtonEmojiKey !== undefined) {
+    const val = updates.botPayScreenButtonEmojiKey ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_pay_screen_button_emoji_key" },
+      create: { key: "bot_pay_screen_button_emoji_key", value: val },
       update: { value: val },
     });
   }
