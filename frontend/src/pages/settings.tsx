@@ -1525,7 +1525,7 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Экран тарифов</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Текст, который видит пользователь в разделе «Тарифы». Используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{CATEGORY}}'}</code> — название категории, <code className="rounded bg-muted px-1">{'{{TARIFFS}}'}</code> — список тарифов. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>.
+                    Текст, который видит пользователь в разделе «Тарифы». Используйте плейсхолдеры: <code className="rounded bg-muted px-1">{'{{CATEGORY}}'}</code> — название категории, <code className="rounded bg-muted px-1">{'{{TARIFFS}}'}</code> — список тарифов. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Для выделения текста жирным используйте теги <code className="rounded bg-muted px-1">{'<b> </b>'}</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Текст сообщения</Label>
@@ -1571,18 +1571,19 @@ export function SettingsPage() {
                     ))}
                   </div>
                   <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-sm">Кнопки тарифов (30 дней — 100 ₽)</Label>
+                    <Label className="text-sm font-medium">Текст кнопок выбора тарифа</Label>
                     <p className="text-xs text-muted-foreground">
-                      Подпись и смайлик на кнопках выбора тарифа. Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code>, <code className="rounded bg-muted px-1">{'{{price}}'}</code>, <code className="rounded bg-muted px-1">{'{{currency}}'}</code>, <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code>. Эмодзи — ключ из блока «Эмодзи (текст и кнопки)».
+                      Настраиваемый текст кнопок вида «30 дней — 100 RUB» на экране выбора тарифа. Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{name}}'}</code> — название, <code className="rounded bg-muted px-1">{'{{price}}'}</code> — цена, <code className="rounded bg-muted px-1">{'{{currency}}'}</code> — валюта (RUB/USD), <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code> — число дней. Если поле пусто — используется шаблон по умолчанию.
                     </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <Label className="text-xs">Текст кнопки</Label>
+                        <Label className="text-xs">Шаблон текста кнопки</Label>
                         <Input
                           value={settings.botTariffButtonText ?? ""}
                           onChange={(e) => setSettings((s) => (s ? { ...s, botTariffButtonText: e.target.value.trim() || null } : s))}
                           placeholder="{{name}} — {{price}} {{currency}}"
                         />
+                        <p className="text-xs text-muted-foreground">Например: <code className="rounded bg-muted px-1">{'{{durationDays}}'}</code> дней — <code className="rounded bg-muted px-1">{'{{price}}'}</code> <code className="rounded bg-muted px-1">{'{{currency}}'}</code></p>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Смайлик кнопки (ключ эмодзи)</Label>
@@ -1606,7 +1607,7 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Окно оплаты</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>.
+                    Текст окна «Оплата». Плейсхолдеры: <code className="rounded bg-muted px-1">{'{{NAME}}'}</code> — название тарифа/опции, <code className="rounded bg-muted px-1">{'{{PRICE}}'}</code> — цена с валютой, <code className="rounded bg-muted px-1">{'{{AMOUNT}}'}</code> — число, <code className="rounded bg-muted px-1">{'{{CURRENCY}}'}</code> — валюта, <code className="rounded bg-muted px-1">{'{{ACTION}}'}</code> — строка действия. Для эмодзи — ключи из блока «Эмодзи», например <code className="rounded bg-muted px-1">{'{{CUSTOM_1}}'}</code>. Для выделения текста жирным используйте теги <code className="rounded bg-muted px-1">{'<b> </b>'}</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Текст сообщения</Label>

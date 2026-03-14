@@ -357,10 +357,11 @@ function renderPaymentText(
 function buildPaymentMessage(
   config: Awaited<ReturnType<typeof api.getPublicConfig>> | null | undefined,
   vars: { name: string; price: string; amount: string; currency: string; action: string }
-): { text: string; entities: CustomEmojiEntity[] } {
+): { text: string; entities: MenuTextEntity[] } {
   const template = (config?.botPaymentText ?? "").trim() || DEFAULT_PAYMENT_TEXT;
   const base = renderPaymentText(template, vars);
-  return applyCustomEmojiPlaceholders(base, config?.botEmojis);
+  const { text, entities } = applyCustomEmojiPlaceholders(base, config?.botEmojis);
+  return mergeBoldWithEntities(text, entities);
 }
 
 function t(texts: Record<string, string> | null | undefined, key: string): string {
@@ -398,6 +399,51 @@ function parseBoldTags(text: string): { text: string; boldRanges: { offset: numb
     }
   }
   return { text: result, boldRanges };
+}
+
+/** Apply <b> parsing to text and merge bold entities with existing custom_emoji entities. */
+function mergeBoldWithEntities(text: string, emojiEntities: CustomEmojiEntity[]): { text: string; entities: MenuTextEntity[] } {
+  const { text: cleaned, boldRanges } = parseBoldTags(text);
+  const boldEntities: BoldEntity[] = boldRanges.map((r) => ({ type: "bold", offset: r.offset, length: r.length }));
+  if (emojiEntities.length === 0) return { text: cleaned, entities: boldEntities };
+
+  // Build mapping: for each index in original text, cleaned index (-1 if inside tag).
+  const origToClean: number[] = [];
+  let i = 0;
+  let c = 0;
+  while (i < text.length) {
+    if (text.slice(i, i + 3) === "<b>") {
+      origToClean[i] = -1;
+      origToClean[i + 1] = -1;
+      origToClean[i + 2] = -1;
+      i += 3;
+    } else if (text.slice(i, i + 4) === "</b>") {
+      origToClean[i] = -1;
+      origToClean[i + 1] = -1;
+      origToClean[i + 2] = -1;
+      origToClean[i + 3] = -1;
+      i += 4;
+    } else {
+      origToClean[i] = c;
+      c++;
+      i++;
+    }
+  }
+
+  const adjusted: CustomEmojiEntity[] = [];
+  for (const e of emojiEntities) {
+    let newOff = -1;
+    let newLen = 0;
+    for (let j = e.offset; j < e.offset + e.length; j++) {
+      if (origToClean[j] >= 0) {
+        if (newOff < 0) newOff = origToClean[j];
+        newLen++;
+      }
+    }
+    if (newOff >= 0 && newLen > 0)
+      adjusted.push({ type: "custom_emoji", offset: newOff, length: newLen, custom_emoji_id: e.custom_emoji_id });
+  }
+  return { text: cleaned, entities: [...adjusted, ...boldEntities] };
 }
 
 /** Длина первого символа в UTF-16 (для entity) */
@@ -1529,11 +1575,12 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const bodyRaw = renderTariffsText(template, head, tariffLines);
       const { text: body, entities: bodyEntities } = applyCustomEmojiPlaceholders(bodyRaw, config?.botEmojis);
-      const btnTemplate = (config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim() || null;
+      const { text: bodyFinal, entities: bodyEntitiesFinal } = mergeBoldWithEntities(body, bodyEntities);
+      const btnTemplate = ((config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim()) || DEFAULT_TARIFF_BUTTON_TEMPLATE;
       const btnEmojiKey = (config as { botTariffButtonEmojiKey?: string | null })?.botTariffButtonEmojiKey?.trim() || null;
-      const tariffRowLabels = btnTemplate ? cat.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t)) : undefined;
+      const tariffRowLabels = cat.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t));
       const tariffRowEmojiId = btnEmojiKey && config?.botEmojis?.[btnEmojiKey]?.tgEmojiId ? config.botEmojis[btnEmojiKey].tgEmojiId : undefined;
-      await editMessageContent(ctx, body, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), bodyEntities);
+      await editMessageContent(ctx, bodyFinal, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), bodyEntitiesFinal);
       return;
     }
 
@@ -1552,11 +1599,12 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const bodyRaw = renderTariffsText(template, head, tariffLines);
       const { text: body, entities: bodyEntities } = applyCustomEmojiPlaceholders(bodyRaw, config?.botEmojis);
-      const btnTemplate = (config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim() || null;
+      const { text: bodyFinal, entities: bodyEntitiesFinal } = mergeBoldWithEntities(body, bodyEntities);
+      const btnTemplate = ((config as { botTariffButtonText?: string | null })?.botTariffButtonText?.trim()) || DEFAULT_TARIFF_BUTTON_TEMPLATE;
       const btnEmojiKey = (config as { botTariffButtonEmojiKey?: string | null })?.botTariffButtonEmojiKey?.trim() || null;
-      const tariffRowLabels = btnTemplate ? category.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t)) : undefined;
+      const tariffRowLabels = category.tariffs.map((t: TariffItem) => renderTariffButtonLabel(btnTemplate, t));
       const tariffRowEmojiId = btnEmojiKey && config?.botEmojis?.[btnEmojiKey]?.tgEmojiId ? config.botEmojis[btnEmojiKey].tgEmojiId : undefined;
-      await editMessageContent(ctx, body, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), bodyEntities);
+      await editMessageContent(ctx, bodyFinal, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", innerEmojiIds, undefined, tariffRowLabels, tariffRowEmojiId), bodyEntitiesFinal);
       return;
     }
 
