@@ -434,12 +434,15 @@ function applyCustomEmojiPlaceholders(
     out += text.slice(lastIdx, match.index);
     const entry = botEmojis?.[key];
     const fallbackUnicode = DEFAULT_EMOJI_UNICODE[key];
-    const unicode = entry?.unicode?.trim() || fallbackUnicode || (useEntities && entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || "•";
+    const useCustomEmoji = useEntities && entry?.tgEmojiId;
+    const unicode = useCustomEmoji
+      ? DEFAULT_CUSTOM_EMOJI_CHAR
+      : (entry?.unicode?.trim() || fallbackUnicode || "•");
     if (unicode) {
       const offset = out.length;
       out += unicode;
-      if (useEntities && entry?.tgEmojiId) {
-        entities.push({ type: "custom_emoji", offset, length: unicode.length, custom_emoji_id: entry.tgEmojiId });
+      if (useCustomEmoji) {
+        entities.push({ type: "custom_emoji", offset, length: unicode.length, custom_emoji_id: entry!.tgEmojiId! });
       }
     } else {
       out += match[0];
@@ -578,7 +581,7 @@ function buildMainMenuText(opts: {
         const emptyLinesLink = Math.min(10, Math.max(0, Math.floor(menuTextIndent?.["linkLabel"] ?? 0)));
         const prefixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
         const suffixLink = emptyLinesLink > 0 ? "\n".repeat(emptyLinesLink) : "";
-        lines.push(prefixLink + label + suffixLink + "\n" + escapeHtml(url));
+        lines.push(prefixLink + label + "\n" + escapeHtml(url) + suffixLink);
         lineStartKeys.push("linkLabel");
         lineEntitiesByIndex.push(emptyLinesLink > 0 ? entities.map((e) => ({ ...e, offset: e.offset + prefixLink.length })) : entities);
       }
@@ -755,7 +758,7 @@ bot.command("start", async (ctx) => {
       currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
       subscription: subRes.subscription,
       tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-      menuTexts: config?.resolvedBotMenuTexts ?? config?.botMenuTexts ?? null,
+      menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
       menuLineVisibility: config?.botMenuLineVisibility ?? null,
       menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
       menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
@@ -1406,7 +1409,7 @@ bot.on("callback_query:data", async (ctx) => {
         currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
         subscription: subRes.subscription,
         tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-        menuTexts: config?.resolvedBotMenuTexts ?? config?.botMenuTexts ?? null,
+        menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
         menuLineVisibility: config?.botMenuLineVisibility ?? null,
         menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
         menuTextIndent: (config as { botMenuTextIndent?: Record<string, number> })?.botMenuTextIndent ?? null,
