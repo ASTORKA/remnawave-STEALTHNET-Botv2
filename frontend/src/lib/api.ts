@@ -1519,7 +1519,7 @@ export interface AdminSettings {
   notificationTelegramGroupId?: string | null;
   plategaMerchantId?: string | null;
   plategaSecret?: string | null;
-  plategaMethods?: { id: number; enabled: boolean; label: string }[];
+  plategaMethods?: { id: number; enabled: boolean; label: string; unicode?: string; tgEmojiId?: string }[];
   yoomoneyClientId?: string | null;
   yoomoneyClientSecret?: string | null;
   yoomoneyReceiverWallet?: string | null;
