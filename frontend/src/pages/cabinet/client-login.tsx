@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LogIn, Shield, Loader2 } from "lucide-react";
 import { useClientAuth } from "@/contexts/client-auth";
 import { api } from "@/lib/api";
 import type { PublicConfig } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +21,6 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export function ClientLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [brand, setBrand] = useState<{ serviceName: string; logo: string | null }>({
@@ -43,30 +38,8 @@ export function ClientLoginPage() {
   const tgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tgFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchParams] = useSearchParams();
-  const { login, loginByGoogle, loginByApple, loginByTelegramDeepLink, registerByTelegram } = useClientAuth();
+  const { loginByGoogle, loginByApple, loginByTelegramDeepLink, registerByTelegram } = useClientAuth();
   const navigate = useNavigate();
-
-  function validateEmail(value: string): string {
-    if (!value.trim()) return "Email обязателен";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return "Введите корректный email";
-    return "";
-  }
-
-  function handleEmailBlur() {
-    setEmailError(validateEmail(email));
-  }
-
-  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setEmail(e.target.value);
-    if (emailError) setEmailError("");
-  }
-
-  function validateAll(): boolean {
-    const emailErr = validateEmail(email);
-    setEmailError(emailErr);
-    return !emailErr;
-  }
 
   // Сохраняем UTM из URL для последующей регистрации (если пользователь перейдёт на /cabinet/register)
   useEffect(() => {
@@ -333,25 +306,6 @@ export function ClientLoginPage() {
       .finally(() => setLoading(false));
   }, [loginByApple, navigate]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    
-    if (!validateAll()) {
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await login(email, password);
-      navigate("/cabinet", { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка входа");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-svh flex flex-col items-center justify-center bg-transparent p-4">
       <motion.div
@@ -383,54 +337,14 @@ export function ClientLoginPage() {
             <p className="text-muted-foreground text-sm">Вход в личный кабинет</p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Скрытое поле: iOS/Safari реже выводит панель автозаполнения на каждый символ */}
-              <input type="text" name="prevent_autofill" autoComplete="off" tabIndex={-1} className="absolute opacity-0 pointer-events-none h-0 w-0 overflow-hidden" aria-hidden />
+            <div className="space-y-4">
               {error && (
                 <div className="rounded-md bg-destructive/10 text-destructive text-sm p-3">
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  name="login_email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={handleEmailChange}
-                  onBlur={handleEmailBlur}
-                  required
-                  autoComplete="off"
-                  data-form-type="other"
-                  className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-                {emailError && <p className="text-xs text-destructive">{emailError}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Пароль</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  name="login_password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="off"
-                  data-form-type="other"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Вход…" : "Войти"}
-              </Button>
               {(telegramBotUsername || googleEnabled || appleEnabled) && (
                 <div className="space-y-3">
-                  <div className="relative flex items-center gap-2">
-                    <div className="flex-1 border-t border-border" />
-                    <span className="text-xs text-muted-foreground px-2">или</span>
-                    <div className="flex-1 border-t border-border" />
-                  </div>
                   {googleEnabled && googleClientId && (
                     <div className="flex flex-wrap items-center justify-center gap-3">
                       <button
@@ -477,7 +391,7 @@ export function ClientLoginPage() {
                         ) : (
                           <>
                             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                            Войти через Telegram
+                            Зарегистрироваться через тг
                           </>
                         )}
                       </Button>
@@ -496,13 +410,7 @@ export function ClientLoginPage() {
                   )}
                 </div>
               )}
-              <p className="text-center text-sm text-muted-foreground">
-                Нет аккаунта?{" "}
-                <Link to="/cabinet/register" className="text-primary hover:underline">
-                  Зарегистрироваться
-                </Link>
-              </p>
-            </form>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
