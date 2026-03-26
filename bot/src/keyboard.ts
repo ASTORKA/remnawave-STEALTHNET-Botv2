@@ -18,6 +18,12 @@ export type InlineMarkup = { inline_keyboard: (InlineButton | WebAppButton | Url
 
 export type BotButtonConfig = { id: string; visible: boolean; label: string; order: number; style?: string; iconCustomEmojiId?: string; onePerRow?: boolean };
 
+function formatCurrencyHuman(currency: string): string {
+  const c = (currency || "").trim().toLowerCase();
+  if (c === "rub" || c === "ruble" || c === "руб" || c === "₽") return "рублей";
+  return currency;
+}
+
 function btn(text: string, data: string, style?: ButtonStyle | null, iconCustomEmojiId?: string): InlineButton {
   const b: InlineButton = { text, callback_data: data };
   if (style) b.style = style;
@@ -311,7 +317,7 @@ export function tariffsOfCategoryButtons(
   const prefix = (category.emoji && category.emoji.trim()) ? `${category.emoji} ` : "";
   const tariffId = emojiIds?.tariff;
   for (const t of category.tariffs) {
-    const label = `${prefix}${t.name} — ${t.price} ${t.currency}`.slice(0, 64);
+    const label = `${prefix}${t.name} — ${t.price} ${formatCurrencyHuman(t.currency)}`.slice(0, 64);
     rows.push([btn(label, `pay_tariff:${t.id}`, tariffPay, tariffId)]);
   }
   rows.push([btn(back, backData, backSty, emojiIds?.back)]);

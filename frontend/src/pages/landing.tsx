@@ -477,10 +477,11 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const tertiarySoft = withAlpha(accentTheme.tertiary, resolvedMode === "dark" ? 0.16 : 0.1);
   const buttonShadow = withAlpha(accentTheme.primary, 0.28);
   const landingSurfaceStyle: CSSProperties = {
+    // Minimal surface (Fin-like): clean background, subtle gradient.
     backgroundImage:
       resolvedMode === "dark"
-        ? `radial-gradient(circle at top, ${withAlpha(accentTheme.primary, 0.22)}, transparent 24%), radial-gradient(circle at 85% 20%, ${withAlpha(accentTheme.secondary, 0.18)}, transparent 22%), linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(4,14,33,0.98) 45%, rgba(3,7,18,1) 100%)`
-        : `radial-gradient(circle at top, ${withAlpha(accentTheme.primary, 0.18)}, transparent 28%), radial-gradient(circle at 85% 20%, ${withAlpha(accentTheme.secondary, 0.14)}, transparent 24%), linear-gradient(180deg, rgba(248,250,252,0.98) 0%, ${withAlpha(accentTheme.primary, 0.05)} 35%, rgba(255,255,255,1) 100%)`,
+        ? `linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 55%, rgba(3,7,18,1) 100%)`
+        : `linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 55%, rgba(255,255,255,1) 100%)`,
     ["--primary" as string]: hexToHsl(accentTheme.primary),
     ["--primary-foreground" as string]: "0 0% 100%",
     ["--ring" as string]: hexToHsl(accentTheme.primary),
@@ -505,14 +506,9 @@ export function LandingPage({ config }: { config: PublicConfig }) {
 
   return (
     <div className="relative min-h-svh overflow-x-clip text-slate-950 dark:text-white" style={landingSurfaceStyle}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-12rem] top-20 h-80 w-80 rounded-full blur-3xl" style={{ backgroundColor: primarySoft }} />
-        <div className="absolute right-[-10rem] top-40 h-72 w-72 rounded-full blur-3xl" style={{ backgroundColor: secondarySoft }} />
-        <div className="absolute bottom-20 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full blur-3xl" style={{ backgroundColor: tertiarySoft }} />
-      </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/20 bg-white/80 dark:bg-white/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/45">
-        <div className="container mx-auto flex h-18 items-center justify-between px-4">
+      <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-3">
             {config.logo ? (
               <img src={config.logo} alt={config.serviceName || title} className="h-10 w-10 rounded-2xl object-cover shadow-lg ring-1 ring-white/30" />
@@ -1336,15 +1332,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                 `© ${new Date().getFullYear()} ${config.serviceName || title}. Все права защищены.`
               )}
             </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
-            <Button variant="ghost" className="rounded-full text-slate-700 hover:bg-white/80 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10" asChild>
-              <Link to={buildLink("/cabinet/login")}>{buttonLogin}</Link>
-            </Button>
-            <Button className="rounded-full text-white" style={primaryButtonStyle} asChild>
-              <Link to={buildLink("/cabinet/register")}>{ctaText}</Link>
-            </Button>
           </div>
         </div>
       </footer>

@@ -370,6 +370,12 @@ function formatDaysRu(days: number): string {
   return "дней";
 }
 
+function formatCurrencyHuman(currency: string): string {
+  const c = (currency || "").trim().toLowerCase();
+  if (c === "rub" || c === "ruble" || c === "руб" || c === "₽") return "рублей";
+  return currency;
+}
+
 const RESET_MODE_LABELS: Record<string, string> = {
   no_reset: "",
   on_purchase: "сброс при покупке",
@@ -381,10 +387,11 @@ function formatTariffLine(tariff: TariffItem, fields: Required<BotTariffLineFiel
   if (fields.name) parts.push(tariff.name);
   if (fields.durationDays) parts.push(`${tariff.durationDays} ${formatDaysRu(tariff.durationDays)}`);
   if (fields.price) {
-    const pricePart = fields.currency ? `${tariff.price} ${tariff.currency}` : `${tariff.price}`;
+    const cur = fields.currency ? formatCurrencyHuman(tariff.currency) : "";
+    const pricePart = fields.currency ? `${tariff.price} ${cur}` : `${tariff.price}`;
     parts.push(pricePart);
   } else if (fields.currency) {
-    parts.push(`${tariff.currency}`);
+    parts.push(`${formatCurrencyHuman(tariff.currency)}`);
   }
   if (fields.trafficLimit) {
     const limit = tariff.trafficLimitBytes;
@@ -1630,14 +1637,11 @@ bot.on("callback_query:data", async (ctx) => {
         await editMessageContent(ctx, "Тарифы пока не настроены.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
         return;
       }
-      const tariffsEmojiKey = getMenuEmojiKey(config, "tariffs");
-      const tariffsEmojiEntry = tariffsEmojiKey ? config?.botEmojis?.[tariffsEmojiKey] : undefined;
-      const tariffsEmojiUnicode = tariffsEmojiKey && !tariffsEmojiEntry?.tgEmojiId
-        ? (tariffsEmojiEntry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[tariffsEmojiKey])
-        : undefined;
-      const tariffsEmojiIds = innerEmojiIds && tariffsEmojiEntry?.tgEmojiId
-        ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
-        : innerEmojiIds;
+      // Важно: эмодзи для кнопки «Купить VPN» — только в главном меню.
+      // На экранах тарифов не показываем общий эмодзи «Тарифы» ни в тексте, ни на кнопках.
+      const tariffsEmojiKey = null;
+      const tariffsEmojiUnicode = undefined;
+      const tariffsEmojiIds = innerEmojiIds;
       if (items.length > 1) {
         const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, "Тарифы\n\nВыберите категорию:", config?.botEmojis);
         await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
@@ -1665,14 +1669,10 @@ bot.on("callback_query:data", async (ctx) => {
       }
       const nameOnly = (category.name || "").replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "").trim() || category.name || "";
       const head = (category.emoji && category.emoji.trim() ? category.emoji + " " : "") + nameOnly;
-      const tariffsEmojiKey = getMenuEmojiKey(config, "tariffs");
-      const tariffsEmojiEntry = tariffsEmojiKey ? config?.botEmojis?.[tariffsEmojiKey] : undefined;
-      const tariffsEmojiUnicode = tariffsEmojiKey && !tariffsEmojiEntry?.tgEmojiId
-        ? (tariffsEmojiEntry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[tariffsEmojiKey])
-        : undefined;
-      const tariffsEmojiIds = innerEmojiIds && tariffsEmojiEntry?.tgEmojiId
-        ? { ...innerEmojiIds, tariff: tariffsEmojiEntry.tgEmojiId }
-        : innerEmojiIds;
+      // См. menu:tariffs — не прокидываем эмодзи «Тарифы» на экраны выбора тарифов.
+      const tariffsEmojiKey = null;
+      const tariffsEmojiUnicode = undefined;
+      const tariffsEmojiIds = innerEmojiIds;
       const tariffFields = { ...DEFAULT_TARIFF_LINE_FIELDS, ...(config?.botTariffsFields ?? {}) };
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
