@@ -381,7 +381,7 @@ export function tariffPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_tariff_cryptopay:${tariffId}`, undefined, cardId)]);
   }
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, m.tgEmojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:tariffs", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -468,7 +468,7 @@ export function proxyPaymentMethodButtons(
   }
   if (cryptopayEnabled) rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_proxy_cryptopay:${proxyTariffId}`, undefined, cardId)]);
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_proxy:${proxyTariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_proxy:${proxyTariffId}:${m.id}`, undefined, m.tgEmojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:proxy", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -555,7 +555,7 @@ export function singboxPaymentMethodButtons(
   }
   if (cryptopayEnabled) rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_singbox_cryptopay:${singboxTariffId}`, undefined, cardId)]);
   for (const m of methods) {
-    rows.push([btn(m.label, `pay_singbox:${singboxTariffId}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_singbox:${singboxTariffId}:${m.id}`, undefined, m.tgEmojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:singbox", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -586,7 +586,7 @@ export function topupPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `topup_cryptopay:${amount}`, "primary", cardId)]);
   }
   for (const m of methods) {
-    rows.push([btn(m.label, `topup:${amount}:${m.id}`, "primary", cardId)]);
+    rows.push([btn(m.label, `topup:${amount}:${m.id}`, "primary", m.tgEmojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:topup", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -645,7 +645,7 @@ export function optionPaymentMethodButtons(
     rows.push([btn("💳 Crypto Bot — криптовалюта", `pay_option_cryptopay:${option.kind}:${option.id}`, undefined, cardId)]);
   }
   for (const m of plategaMethods) {
-    rows.push([btn(m.label, `pay_option_platega:${option.kind}:${option.id}:${m.id}`, undefined, cardId)]);
+    rows.push([btn(m.label, `pay_option_platega:${option.kind}:${option.id}:${m.id}`, undefined, m.tgEmojiId ?? cardId)]);
   }
   if (rows.length === 0) {
     rows.push([btn("💳 Оплата (ЮKassa)", `pay_option_yookassa:${option.kind}:${option.id}`, undefined, cardId)]);

@@ -133,21 +133,9 @@ const FAQ_ITEMS = [
 ];
 
 const JOURNEY_STEPS = [
-  {
-    icon: Sparkles,
-    title: "Выбираешь сценарий",
-    desc: "Выбери тариф под свои задачи.",
-  },
-  {
-    icon: CreditCard,
-    title: "Оплачиваешь как удобно",
-    desc: "Карта, СБП или крипта.",
-  },
-  {
-    icon: Rocket,
-    title: "Подключаешься без боли",
-    desc: "Инструкции доступны сразу после оплаты.",
-  },
+  { icon: Sparkles, title: "Выберите тариф", desc: "Выберите тариф под свои задачи." },
+  { icon: CreditCard, title: "Оплатите как вам удобнее", desc: "Карта, СБП или крипта." },
+  { icon: Rocket, title: "Подключение через любое устройство", desc: "Инструкции доступны сразу после оплаты." },
 ];
 
 
@@ -233,7 +221,8 @@ type LandingAccentTheme = {
 };
 
 const LANDING_ACCENT_THEMES: Record<ThemeAccent, LandingAccentTheme> = {
-  default: { primary: "#10b981", secondary: "#06b6d4", tertiary: "#38bdf8" },
+  // Light blue palette by default
+  default: { primary: "#2563eb", secondary: "#0ea5e9", tertiary: "#60a5fa" },
   blue: { primary: "#3b82f6", secondary: "#06b6d4", tertiary: "#60a5fa" },
   violet: { primary: "#8b5cf6", secondary: "#6366f1", tertiary: "#a78bfa" },
   rose: { primary: "#f43f5e", secondary: "#fb7185", tertiary: "#fda4af" },
@@ -485,13 +474,11 @@ export function LandingPage({ config }: { config: PublicConfig }) {
     ["--primary-foreground" as string]: "0 0% 100%",
     ["--ring" as string]: hexToHsl(accentTheme.primary),
   };
-  const accentTextStyle: CSSProperties = {
-    backgroundImage: `linear-gradient(90deg, ${accentTheme.primary}, ${accentTheme.secondary}, ${accentTheme.tertiary})`,
-  };
+  const accentTextStyle: CSSProperties = { color: accentTheme.primary };
   const primaryButtonStyle: CSSProperties = {
-    backgroundImage: `linear-gradient(90deg, ${accentTheme.primary}, ${accentTheme.secondary})`,
-    boxShadow: `0 18px 50px ${buttonShadow}`,
-    borderColor: withAlpha(accentTheme.primary, 0.4),
+    backgroundColor: accentTheme.primary,
+    boxShadow: `0 14px 40px ${buttonShadow}`,
+    borderColor: withAlpha(accentTheme.primary, 0.28),
   };
   const accentGlowStyle: CSSProperties = {
     backgroundImage: `linear-gradient(135deg, ${withAlpha(accentTheme.primary, 0.12)}, ${withAlpha(accentTheme.secondary, 0.1)}, ${withAlpha(accentTheme.tertiary, 0.12)})`,
@@ -561,10 +548,8 @@ export function LandingPage({ config }: { config: PublicConfig }) {
               </div>
 
               <h1 className="max-w-5xl text-5xl font-black leading-[0.9] tracking-[-0.06em] text-slate-950 md:text-6xl lg:text-[5.4rem] dark:text-white">
-                {heroHeadline1}
-                <span className="block bg-clip-text text-transparent" style={accentTextStyle}>
-                  {heroHeadline2}
-                </span>
+                <span style={accentTextStyle}>{heroHeadline1}</span>
+                <span className="block">{heroHeadline2}</span>
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300 md:text-xl">
@@ -650,23 +635,9 @@ export function LandingPage({ config }: { config: PublicConfig }) {
             </motion.div>
 
             <motion.div {...fadeUp} transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }} className="relative">
-              <div className="absolute -left-6 top-10 h-40 w-40 rounded-full blur-3xl" style={{ backgroundColor: primarySoft }} />
-              <div className="absolute -right-8 bottom-8 h-44 w-44 rounded-full blur-3xl" style={{ backgroundColor: secondarySoft }} />
-
-                            <div className="relative overflow-hidden rounded-[32px] border border-slate-200/60 dark:border-white/10 bg-white/85 dark:bg-white/5 p-6 shadow-[0_30px_100px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/7 md:p-7">
+              <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 dark:border-white/10 bg-white p-6 shadow-lg backdrop-blur-2xl dark:bg-white/5 md:p-7">
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-emerald-300/70" />
-
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">{headerBadge}</p>
-                    <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-slate-950 dark:text-white">
-                      {infraTitle}
-                    </h2>
-                  </div>
-                  <div className="rounded-2xl border p-3" style={{ borderColor: withAlpha(accentTheme.primary, 0.28), backgroundColor: withAlpha(accentTheme.primary, 0.12), color: resolvedMode === "dark" ? accentTheme.tertiary : accentTheme.primary }}>
-                    <Shield className="h-6 w-6" />
-                  </div>
-                </div>
+                {/* Removed: informational block "Доступ к нужным сервисам" */}
 
                 <div className="mt-6 grid gap-3">
                   {featuresList.slice(0, 4).map(({ icon: Icon, label, sub }: any, index: number) => (
@@ -676,7 +647,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.4, delay: 0.08 * index }}
-                      className="flex items-center gap-4 rounded-3xl border border-slate-200 dark:border-white/15 bg-white/85 dark:bg-white/5 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/35"
+                      className="flex items-center gap-4 rounded-3xl border border-slate-200/80 dark:border-white/15 bg-white p-4 shadow-sm backdrop-blur-xl dark:bg-white/5"
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ ...accentGlowStyle, color: resolvedMode === "dark" ? accentTheme.tertiary : accentTheme.primary }}>
                         <Icon className="h-5 w-5" />
@@ -689,35 +660,16 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                   ))}
                 </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[28px] border border-slate-200/80 dark:border-white/12 bg-slate-950 px-5 py-5 text-white shadow-xl shadow-slate-950/15 dark:border-white/12 dark:bg-slate-900/90">
-                    <p className="text-xs uppercase tracking-[0.28em]" style={{ color: withAlpha(accentTheme.tertiary, 0.8) }}>от</p>
-                    <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-4xl font-black tracking-[-0.05em]">
-                        {lowestTariff ? lowestTariff.tariff.price : "∞"}
-                      </span>
-                      <span className="text-sm text-slate-300">
-                        {lowestTariff ? lowestTariff.tariff.currency.toUpperCase() : "privacy"}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-300/90">
-                      {lowestTariff
-                        ? (lowestTariffDesc || `${lowestTariff.tariff.name} · ${lowestTariff.tariff.durationDays} дней доступа`)
-                        : "Тарифы и условия подтягиваются из админки автоматически"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[28px] border border-slate-200/80 dark:border-white/12 bg-white/95 dark:bg-white/5 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/6">
-                    <p className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">быстрый старт</p>
-                    <ul className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                      {quickStartList.slice(0, 3).map((item: string) => (
-                        <li key={item} className="flex items-start gap-3"><Check className="mt-0.5 h-4 w-4" style={{ color: accentTheme.primary }} />{item}</li>
-                      ))}
-                    </ul>
-                  </div>
+                <div className="mt-6 rounded-[28px] border border-slate-200/80 dark:border-white/12 bg-white p-5 shadow-sm backdrop-blur-xl dark:bg-white/5">
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">быстрый старт</p>
+                  <ul className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                    {quickStartList.slice(0, 3).map((item: string) => (
+                      <li key={item} className="flex items-start gap-3"><Check className="mt-0.5 h-4 w-4" style={{ color: accentTheme.primary }} />{item}</li>
+                    ))}
+                  </ul>
                 </div>
 
-                <div className="mt-4 rounded-[28px] border border-slate-200/80 dark:border-white/12 p-5 backdrop-blur-xl dark:border-white/10" style={accentGlowStyle}>
+                <div className="mt-4 rounded-[28px] border border-slate-200/80 dark:border-white/12 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">ощущение продукта</p>
