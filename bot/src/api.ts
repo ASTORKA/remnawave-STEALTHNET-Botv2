@@ -98,7 +98,7 @@ export async function getPublicConfig(): Promise<{
   defaultCurrency?: string;
   trialEnabled?: boolean;
   trialDays?: number;
-  plategaMethods?: { id: number; label: string }[];
+  plategaMethods?: { id: number; label: string; tgEmojiId?: string | null }[];
   yoomoneyEnabled?: boolean;
   yookassaEnabled?: boolean;
   cryptopayEnabled?: boolean;

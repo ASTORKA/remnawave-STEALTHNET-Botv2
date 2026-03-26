@@ -38,37 +38,37 @@ const FEATURES_STRIP: LandingFeatureItem[] = [
   {
     icon: Shield,
     label: "Защита",
-    sub: "AES-256 шифрование",
-    desc: "Современные протоколы и аккуратная защита трафика без ощущения технарского конструктора.",
-    chips: ["Шифрование", "Стабильность"],
+    sub: "Шифрование трафика",
+    desc: "Надёжное подключение без лишних настроек.",
+    chips: ["Приватность", "Стабильность"],
   },
   {
     icon: Lock,
     label: "Zero-Log",
     sub: "История не сохраняется",
-    desc: "Доступ строится вокруг приватности: без лишних следов, без визуального мусора и без тревоги за данные.",
-    chips: ["Zero-Log", "Приватность"],
+    desc: "Фокус на приватности и простоте.",
+    chips: ["Приватность", "Zero-Log"],
   },
   {
     icon: Star,
     label: "Оплата",
-    sub: "Анонимно и безопасно",
-    desc: "Карта, СБП, кошелёк и крипта собираются в один понятный сценарий оплаты без сюрпризов.",
+    sub: "Быстро и удобно",
+    desc: "Несколько способов оплаты — выбирай подходящий.",
     chips: ["Карта / СБП", "Крипта"],
   },
   {
     icon: Zap,
     label: "Серверы",
-    sub: "Собственная инфраструктура",
-    desc: "Свои мощности и продуманная маршрутизация дают нормальную скорость и предсказуемую работу сервиса.",
-    chips: ["Скорость", "Своя сеть"],
+    sub: "Стабильная скорость",
+    desc: "Оптимальные маршруты для повседневных задач.",
+    chips: ["Скорость", "Доступ"],
   },
   {
     icon: Smartphone,
     label: "Установка",
     sub: "За 30 секунд",
-    desc: "Минимум кликов до подключения: зарегистрировался, оплатил и сразу получил инструкции внутри кабинета.",
-    chips: ["Быстрый старт", "Все устройства"],
+    desc: "Всё внутри кабинета: тарифы, оплата и инструкции.",
+    chips: ["Быстрый старт", "Устройства"],
   },
 ];
 
@@ -76,32 +76,32 @@ const BENEFITS = [
   {
     icon: Zap,
     title: "Всегда онлайн",
-    desc: "Работает стабильно даже в перегруженных сетях. Быстрый доступ с мобильного и десктопа без возни с настройками.",
+    desc: "Стабильное соединение для работы и отдыха.",
   },
   {
     icon: Globe,
     title: "РФ-сервисы за границей",
-    desc: "Смотри, звони, работай и плати без лишних плясок — маршруты уже продуманы под реальные сценарии.",
+    desc: "Доступ к привычным сервисам в поездках.",
   },
   {
     icon: Shield,
     title: "Без посредников",
-    desc: "Своя инфраструктура, аккуратная маршрутизация и понятный личный кабинет вместо хаоса из сторонних сервисов.",
+    desc: "Понятный сервис и единый кабинет.",
   },
   {
     icon: Lock,
     title: "Чистая приватность",
-    desc: "Шифрование, маскировка и аккуратная архитектура без ощущения, что ты подключаешь что-то сомнительное.",
+    desc: "Аккуратный подход к приватности.",
   },
   {
     icon: LayoutDashboard,
     title: "Управление в одном месте",
-    desc: "Telegram-бот, кабинет, тарифы, продление, инструкции и поддержка — всё собрано в единую систему.",
+    desc: "Тарифы, оплата и инструкции — в одном месте.",
   },
   {
     icon: Sparkles,
     title: "Красиво и понятно",
-    desc: "Нормальный продуктовый опыт: от первого экрана до покупки всё выглядит премиально и читается без боли.",
+    desc: "Минималистичный интерфейс без лишнего текста.",
   },
 ];
 
@@ -116,19 +116,19 @@ const DEVICES = [
 const FAQ_ITEMS = [
   {
     q: "Что такое VPN и зачем он нужен?",
-    a: "VPN шифрует трафик, помогает обходить блокировки и даёт стабильный доступ к нужным сервисам дома, в поездках и за рубежом.",
+    a: "VPN шифрует трафик и помогает получить доступ к нужным сервисам.",
   },
   {
     q: "Ведётся ли логирование подключений?",
-    a: "Нет. Сервис ориентирован на zero-log подход: без хранения истории активности и лишней привязки действий к личности.",
+    a: "Нет. Мы не сохраняем историю активности.",
   },
   {
     q: "Сколько устройств можно подключить?",
-    a: "Зависит от выбранного тарифа. Лимиты, срок и условия отображаются в кабинете и могут гибко настраиваться в админке.",
+    a: "Зависит от тарифа — всё видно в кабинете.",
   },
   {
     q: "Как быстро начать?",
-    a: "Регистрируешься, выбираешь тариф, оплачиваешь удобным способом и сразу получаешь доступ к инструкциям и подключению в кабинете.",
+    a: "Регистрация → тариф → оплата → инструкции в кабинете.",
   },
 ];
 
@@ -136,17 +136,17 @@ const JOURNEY_STEPS = [
   {
     icon: Sparkles,
     title: "Выбираешь сценарий",
-    desc: "Доступны гибкие тарифы: выбери то, что подходит именно тебе, без переплат.",
+    desc: "Выбери тариф под свои задачи.",
   },
   {
     icon: CreditCard,
     title: "Оплачиваешь как удобно",
-    desc: "Карта, СБП, крипта — выбирай любой удобный и безопасный метод оплаты.",
+    desc: "Карта, СБП или крипта.",
   },
   {
     icon: Rocket,
     title: "Подключаешься без боли",
-    desc: "После оплаты бот или личный кабинет сразу выдадут все инструкции. Настройка за 1 минуту.",
+    desc: "Инструкции доступны сразу после оплаты.",
   },
 ];
 
@@ -155,24 +155,24 @@ const EXPERIENCE_PANELS = [
   {
     icon: Sparkles,
     title: "Никаких зависаний",
-    desc: "Смотри видео в 4K, играй в игры и работай без задержек.",
+    desc: "Стабильная работа в повседневных сценариях.",
   },
   {
     icon: Zap,
     title: "Мгновенное подключение",
-    desc: "Достаточно нажать одну кнопку, чтобы оказаться в защищенной сети.",
+    desc: "Подключение за пару кликов.",
   },
   {
     icon: LayoutDashboard,
     title: "Удобный кабинет",
-    desc: "Управляй подпиской, устройствами и получай поддержку в пару кликов.",
+    desc: "Подписка и инструкции в одном месте.",
   },
 ];
 
 const TRUST_POINTS = [
-  "Современные протоколы шифрования",
-  "Строгая политика Zero-Log: мы не храним данные",
-  "Высокая пропускная способность без ограничений",
+  "Современное шифрование",
+  "Zero-Log подход",
+  "Стабильный доступ",
 ];
 
 const SECTION_SCROLL_OFFSET = "scroll-mt-24 md:scroll-mt-28";
@@ -335,14 +335,14 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const title = lc?.heroTitle || config.serviceName || "STEALTHNET";
   const subtitle =
     lc?.heroSubtitle ||
-    "Telegram, YouTube, видеозвонки и доступ к любым сервисам в одной подписке. Без ограничений, мусора и скрытых платежей.";
+    "Быстрый и аккуратный доступ к нужным сервисам.";
   const ctaText = lc?.heroCtaText || "Начать сейчас";
-  const heroBadge = lc?.heroBadge ?? "Приватность, скорость и доступ";
-  const heroHint = lc?.heroHint ?? "Регистрация за минуту · Оплата картой, СБП, кошельком и криптой";
+  const heroBadge = lc?.heroBadge ?? "Приватность · Скорость";
+  const heroHint = lc?.heroHint ?? "Регистрация за минуту · Оплата картой, СБП или криптой";
 
-  const heroHeadline1 = lc?.heroHeadline1 ?? "Тихий доступ,";
-  const heroHeadline2 = lc?.heroHeadline2 ?? "который выглядит дорого.";
-  const headerBadge = lc?.headerBadge ?? "premium access";
+  const heroHeadline1 = lc?.heroHeadline1 ?? "STEALTHNET";
+  const heroHeadline2 = lc?.heroHeadline2 ?? "VPN";
+  const headerBadge = lc?.headerBadge ?? "";
   const buttonLogin = lc?.buttonLogin ?? "Вход";
   const buttonLoginCabinet = lc?.buttonLoginCabinet ?? "Войти в кабинет";
   const defaultPaymentText = lc?.defaultPaymentText ?? "Карта, СБП, крипта и быстрый старт";
@@ -350,31 +350,31 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const buttonWatchTariffs = lc?.buttonWatchTariffs ?? "Смотреть тарифы";
   const buttonStart = lc?.buttonStart ?? "Начать";
   const buttonOpenCabinet = lc?.buttonOpenCabinet ?? "Открыть кабинет и подключиться";
-  const noTariffsMessage = lc?.noTariffsMessage ?? "Тарифы пока не опубликованы, но лендинг уже готов — контент подтянется автоматически из админки.";
+  const noTariffsMessage = lc?.noTariffsMessage ?? "Тарифы пока не опубликованы.";
 
-  const comfortTitle = lc?.comfortTitle ?? "Всё для твоего комфорта и безопасности в сети";
-  const comfortBadge = lc?.comfortBadge ?? "стабильность · скорость · безопасность";
-  const principlesTitle = lc?.principlesTitle ?? "Мы строим сервис, которому доверяют. Без компромиссов в скорости.";
-  const pulseTitle = lc?.pulseTitle ?? "Не просто VPN, а аккуратно собранный сервис с человеческим UX";
-  const infraTitle = lc?.infraTitle ?? "Один доступ — все нужные сервисы под рукой";
-  const techTitle = lc?.techTitle ?? "Продуманная инфраструктура для твоей свободы.";
-  const techDesc = lc?.techDesc ?? "Мы используем только современные протоколы и мощные серверы, чтобы обеспечить максимальную скорость и стабильность соединения в любых условиях.";
-  const categorySubtitle = lc?.categorySubtitle ?? "Подбирай вариант под свой сценарий — от базового доступа до долгого спокойного использования.";
-  const tariffDefaultDesc = lc?.tariffDefaultDesc ?? "Чистый доступ без лишних ограничений и путаницы.";
+  const comfortTitle = lc?.comfortTitle ?? "Минимум слов. Максимум пользы.";
+  const comfortBadge = lc?.comfortBadge ?? "";
+  const principlesTitle = lc?.principlesTitle ?? "Стабильный доступ и аккуратный UX.";
+  const pulseTitle = lc?.pulseTitle ?? "Подключайся и пользуйся.";
+  const infraTitle = lc?.infraTitle ?? "Доступ к нужным сервисам";
+  const techTitle = lc?.techTitle ?? "Стабильно и просто.";
+  const techDesc = lc?.techDesc ?? "Современные протоколы и понятный кабинет.";
+  const categorySubtitle = lc?.categorySubtitle ?? "";
+  const tariffDefaultDesc = lc?.tariffDefaultDesc ?? "Доступ без лишних деталей.";
   const tariffBullet1 = lc?.tariffBullet1 ?? "Подключение через личный кабинет";
   const tariffBullet2 = lc?.tariffBullet2 ?? "Поддержка и инструкции внутри сервиса";
   const tariffBullet3 = lc?.tariffBullet3 ?? "Автоматическая активация после оплаты";
   const lowestTariffDesc = lc?.lowestTariffDesc ?? null;
-  const devicesCockpitText = lc?.devicesCockpitText ?? "Один аккаунт, много устройств, ноль ощущения хаоса";
-  const universalityTitle = lc?.universalityTitle ?? "Одинаково приятный опыт на десктопе, телефоне и планшете";
-  const universalityDesc = lc?.universalityDesc ?? "Один аккаунт для всех твоих устройств. Подключай что угодно и когда угодно.";
-  const quickSetupTitle = lc?.quickSetupTitle ?? "Установка займет меньше минуты";
-  const quickSetupDesc = lc?.quickSetupDesc ?? "Нажал, оплатил, получил доступ. Подробные инструкции помогут сделать всё быстро.";
-  const premiumServiceTitle = lc?.premiumServiceTitle ?? "Премиальный сервис без технической боли";
-  const premiumServicePara1 = lc?.premiumServicePara1 ?? "Один вход, одна подписка и понятные шаги: зарегистрировался, оплатил, подключил нужное устройство и забыл про блокировки.";
-  const premiumServicePara2 = lc?.premiumServicePara2 ?? "Наша цель — предоставить инструмент, который просто работает. Всегда, везде и на любом устройстве.";
-  const howItWorksTitle = lc?.howItWorksTitle ?? "От первого визита до безопасного интернета — всего пара шагов";
-  const howItWorksDesc = lc?.howItWorksDesc ?? "Мы сделали всё, чтобы процесс подключения был максимально простым и понятным. Никаких сложных инструкций и лишних действий.";
+  const devicesCockpitText = lc?.devicesCockpitText ?? "Один аккаунт — все устройства";
+  const universalityTitle = lc?.universalityTitle ?? "Для всех устройств";
+  const universalityDesc = lc?.universalityDesc ?? "Подключай телефон и ноутбук в одном кабинете.";
+  const quickSetupTitle = lc?.quickSetupTitle ?? "Быстрый старт";
+  const quickSetupDesc = lc?.quickSetupDesc ?? "Оплата → инструкции → готово.";
+  const premiumServiceTitle = lc?.premiumServiceTitle ?? "Просто работает";
+  const premiumServicePara1 = lc?.premiumServicePara1 ?? "Зарегистрируйся, оплати и подключись по инструкции.";
+  const premiumServicePara2 = lc?.premiumServicePara2 ?? "";
+  const howItWorksTitle = lc?.howItWorksTitle ?? "Как начать";
+  const howItWorksDesc = lc?.howItWorksDesc ?? "Три шага до подключения.";
 
   const showFeatures = lc?.showFeatures !== false;
   const showBenefits = lc?.showBenefits !== false;
@@ -396,10 +396,10 @@ export function LandingPage({ config }: { config: PublicConfig }) {
       };
     })
     : FEATURES_STRIP;
-  const benefitsTitle = lc?.benefitsTitle ?? "Почему STEALTHNET ощущается как продукт, а не костыль";
+  const benefitsTitle = lc?.benefitsTitle ?? "Почему выбирают нас";
   const benefitsSubtitle =
     lc?.benefitsSubtitle ??
-    "Всё, что нужно для спокойного доступа, нормальной скорости и уверенного пользовательского опыта, уже собрано в одном месте.";
+    "Собрано всё необходимое — без лишнего текста.";
   const benefitsBadge = lc?.benefitsBadge ?? "Почему мы";
   const benefitsList = lc?.benefits?.length
     ? lc.benefits.map((benefit: any, index: number) => ({
@@ -408,11 +408,10 @@ export function LandingPage({ config }: { config: PublicConfig }) {
       desc: benefit.desc,
     }))
     : BENEFITS;
-  const tariffsTitle = lc?.tariffsTitle ?? "Тарифы без неприятных сюрпризов";
-  const tariffsSubtitle = lc?.tariffsSubtitle ?? "Платишь за понятный доступ, а не за хаос из скрытых ограничений.";
-  const devicesTitle = lc?.devicesTitle ?? "Работает на всех твоих устройствах";
-  const devicesSubtitle =
-    lc?.devicesSubtitle ?? "Один аккаунт, один кабинет и одинаково приятный опыт на ноутбуке, телефоне и планшете.";
+  const tariffsTitle = lc?.tariffsTitle ?? "Тарифы";
+  const tariffsSubtitle = lc?.tariffsSubtitle ?? "Выбери подходящий вариант.";
+  const devicesTitle = lc?.devicesTitle ?? "Устройства";
+  const devicesSubtitle = lc?.devicesSubtitle ?? "Подключай телефон и компьютер.";
   const faqTitle = lc?.faqTitle ?? "Частые вопросы";
   const faqList = lc?.faq?.length ? lc.faq : FAQ_ITEMS;
 

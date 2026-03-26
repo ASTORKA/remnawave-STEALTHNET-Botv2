@@ -1658,7 +1658,7 @@ export interface AdminSettings {
   notificationTopicTickets?: string | null;
   plategaMerchantId?: string | null;
   plategaSecret?: string | null;
-  plategaMethods?: { id: number; enabled: boolean; label: string }[];
+  plategaMethods?: { id: number; enabled: boolean; label: string; tgEmojiId?: string | null }[];
   yoomoneyClientId?: string | null;
   yoomoneyClientSecret?: string | null;
   yoomoneyReceiverWallet?: string | null;
@@ -2435,7 +2435,7 @@ export interface PublicConfig {
   publicAppUrl?: string | null;
   telegramBotUsername?: string | null;
   telegramBotId?: string | null;
-  plategaMethods?: { id: number; label: string }[];
+  plategaMethods?: { id: number; label: string; tgEmojiId?: string | null }[];
   yoomoneyEnabled?: boolean;
   yookassaEnabled?: boolean;
   cryptopayEnabled?: boolean;

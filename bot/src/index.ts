@@ -433,7 +433,9 @@ function t(texts: Record<string, string> | null | undefined, key: string): strin
   return (texts?.[key] ?? DEFAULT_MENU_TEXTS[key]) || "";
 }
 
-type CustomEmojiEntity = { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string };
+type CustomEmojiEntity =
+  | { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string }
+  | { type: "bold"; offset: number; length: number };
 
 /** Длина первого символа в UTF-16 (для entity) */
 function firstCharLengthUtf16(s: string): number {
@@ -525,7 +527,55 @@ function applyCustomEmojiPlaceholders(
     lastIdx = match.index + match[0].length;
   }
   out += text.slice(lastIdx);
-  return { text: out, entities };
+  return stripBoldTags(out, entities);
+}
+
+function stripBoldTags(text: string, baseEntities: CustomEmojiEntity[] = []): { text: string; entities: CustomEmojiEntity[] } {
+  if (!text.includes("<b>") && !text.includes("</b>")) return { text, entities: baseEntities };
+
+  const offsetMap: number[] = new Array(text.length + 1);
+  const out: string[] = [];
+  let newIdx = 0;
+  const boldStack: number[] = [];
+  const boldEntities: Array<{ type: "bold"; offset: number; length: number }> = [];
+
+  for (let i = 0; i < text.length;) {
+    offsetMap[i] = newIdx;
+    if (text.startsWith("<b>", i)) {
+      boldStack.push(newIdx);
+      i += 3;
+      continue;
+    }
+    if (text.startsWith("</b>", i)) {
+      const start = boldStack.pop();
+      if (start != null && newIdx >= start) boldEntities.push({ type: "bold", offset: start, length: newIdx - start });
+      i += 4;
+      continue;
+    }
+    out.push(text[i]!);
+    i += 1;
+    newIdx += 1;
+  }
+  offsetMap[text.length] = newIdx;
+  while (boldStack.length) {
+    const start = boldStack.pop()!;
+    if (newIdx >= start) boldEntities.push({ type: "bold", offset: start, length: newIdx - start });
+  }
+  const nextText = out.join("");
+
+  const remapped: CustomEmojiEntity[] = [];
+  for (const e of baseEntities) {
+    const start = Math.max(0, Math.min(text.length, e.offset));
+    const end = Math.max(0, Math.min(text.length, e.offset + e.length));
+    const ns = offsetMap[start] ?? 0;
+    const ne = offsetMap[end] ?? ns;
+    const len = Math.max(0, ne - ns);
+    if (len > 0) remapped.push({ ...(e as any), offset: ns, length: len });
+  }
+  for (const b of boldEntities) {
+    if (b.length > 0) remapped.push(b);
+  }
+  return { text: nextText, entities: remapped };
 }
 
 function titleWithEmojiAndCustomEmojis(

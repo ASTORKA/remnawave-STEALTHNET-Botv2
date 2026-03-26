@@ -673,12 +673,12 @@ function parseCategoryEmojis(raw: string | undefined): CategoryEmojis {
   }
 }
 
-export type PlategaMethodConfig = { id: number; enabled: boolean; label: string };
+export type PlategaMethodConfig = { id: number; enabled: boolean; label: string; tgEmojiId?: string | null };
 const DEFAULT_PLATEGA_METHODS: PlategaMethodConfig[] = [
-  { id: 2, enabled: true, label: "СПБ" },
-  { id: 11, enabled: false, label: "Карты" },
-  { id: 12, enabled: false, label: "Международный" },
-  { id: 13, enabled: false, label: "Криптовалюта" },
+  { id: 2, enabled: true, label: "СПБ", tgEmojiId: null },
+  { id: 11, enabled: false, label: "Карты", tgEmojiId: null },
+  { id: 12, enabled: false, label: "Международный", tgEmojiId: null },
+  { id: 13, enabled: false, label: "Криптовалюта", tgEmojiId: null },
 ];
 
 function parsePlategaMethods(raw: string | undefined): PlategaMethodConfig[] {
@@ -688,10 +688,13 @@ function parsePlategaMethods(raw: string | undefined): PlategaMethodConfig[] {
     if (!Array.isArray(parsed)) return DEFAULT_PLATEGA_METHODS;
     return parsed.map((m: unknown) => {
       const x = m as Record<string, unknown>;
+      const rawEmojiId = (x.tgEmojiId ?? x.emojiId) as unknown;
+      const tgEmojiId = typeof rawEmojiId === "string" && rawEmojiId.trim() ? rawEmojiId.trim() : null;
       return {
         id: typeof x.id === "number" ? x.id : Number(x.id) || 2,
         enabled: Boolean(x.enabled),
         label: typeof x.label === "string" ? x.label : String(x.id),
+        tgEmojiId,
       };
     });
   } catch {
@@ -881,7 +884,9 @@ export async function getPublicConfig() {
     telegramBotUsername: full.telegramBotUsername,
     telegramBotId: full.telegramBotToken?.split(":")[0] || null,
     botAdminTelegramIds: full.botAdminTelegramIds ?? [],
-    plategaMethods: full.plategaMethods.filter((m) => m.enabled).map((m) => ({ id: m.id, label: m.label })),
+    plategaMethods: full.plategaMethods
+      .filter((m) => m.enabled)
+      .map((m) => ({ id: m.id, label: m.label, tgEmojiId: m.tgEmojiId ?? null })),
     yoomoneyEnabled: Boolean(full.yoomoneyReceiverWallet?.trim()),
     yookassaEnabled: Boolean(full.yookassaShopId?.trim() && full.yookassaSecretKey?.trim()),
     yookassaRecurringEnabled: full.yookassaRecurringEnabled ?? false,

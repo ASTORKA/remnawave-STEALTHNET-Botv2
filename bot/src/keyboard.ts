@@ -345,7 +345,7 @@ export function tariffPayButtons(
 /** Кнопки выбора способа оплаты (СПБ, Карты и т.д. из админки) для тарифа + баланс + ЮMoney */
 export function tariffPaymentMethodButtons(
   tariffId: string,
-  methods: { id: number; label: string }[],
+  methods: { id: number; label: string; tgEmojiId?: string | null }[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -439,7 +439,7 @@ export function proxyTariffPayButtons(
 /** Кнопки способа оплаты для прокси-тарифа */
 export function proxyPaymentMethodButtons(
   proxyTariffId: string,
-  methods: { id: number; label: string }[],
+  methods: { id: number; label: string; tgEmojiId?: string | null }[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -526,7 +526,7 @@ export function singboxTariffPayButtons(
 /** Кнопки способа оплаты для тарифа Sing-box */
 export function singboxPaymentMethodButtons(
   singboxTariffId: string,
-  methods: { id: number; label: string }[],
+  methods: { id: number; label: string; tgEmojiId?: string | null }[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -558,7 +558,7 @@ export function singboxPaymentMethodButtons(
 /** Кнопки выбора способа оплаты для пополнения на сумму + ЮMoney */
 export function topupPaymentMethodButtons(
   amount: string,
-  methods: { id: number; label: string }[],
+  methods: { id: number; label: string; tgEmojiId?: string | null }[],
   backLabel?: string | null,
   backStyle?: string,
   emojiIds?: InnerEmojiIds,
@@ -617,7 +617,7 @@ export function optionPaymentMethodButtons(
   backLabel: string | null,
   innerStyles?: InnerButtonStyles,
   emojiIds?: InnerEmojiIds,
-  plategaMethods: { id: number; label: string }[] = [],
+  plategaMethods: { id: number; label: string; tgEmojiId?: string | null }[] = [],
   yoomoneyEnabled?: boolean,
   yookassaEnabled?: boolean,
   cryptopayEnabled?: boolean,

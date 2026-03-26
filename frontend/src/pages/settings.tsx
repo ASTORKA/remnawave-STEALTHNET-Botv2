@@ -2164,6 +2164,23 @@ export function SettingsPage() {
                               }
                               placeholder="Подпись на кнопке"
                             />
+                            <Input
+                              className="w-[220px] font-mono text-xs"
+                              value={m.tgEmojiId ?? ""}
+                              onChange={(e) =>
+                                setSettings((s) =>
+                                  s
+                                    ? {
+                                        ...s,
+                                        plategaMethods: (s.plategaMethods ?? DEFAULT_PLATEGA_METHODS).map((x) =>
+                                          x.id === m.id ? { ...x, tgEmojiId: e.target.value.trim() || null } : x
+                                        ),
+                                      }
+                                    : s
+                                )
+                              }
+                              placeholder="TG emoji id (premium)"
+                            />
                           </div>
                         ))}
                       </div>
