@@ -1718,7 +1718,7 @@ export interface AdminSettings {
   sellOptionsTrafficEnabled?: boolean;
   sellOptionsTrafficProducts?: { id: string; name: string; trafficGb: number; price: number; currency: string }[];
   sellOptionsDevicesEnabled?: boolean;
-  sellOptionsDevicesProducts?: { id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string }[];
+  sellOptionsDevicesProducts?: { id: string; name: string; deviceCount: number; price: number; currency: string; tgEmojiId?: string }[];
   sellOptionsServersEnabled?: boolean;
   sellOptionsServersProducts?: { id: string; name: string; squadUuid: string; trafficGb?: number; price: number; currency: string }[];
   /** Google Analytics 4 Measurement ID (G-XXXXXXXXXX) — подключается на страницах кабинета */
@@ -2423,7 +2423,7 @@ export type UpdatePromoCodePayload = Partial<CreatePromoCodePayload>;
 /** Одна опция для продажи в кабинете (трафик / устройства / сервер) */
 export type PublicSellOption =
   | { kind: "traffic"; id: string; name: string; trafficGb: number; price: number; currency: string }
-  | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string }
+  | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; tgEmojiId?: string }
   | { kind: "servers"; id: string; name: string; squadUuid: string; trafficGb?: number; price: number; currency: string };
 
 export interface PublicConfig {

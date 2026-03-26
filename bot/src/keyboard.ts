@@ -595,7 +595,7 @@ export function topupPaymentMethodButtons(
 
 type SellOptionItem =
   | { kind: "traffic"; id: string; name: string; trafficGb: number; price: number; currency: string }
-  | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string }
+  | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; tgEmojiId?: string }
   | { kind: "servers"; id: string; name: string; squadUuid: string; trafficGb?: number; price: number; currency: string };
 
 /** Кнопки списка доп. опций (трафик, устройства, серверы). */
@@ -611,9 +611,9 @@ export function extraOptionsButtons(
   const cardId = emojiIds?.card;
   const rows: InlineButton[][] = options.map((o) => {
     const extra = o.kind === "servers" && (o.trafficGb ?? 0) > 0 ? ` + ${o.trafficGb} ГБ` : "";
-    const emojiPrefix = o.kind === "devices" && o.emoji?.trim() ? `${o.emoji.trim()} ` : "";
-    const label = `${emojiPrefix}${o.name || o.kind}${extra} — ${o.price} ${formatCurrencyHuman(o.currency)}`.slice(0, 64);
-    return [btn(label, `pay_option:${o.kind}:${o.id}`, optionSty, cardId)];
+    const label = `${o.name || o.kind}${extra} — ${o.price} ${formatCurrencyHuman(o.currency)}`.slice(0, 64);
+    const optionEmojiId = o.kind === "devices" ? o.tgEmojiId ?? cardId : cardId;
+    return [btn(label, `pay_option:${o.kind}:${o.id}`, optionSty, optionEmojiId)];
   });
   rows.push([btn(back, "menu:main", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };

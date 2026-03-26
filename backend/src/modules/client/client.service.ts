@@ -152,7 +152,7 @@ const SYSTEM_CONFIG_KEYS = [
 /** Продукт «Доп. трафик»: объём в ГБ, цена, валюта */
 export type SellOptionTrafficProduct = { id: string; name: string; trafficGb: number; price: number; currency: string };
 /** Продукт «Доп. устройства»: кол-во устройств, цена */
-export type SellOptionDeviceProduct = { id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string };
+export type SellOptionDeviceProduct = { id: string; name: string; deviceCount: number; price: number; currency: string; tgEmojiId?: string };
 /** Продукт «Доп. сервер»: сквад Remna, опционально трафик (ГБ), цена */
 export type SellOptionServerProduct = { id: string; name: string; squadUuid: string; trafficGb?: number; price: number; currency: string };
 
@@ -744,7 +744,10 @@ function parseSellOptionDeviceProducts(raw: string | undefined): SellOptionDevic
         deviceCount: typeof x.deviceCount === "number" ? x.deviceCount : Number(x.deviceCount) || 0,
         price: typeof x.price === "number" ? x.price : Number(x.price) || 0,
         currency: typeof x.currency === "string" ? x.currency : "rub",
-        emoji: typeof x.emoji === "string" && x.emoji.trim() ? x.emoji.trim().slice(0, 8) : undefined,
+        tgEmojiId:
+          typeof x.tgEmojiId === "string" && x.tgEmojiId.trim()
+            ? x.tgEmojiId.trim().slice(0, 50)
+            : (typeof x.emoji === "string" && x.emoji.trim() ? x.emoji.trim().slice(0, 50) : undefined),
       }))
       .filter((p) => p.deviceCount > 0 && p.price >= 0);
   } catch {
@@ -959,7 +962,7 @@ export async function getPublicConfig() {
       if (!so.sellOptionsEnabled) return [];
       const out: Array<
         { kind: "traffic"; id: string; name: string; trafficGb: number; price: number; currency: string } |
-        { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string } |
+        { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; tgEmojiId?: string } |
         { kind: "servers"; id: string; name: string; squadUuid: string; trafficGb: number; price: number; currency: string }
       > = [];
       if (so.sellOptionsTrafficEnabled && so.sellOptionsTrafficProducts?.length) {
@@ -969,7 +972,7 @@ export async function getPublicConfig() {
       }
       if (so.sellOptionsDevicesEnabled && so.sellOptionsDevicesProducts?.length) {
         for (const p of so.sellOptionsDevicesProducts) {
-          out.push({ kind: "devices", id: p.id, name: p.name, deviceCount: p.deviceCount, price: p.price, currency: p.currency, emoji: p.emoji });
+          out.push({ kind: "devices", id: p.id, name: p.name, deviceCount: p.deviceCount, price: p.price, currency: p.currency, tgEmojiId: p.tgEmojiId });
         }
       }
       if (so.sellOptionsServersEnabled && so.sellOptionsServersProducts?.length) {
