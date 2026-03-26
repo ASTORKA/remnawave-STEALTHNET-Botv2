@@ -50,7 +50,7 @@ export function ClientTariffsPage() {
   const [trialLoading, setTrialLoading] = useState(false);
   const [trialError, setTrialError] = useState<string | null>(null);
 
-  // Промокод
+  // Promo code
   const [promoInput, setPromoInput] = useState("");
   const [promoChecking, setPromoChecking] = useState(false);
   const [promoResult, setPromoResult] = useState<{ type: string; discountPercent?: number | null; discountFixed?: number | null; name: string } | null>(null);
@@ -64,9 +64,9 @@ export function ClientTariffsPage() {
   const tariffsRequestIdRef = useRef(0);
 
   async function refreshTariffs(silent = false) {
-    if (useCategoryCardLayout && !token) {
+    if (!token) {
       if (!silent) {
-        setLoading(true);
+        setLoading(false);
         setTariffs([]);
         setPayModal(null);
         setExpandedCategoryId(null);
