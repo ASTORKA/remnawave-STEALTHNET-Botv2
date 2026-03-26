@@ -1589,6 +1589,14 @@ adminRouter.patch("/settings", async (req, res) => {
       update: { value: val },
     });
   }
+  if (updates.botExtraOptionsText !== undefined) {
+    const val = updates.botExtraOptionsText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_extra_options_text" },
+      create: { key: "bot_extra_options_text", value: val },
+      update: { value: val },
+    });
+  }
   if (updates.subscriptionPageConfig !== undefined) {
     const val = updates.subscriptionPageConfig ?? "";
     await prisma.systemSetting.upsert({
