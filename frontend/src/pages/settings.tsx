@@ -71,6 +71,7 @@ const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
 const DEFAULT_BOT_EXTRA_OPTIONS_TEXT = "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
+const DEFAULT_BOT_TARIFF_CATEGORIES_TEXT = "Тарифы\n\nВыберите категорию:";
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -229,6 +230,7 @@ export function SettingsPage() {
         botTariffsText: (data as AdminSettings).botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+        botTariffCategoriesText: (data as AdminSettings).botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT,
         botExtraOptionsText: (data as AdminSettings).botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
@@ -558,6 +560,7 @@ export function SettingsPage() {
         botTariffsText: settings.botTariffsText ?? undefined,
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
+        botTariffCategoriesText: settings.botTariffCategoriesText ?? undefined,
         botExtraOptionsText: settings.botExtraOptionsText ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
@@ -1659,6 +1662,24 @@ export function SettingsPage() {
                         <Label className="text-xs">{BOT_TARIFF_FIELD_LABELS[key] ?? key}</Label>
                       </div>
                     ))}
+                  </div>
+                </div>
+                <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    <Label className="text-base font-medium">Экран выбора категории тарифа</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Текст, который показывается, когда у пользователя несколько категорий тарифов и нужно выбрать одну.
+                  </p>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Текст сообщения</Label>
+                    <Textarea
+                      rows={4}
+                      value={settings.botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT}
+                      onChange={(e) => setSettings((s) => (s ? { ...s, botTariffCategoriesText: e.target.value } : s))}
+                      placeholder={DEFAULT_BOT_TARIFF_CATEGORIES_TEXT}
+                    />
                   </div>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">

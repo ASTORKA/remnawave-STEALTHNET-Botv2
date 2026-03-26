@@ -75,7 +75,7 @@ const SYSTEM_CONFIG_KEYS = [
   "heleket_merchant_id", "heleket_api_key",
   "groq_api_key", "groq_model", "groq_fallback_1", "groq_fallback_2", "groq_fallback_3", "ai_system_prompt",
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
-  "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text", "bot_extra_options_text",
+  "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text", "bot_extra_options_text", "bot_tariff_categories_text",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -230,6 +230,7 @@ export type BotTariffLineFields = {
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
 const DEFAULT_BOT_EXTRA_OPTIONS_TEXT = "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
+const DEFAULT_BOT_TARIFF_CATEGORIES_TEXT = "Тарифы\n\nВыберите категорию:";
 
 const DEFAULT_BOT_TARIFF_LINE_FIELDS: Required<BotTariffLineFields> = {
   name: true,
@@ -334,6 +335,11 @@ function parseBotPaymentText(raw: string | undefined): string {
 
 function parseBotExtraOptionsText(raw: string | undefined): string {
   if (!raw || !raw.trim()) return DEFAULT_BOT_EXTRA_OPTIONS_TEXT;
+  return raw;
+}
+
+function parseBotTariffCategoriesText(raw: string | undefined): string {
+  if (!raw || !raw.trim()) return DEFAULT_BOT_TARIFF_CATEGORIES_TEXT;
   return raw;
 }
 
@@ -512,6 +518,7 @@ export async function getSystemConfig() {
     botTariffsFields: parseBotTariffLineFields(map.bot_tariffs_fields),
     botPaymentText: parseBotPaymentText(map.bot_payment_text),
     botExtraOptionsText: parseBotExtraOptionsText(map.bot_extra_options_text),
+    botTariffCategoriesText: parseBotTariffCategoriesText(map.bot_tariff_categories_text),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
     defaultAutoRenewEnabled: map.default_auto_renew_enabled === "true" || map.default_auto_renew_enabled === "1",
@@ -923,6 +930,7 @@ export async function getPublicConfig() {
     botTariffsFields: full.botTariffsFields ?? DEFAULT_BOT_TARIFF_LINE_FIELDS,
     botPaymentText: full.botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
     botExtraOptionsText: full.botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
+    botTariffCategoriesText: full.botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT,
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,

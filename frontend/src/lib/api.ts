@@ -831,11 +831,11 @@ export const api = {
     return request("/admin/tariff-categories", { token });
   },
 
-  async createTariffCategory(token: string, data: { name: string; sortOrder?: number; emojiKey?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
+  async createTariffCategory(token: string, data: { name: string; sortOrder?: number; emojiKey?: string | null; tgEmojiId?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
     return request("/admin/tariff-categories", { method: "POST", body: JSON.stringify(data), token });
   },
 
-  async updateTariffCategory(token: string, id: string, data: { name?: string; sortOrder?: number; emojiKey?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
+  async updateTariffCategory(token: string, id: string, data: { name?: string; sortOrder?: number; emojiKey?: string | null; tgEmojiId?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
     return request(`/admin/tariff-categories/${id}`, { method: "PATCH", body: JSON.stringify(data), token });
   },
 
@@ -1419,6 +1419,7 @@ export type UpdateSettingsPayload = {
   botTariffsFields?: string | null;
   botPaymentText?: string | null;
   botExtraOptionsText?: string | null;
+  botTariffCategoriesText?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;
@@ -1699,6 +1700,8 @@ export interface AdminSettings {
   botPaymentText?: string | null;
   /** Текст экрана доп. опций в боте */
   botExtraOptionsText?: string | null;
+  /** Текст экрана выбора категории тарифа в боте */
+  botTariffCategoriesText?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */
@@ -2195,6 +2198,7 @@ export interface TariffCategoryRecord {
   id: string;
   name: string;
   emojiKey: string | null;
+  tgEmojiId: string | null;
   maxPurchasesPerClient: number | null;
   sortOrder: number;
   createdAt: string;
@@ -2313,6 +2317,7 @@ export interface PublicTariffCategory {
   id: string;
   name: string;
   emojiKey: string | null;
+  tgEmojiId?: string | null;
   emoji: string;
   maxPurchasesPerClient?: number | null;
   tariffs: { id: string; name: string; description: string | null; durationDays: number; price: number; currency: string; trafficLimitBytes: number | null; trafficResetMode?: string; deviceLimit: number | null }[];

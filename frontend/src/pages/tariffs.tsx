@@ -514,6 +514,7 @@ function CategoryModal({
   const editCat = isEdit ? (modal as { edit: TariffCategoryWithTariffs }).edit : null;
   const [name, setName] = useState(editCat?.name ?? "");
   const [emojiKey, setEmojiKey] = useState<string>(editCat?.emojiKey ?? "");
+  const [tgEmojiId, setTgEmojiId] = useState<string>(editCat?.tgEmojiId ?? "");
   const [maxPurchasesPerClient, setMaxPurchasesPerClient] = useState<string>(
     editCat?.maxPurchasesPerClient != null ? String(editCat.maxPurchasesPerClient) : "",
   );
@@ -522,13 +523,15 @@ function CategoryModal({
     if (isEdit && editCat) {
       setName(editCat.name);
       setEmojiKey(editCat.emojiKey ?? "");
+      setTgEmojiId(editCat.tgEmojiId ?? "");
       setMaxPurchasesPerClient(editCat.maxPurchasesPerClient != null ? String(editCat.maxPurchasesPerClient) : "");
     } else {
       setName("");
       setEmojiKey("");
+      setTgEmojiId("");
       setMaxPurchasesPerClient("");
     }
-  }, [modal, isEdit, editCat?.name, editCat?.emojiKey, editCat?.maxPurchasesPerClient]);
+  }, [modal, isEdit, editCat?.name, editCat?.emojiKey, editCat?.tgEmojiId, editCat?.maxPurchasesPerClient]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -537,7 +540,12 @@ function CategoryModal({
     try {
       const maxRaw = maxPurchasesPerClient.trim();
       const maxValue = maxRaw === "" ? null : Math.max(1, Math.floor(Number(maxRaw) || 1));
-      const payload = { name: name.trim(), emojiKey: emojiKey.trim() || null, maxPurchasesPerClient: maxValue };
+      const payload = {
+        name: name.trim(),
+        emojiKey: emojiKey.trim() || null,
+        tgEmojiId: tgEmojiId.trim() || null,
+        maxPurchasesPerClient: maxValue,
+      };
       if (isEdit) {
         await api.updateTariffCategory(token, (modal as { edit: TariffCategoryWithTariffs }).edit.id, payload);
       } else {
@@ -579,6 +587,14 @@ function CategoryModal({
             <option value="ordinary">ordinary — 📦</option>
             <option value="premium">premium — ⭐</option>
           </select>
+          <Label htmlFor="cat-tg-emoji-id" className="mt-2 block">TG emoji ID (premium)</Label>
+          <Input
+            id="cat-tg-emoji-id"
+            value={tgEmojiId}
+            onChange={(e) => setTgEmojiId(e.target.value)}
+            placeholder="6037286673010660132"
+            className="mt-1 mb-4"
+          />
           <Label htmlFor="cat-max-purchases" className="mt-2 block">Сколько раз можно купить тариф из категории</Label>
           <Input
             id="cat-max-purchases"

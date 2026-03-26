@@ -226,7 +226,7 @@ type TariffItem = {
   price: number;
   currency: string;
 };
-type TariffCategory = { id: string; name: string; emoji?: string; emojiKey?: string | null; tariffs: TariffItem[] };
+type TariffCategory = { id: string; name: string; emoji?: string; emojiKey?: string | null; tgEmojiId?: string | null; tariffs: TariffItem[] };
 
 // Токены по telegram_id (в памяти; автоматическая переавторизация при потере)
 const tokenStore = new Map<number, string>();
@@ -339,6 +339,7 @@ const DEFAULT_MENU_TEXTS: Record<string, string> = {
 };
 
 const DEFAULT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
+const DEFAULT_TARIFF_CATEGORIES_TEXT = "Тарифы\n\nВыберите категорию:";
 const DEFAULT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
 
 type BotTariffLineFields = {
@@ -1644,7 +1645,8 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffsEmojiUnicode = undefined;
       const tariffsEmojiIds = innerEmojiIds;
       if (items.length > 1) {
-        const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, "Тарифы\n\nВыберите категорию:", config?.botEmojis);
+        const categoryText = (config?.botTariffCategoriesText ?? "").trim() || DEFAULT_TARIFF_CATEGORIES_TEXT;
+        const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, categoryText, config?.botEmojis);
         await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
         return;
       }

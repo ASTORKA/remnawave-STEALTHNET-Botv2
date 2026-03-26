@@ -418,6 +418,7 @@ adminRouter.get("/tariff-categories", async (_req, res) => {
         id: c.id,
         name: c.name,
         emojiKey: c.emojiKey ?? null,
+        tgEmojiId: c.tgEmojiId ?? null,
         maxPurchasesPerClient: c.maxPurchasesPerClient ?? null,
         sortOrder: c.sortOrder,
         createdAt: c.createdAt.toISOString(),
@@ -441,12 +442,14 @@ const createTariffCategorySchema = z.object({
   name: z.string().min(1).max(255),
   sortOrder: z.number().int().optional(),
   emojiKey: z.string().max(32).optional().nullable(),
+  tgEmojiId: z.string().max(64).optional().nullable(),
   maxPurchasesPerClient: z.number().int().min(1).optional().nullable(),
 });
 const updateTariffCategorySchema = z.object({
   name: z.string().min(1).max(255).optional(),
   sortOrder: z.number().int().optional(),
   emojiKey: z.string().max(32).optional().nullable(),
+  tgEmojiId: z.string().max(64).optional().nullable(),
   maxPurchasesPerClient: z.number().int().min(1).optional().nullable(),
 });
 
@@ -458,6 +461,7 @@ adminRouter.post("/tariff-categories", async (req, res) => {
       name: body.data.name,
       sortOrder: body.data.sortOrder ?? 0,
       emojiKey: body.data.emojiKey ?? undefined,
+      tgEmojiId: body.data.tgEmojiId ?? null,
       maxPurchasesPerClient: body.data.maxPurchasesPerClient ?? null,
     },
   });
@@ -465,6 +469,7 @@ adminRouter.post("/tariff-categories", async (req, res) => {
     id: created.id,
     name: created.name,
     emojiKey: created.emojiKey,
+    tgEmojiId: created.tgEmojiId,
     maxPurchasesPerClient: created.maxPurchasesPerClient,
     sortOrder: created.sortOrder,
     createdAt: created.createdAt.toISOString(),
@@ -477,10 +482,11 @@ adminRouter.patch("/tariff-categories/:id", async (req, res) => {
   if (!idParse.success) return res.status(400).json({ message: "Invalid id" });
   const body = updateTariffCategorySchema.safeParse(req.body);
   if (!body.success) return res.status(400).json({ message: "Неверные данные", errors: body.error.flatten() });
-  const data: { name?: string; sortOrder?: number; emojiKey?: string | null; maxPurchasesPerClient?: number | null } = {};
+  const data: { name?: string; sortOrder?: number; emojiKey?: string | null; tgEmojiId?: string | null; maxPurchasesPerClient?: number | null } = {};
   if (body.data.name !== undefined) data.name = body.data.name;
   if (body.data.sortOrder !== undefined) data.sortOrder = body.data.sortOrder;
   if (body.data.emojiKey !== undefined) data.emojiKey = body.data.emojiKey;
+  if (body.data.tgEmojiId !== undefined) data.tgEmojiId = body.data.tgEmojiId;
   if (body.data.maxPurchasesPerClient !== undefined) data.maxPurchasesPerClient = body.data.maxPurchasesPerClient;
   const updated = await prisma.tariffCategory.update({
     where: { id: idParse.data.id },
@@ -490,6 +496,7 @@ adminRouter.patch("/tariff-categories/:id", async (req, res) => {
     id: updated.id,
     name: updated.name,
     emojiKey: updated.emojiKey,
+    tgEmojiId: updated.tgEmojiId,
     maxPurchasesPerClient: updated.maxPurchasesPerClient,
     sortOrder: updated.sortOrder,
     createdAt: updated.createdAt.toISOString(),
@@ -1075,6 +1082,7 @@ const updateSettingsSchema = z.object({
   botTariffsFields: z.union([z.string().max(2000), z.record(z.boolean())]).nullable().optional(),
   botPaymentText: z.string().max(8000).nullable().optional(),
   botExtraOptionsText: z.string().max(8000).nullable().optional(),
+  botTariffCategoriesText: z.string().max(8000).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1601,6 +1609,14 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_extra_options_text" },
       create: { key: "bot_extra_options_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botTariffCategoriesText !== undefined) {
+    const val = updates.botTariffCategoriesText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_tariff_categories_text" },
+      create: { key: "bot_tariff_categories_text", value: val },
       update: { value: val },
     });
   }

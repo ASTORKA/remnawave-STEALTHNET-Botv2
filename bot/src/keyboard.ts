@@ -284,7 +284,7 @@ export function topUpPresets(currency: string, backLabel?: string | null, innerS
 
 /** Кнопки категорий тарифов (первый экран при нескольких категориях). Только эмодзи категории (ordinary/premium), без общего эмодзи «Тарифы». */
 export function tariffCategoryButtons(
-  categories: { id: string; name: string; emoji?: string }[],
+  categories: { id: string; name: string; emoji?: string; tgEmojiId?: string | null }[],
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   emojiIds?: InnerEmojiIds,
@@ -296,7 +296,7 @@ export function tariffCategoryButtons(
   const tariffId = emojiIds?.tariff;
   const rows: InlineButton[][] = categories.map((cat) => {
     const label = ((cat.emoji && cat.emoji.trim()) ? `${cat.emoji} ` : "") + (cat.name || "").trim();
-    return [btn(label.slice(0, 64), `cat_tariffs:${cat.id}`, tariffPay, tariffId)];
+    return [btn(label.slice(0, 64), `cat_tariffs:${cat.id}`, tariffPay, cat.tgEmojiId ?? tariffId)];
   });
   rows.push([btn(back, "menu:main", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
@@ -304,7 +304,7 @@ export function tariffCategoryButtons(
 
 /** Кнопки тарифов одной категории. Только эмодзи категории (ordinary/premium), без общего эмодзи «Тарифы». */
 export function tariffsOfCategoryButtons(
-  category: { name: string; emoji?: string; tariffs: { id: string; name: string; price: number; currency: string }[] },
+  category: { name: string; emoji?: string; tgEmojiId?: string | null; tariffs: { id: string; name: string; price: number; currency: string }[] },
   backLabel?: string | null,
   innerStyles?: InnerButtonStyles,
   backData: string = "menu:tariffs",
@@ -316,7 +316,7 @@ export function tariffsOfCategoryButtons(
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = resolveStyle(toStyle(innerStyles?.back), "danger");
   const prefix = (category.emoji && category.emoji.trim()) ? `${category.emoji} ` : "";
-  const tariffId = emojiIds?.tariff;
+  const tariffId = category.tgEmojiId ?? emojiIds?.tariff;
   for (const t of category.tariffs) {
     const label = `${prefix}${t.name} — ${t.price} ${formatCurrencyHuman(t.currency)}`.slice(0, 64);
     rows.push([btn(label, `pay_tariff:${t.id}`, tariffPay, tariffId)]);
@@ -331,6 +331,7 @@ export function tariffPayButtons(
     id: string;
     name: string;
     emoji?: string;
+    tgEmojiId?: string | null;
     tariffs: { id: string; name: string; price: number; currency: string }[];
   }[],
   backLabel?: string | null,

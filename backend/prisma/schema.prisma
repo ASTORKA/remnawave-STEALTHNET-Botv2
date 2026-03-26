@@ -325,6 +325,7 @@ model TariffCategory {
   id        String   @id @default(cuid())
   name      String
   emojiKey  String?  @map("emoji_key") // ordinary | premium — подставляется эмодзи из настройки category_emojis
+  tgEmojiId String?  @map("tg_emoji_id") // TG custom emoji id для кнопок категории
   maxPurchasesPerClient Int? @map("max_purchases_per_client") // null = без лимита, иначе макс. число покупок на клиента
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")

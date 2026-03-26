@@ -3683,6 +3683,7 @@ async function getTariffCategoriesForClient(clientId: string | null) {
         id: c.id,
         name: c.name,
         emojiKey: c.emojiKey ?? null,
+        tgEmojiId: c.tgEmojiId ?? null,
         emoji,
         maxPurchasesPerClient: c.maxPurchasesPerClient ?? null,
         tariffs: c.tariffs.map(tariffToJson),
