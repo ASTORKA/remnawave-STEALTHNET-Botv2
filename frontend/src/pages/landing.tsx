@@ -303,7 +303,7 @@ function getPaymentLabels(config: PublicConfig): string[] {
 }
 
 export function LandingPage({ config }: { config: PublicConfig }) {
-  const { buildLink } = useUtmCaptureAndBuildLink();
+  useUtmCaptureAndBuildLink();
   const { resolvedMode } = useTheme();
   const lc = (config as any).landingConfig;
   const [tariffs, setTariffs] = useState<{ items: PublicTariffCategory[] } | null>(null);
@@ -332,7 +332,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const heroHeadline1 = lc?.heroHeadline1 ?? "STEALTHNET";
   const heroHeadline2 = lc?.heroHeadline2 ?? "VPN";
   const headerBadge = lc?.headerBadge ?? "";
-  const buttonLoginCabinet = lc?.buttonLoginCabinet ?? "Войти в кабинет";
   const defaultPaymentText = lc?.defaultPaymentText ?? "Карта, СБП, крипта и быстрый старт";
   const buttonChooseTariff = lc?.buttonChooseTariff ?? "Выбрать тариф";
   const buttonWatchTariffs = lc?.buttonWatchTariffs ?? "Смотреть тарифы";
