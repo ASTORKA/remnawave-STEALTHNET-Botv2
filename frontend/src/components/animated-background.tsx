@@ -33,6 +33,7 @@ export function AnimatedBackground({ variant = "fixed", intensity = "normal" }: 
   const { config, resolvedMode } = useTheme();
   const location = useLocation();
   if (location.pathname === "/admin" && variant === "fixed") return null;
+  if (location.pathname.startsWith("/cabinet") && variant === "fixed") return null;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(0);

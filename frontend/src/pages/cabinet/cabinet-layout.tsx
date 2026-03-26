@@ -88,12 +88,7 @@ function Client2FAStepScreen() {
   if (!state.pending2FAToken) return null;
 
   return (
-    <div className="relative min-h-dvh flex items-center justify-center bg-background p-4 sm:p-8 overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px]" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[50%] h-[50%] rounded-full bg-purple-500/20 blur-[120px]" />
-      </div>
+    <div className="relative min-h-dvh flex items-center justify-center bg-white p-4 sm:p-8 overflow-hidden">
 
       <div className="w-full max-w-md relative z-10 flex flex-col rounded-[2rem] shadow-[0_8px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.3)] min-w-0">
         <div className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/10 dark:border-white/5 bg-[hsl(var(--card)/0.85)] backdrop-blur-3xl pointer-events-none" />
@@ -182,7 +177,7 @@ function ThemePopover() {
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 bg-background/20 hover:bg-background/40 transition-all duration-300"
+        className="h-8 w-8 p-0 bg-white hover:bg-slate-50 border border-slate-200 transition-all duration-300"
         onClick={() => setMode(resolvedMode === "dark" ? "light" : "dark")}
       >
         <span className="relative h-4 w-4">
@@ -195,12 +190,12 @@ function ThemePopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 bg-background/20 hover:bg-background/40" onClick={() => setShow(!show)}>
+      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 bg-white hover:bg-slate-50 border border-slate-200" onClick={() => setShow(!show)}>
         <Palette className="h-3.5 w-3.5" />
       </Button>
       <div
         className={cn(
-          "absolute -right-2 sm:right-0 top-full z-50 mt-3 w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] rounded-[2rem] border border-white/40 dark:border-white/10 bg-slate-200/60 dark:bg-slate-900/60 backdrop-blur-[32px] p-5 shadow-[0_10px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_60px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top-right",
+          "absolute -right-2 sm:right-0 top-full z-50 mt-3 w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_16px_60px_rgba(15,23,42,0.10)] transition-all duration-300 origin-top-right",
           show
             ? "opacity-100 scale-100 pointer-events-auto translate-y-0"
             : "opacity-0 scale-95 pointer-events-none -translate-y-2"
@@ -326,12 +321,12 @@ function SettingsPopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 px-2 bg-background/20 hover:bg-background/40" onClick={() => setShow(!show)}>
+      <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 px-2 bg-white hover:bg-slate-50 border border-slate-200" onClick={() => setShow(!show)}>
         <Settings className="h-3.5 w-3.5" />
       </Button>
       <div
         className={cn(
-          "absolute -right-2 sm:right-0 top-full z-50 mt-3 w-[calc(100vw-2rem)] sm:w-[260px] max-w-[260px] rounded-[2rem] border border-white/40 dark:border-white/10 bg-slate-200/60 dark:bg-slate-900/60 backdrop-blur-[32px] p-5 shadow-[0_10px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_60px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top-right",
+          "absolute -right-2 sm:right-0 top-full z-50 mt-3 w-[calc(100vw-2rem)] sm:w-[260px] max-w-[260px] rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_16px_60px_rgba(15,23,42,0.10)] transition-all duration-300 origin-top-right",
           show ? "opacity-100 scale-100 pointer-events-auto translate-y-0" : "opacity-0 scale-95 pointer-events-none -translate-y-2"
         )}
       >
@@ -408,14 +403,14 @@ function MobileCabinetShell() {
   const logo = config?.logo && !logoError ? config.logo : null;
 
   return (
-    <div className="min-h-svh flex flex-col bg-transparent min-w-0 overflow-x-hidden pb-36 relative">
+    <div className="min-h-svh flex flex-col bg-white min-w-0 overflow-x-hidden pb-36 relative">
       <FloatingChat />
       <header className="sticky top-0 z-50 border-b border-border shrink-0 transition-all duration-300" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="absolute inset-0 bg-card/40 backdrop-blur-xl -z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-white -z-10 pointer-events-none" />
         <div className="relative flex h-14 items-center justify-between gap-3 px-4 min-w-0 w-full max-w-7xl mx-auto">
           <Link to="/cabinet/dashboard" className="flex items-center gap-2.5 font-semibold text-base tracking-tight shrink-0 min-w-0">
             {logo ? (
-              <span className="flex items-center justify-center h-8 px-1.5 rounded-lg dark:bg-transparent bg-zinc-900 shrink-0">
+              <span className="flex items-center justify-center h-8 px-1.5 rounded-lg bg-white shrink-0 border border-slate-200 shadow-sm">
                 <img src={logo} alt="" className="h-6 max-w-[100px] object-contain" onError={() => setLogoError(true)} />
               </span>
             ) : (
@@ -429,7 +424,7 @@ function MobileCabinetShell() {
             <ThemePopover />
             <SettingsPopover />
             {!isMiniapp && (
-              <Button variant="ghost" size="icon" className="shrink-0 bg-background/20 hover:bg-background/40 text-muted-foreground hover:text-foreground" asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 bg-white hover:bg-slate-50 border border-slate-200 text-muted-foreground hover:text-foreground" asChild>
                 <Link to="/cabinet/login" onClick={() => logout()} title="Выйти">
                   <LogOut className="h-5 w-5" />
                 </Link>
@@ -439,11 +434,11 @@ function MobileCabinetShell() {
         </div>
       </header>
 
-      <main className="flex-1 w-full min-w-0 px-4 py-6 max-w-7xl mx-auto transition-all duration-300">
+      <main className="flex-1 w-full min-w-0 px-4 py-6 max-w-7xl mx-auto transition-all duration-300 bg-white">
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/60 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] transition-all duration-300">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_40px_rgba(15,23,42,0.08)] transition-all duration-300">
         <div className="flex items-center justify-around w-full h-[4.5rem] px-2 gap-0">
           {visibleItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
@@ -553,14 +548,13 @@ function CabinetShell() {
   }
 
   return (
-    <div className="min-h-svh flex flex-col bg-transparent">
+    <div className="min-h-svh flex flex-col bg-white">
       <FloatingChat />
-      <header className="sticky top-0 z-50 border-b border-border shadow-sm transition-all duration-300">
-        <div className="absolute inset-0 bg-card/40 backdrop-blur-xl -z-10 pointer-events-none" />
+      <header className="sticky top-0 z-50 border-b border-slate-200 shadow-sm bg-white transition-all duration-300">
         <div className="relative w-full max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-4">
           <Link to="/cabinet/dashboard" className="flex items-center gap-2.5 font-semibold text-lg tracking-tight shrink-0 hover:opacity-80 transition-opacity">
             {logo ? (
-              <span className="flex items-center justify-center h-9 px-2 rounded-lg dark:bg-transparent bg-zinc-900 shrink-0">
+              <span className="flex items-center justify-center h-9 px-2 rounded-lg bg-white shrink-0 border border-slate-200 shadow-sm">
                 <img src={logo} alt="" className="h-6 max-w-[110px] object-contain" onError={() => setLogoError(true)} />
               </span>
             ) : (
@@ -630,7 +624,7 @@ function CabinetShell() {
           <div className="flex items-center gap-2 shrink-0">
             <ThemePopover />
             <SettingsPopover />
-            <div className="hidden lg:flex h-9 items-center gap-3 rounded-full border border-border/60 bg-background/35 px-4 shadow-sm backdrop-blur-xl transition-all hover:bg-background/50">
+            <div className="hidden lg:flex h-9 items-center gap-3 rounded-full border border-slate-200 bg-white px-4 shadow-sm transition-all hover:bg-slate-50">
               <span className="max-w-[120px] xl:max-w-[160px] truncate text-sm font-medium text-muted-foreground" title={state.client?.email?.trim() || (state.client?.telegramUsername ? `@${state.client.telegramUsername}` : "")}>
                 {state.client?.email?.trim() ? state.client.email : state.client?.telegramUsername ? `@${state.client.telegramUsername}` : "—"}
               </span>
@@ -642,7 +636,7 @@ function CabinetShell() {
             </div>
             <Button
               variant="outline"
-              className="group h-9 rounded-full border-border/60 bg-background/35 p-0 shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive"
+              className="group h-9 rounded-full border-slate-200 bg-white p-0 shadow-sm transition-all duration-300 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive"
               asChild
             >
               <Link to="/cabinet/login" onClick={() => logout()} className="flex h-full items-center">
@@ -659,7 +653,7 @@ function CabinetShell() {
           </div>
         </div>
       </header>
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 transition-all duration-300">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 transition-all duration-300 bg-white">
         <Outlet />
       </main>
     </div>
@@ -669,9 +663,16 @@ function CabinetShell() {
 export function CabinetLayout() {
   const location = useLocation();
   const { state } = useClientAuth();
+  const { setMode, setAccent } = useTheme();
   const isAuthPage = location.pathname === "/cabinet/login" || location.pathname === "/cabinet/register";
   const isLoggedIn = Boolean(state.token);
   const needs2FA = !isLoggedIn && Boolean(state.pending2FAToken);
+
+  useEffect(() => {
+    // Cabinet theme: light + blue (keep functionality unchanged).
+    setMode("light");
+    setAccent("blue");
+  }, [setMode, setAccent]);
 
   return (
     <>

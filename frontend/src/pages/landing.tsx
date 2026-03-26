@@ -455,8 +455,8 @@ export function LandingPage({ config }: { config: PublicConfig }) {
     // Minimal surface (Fin-like): clean background, subtle gradient.
     backgroundImage:
       resolvedMode === "dark"
-        ? `linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 55%, rgba(3,7,18,1) 100%)`
-        : `linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 55%, rgba(255,255,255,1) 100%)`,
+        ? `linear-gradient(180deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 100%)`
+        : `linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)`,
     ["--primary" as string]: hexToHsl(accentTheme.primary),
     ["--primary-foreground" as string]: "0 0% 100%",
     ["--ring" as string]: hexToHsl(accentTheme.primary),
@@ -510,18 +510,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
             </nav>
           )}
 
-          <nav className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" className="rounded-full px-4 text-slate-700 hover:bg-white/80 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10" asChild>
-              <Link to={buildLink("/cabinet/login")}>{buttonLogin}</Link>
-            </Button>
-            <Button
-              className="rounded-full border px-5 text-white shadow-lg"
-              style={primaryButtonStyle}
-              asChild
-            >
-              <Link to={buildLink("/cabinet/register")}>{ctaText}</Link>
-            </Button>
-          </nav>
+          {/* Removed top-right auth buttons */}
         </div>
       </header>
 
@@ -622,8 +611,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
             </motion.div>
 
             <motion.div {...fadeUp} transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }} className="relative">
-              <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 dark:border-white/10 bg-white p-6 shadow-lg backdrop-blur-2xl dark:bg-white/5 md:p-7">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-emerald-300/70" />
+              <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-white p-6 shadow-lg backdrop-blur-2xl md:p-7">
                 {/* Removed: informational block "Доступ к нужным сервисам" */}
 
                 <div className="mt-6 grid gap-3">
