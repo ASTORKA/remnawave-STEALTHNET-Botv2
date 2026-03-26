@@ -474,7 +474,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const accentTheme = getLandingAccentTheme(config.themeAccent);
   const primarySoft = withAlpha(accentTheme.primary, resolvedMode === "dark" ? 0.24 : 0.18);
   const secondarySoft = withAlpha(accentTheme.secondary, resolvedMode === "dark" ? 0.18 : 0.14);
-  const tertiarySoft = withAlpha(accentTheme.tertiary, resolvedMode === "dark" ? 0.16 : 0.1);
   const buttonShadow = withAlpha(accentTheme.primary, 0.28);
   const landingSurfaceStyle: CSSProperties = {
     // Minimal surface (Fin-like): clean background, subtle gradient.
