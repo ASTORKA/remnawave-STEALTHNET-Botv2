@@ -2180,8 +2180,11 @@ bot.on("callback_query:data", async (ctx) => {
       const extraOptionsText =
         config?.botExtraOptionsText?.trim() ||
         "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
-      const { text, entities } = titleWithEmoji("PACKAGE", extraOptionsText, config?.botEmojis);
-      await editMessageContent(ctx, text, extraOptionsButtons(options, config?.botBackLabel ?? null, innerStyles, innerEmojiIds), entities);
+      await editMessageContent(
+        ctx,
+        extraOptionsText,
+        extraOptionsButtons(options, config?.botBackLabel ?? null, innerStyles, innerEmojiIds),
+      );
       return;
     }
 
