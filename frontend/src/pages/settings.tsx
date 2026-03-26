@@ -3067,6 +3067,7 @@ export function SettingsPage() {
                     <table className="w-full text-sm min-w-[400px] [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                       <thead>
                         <tr className="border-b bg-muted/50">
+                          <th className="text-left p-2 font-medium w-20">Эмодзи</th>
                           <th className="text-left p-2 font-medium">Название</th>
                           <th className="text-left p-2 font-medium w-20">Шт.</th>
                           <th className="text-left p-2 font-medium w-28">Цена</th>
@@ -3077,6 +3078,7 @@ export function SettingsPage() {
                       <tbody>
                         {(settings.sellOptionsDevicesProducts ?? []).map((p, i) => (
                           <tr key={p.id} className="border-b last:border-0">
+                            <td className="p-2"><Input className="h-9 w-full max-w-[72px] text-center" placeholder="📱" value={p.emoji ?? ""} onChange={(e) => setSettings((s) => { if (!s?.sellOptionsDevicesProducts) return s; const arr = [...s.sellOptionsDevicesProducts]; arr[i] = { ...arr[i], emoji: e.target.value }; return { ...s, sellOptionsDevicesProducts: arr }; })} /></td>
                             <td className="p-2"><Input className="h-9 w-full max-w-[180px]" placeholder="Название" value={p.name} onChange={(e) => setSettings((s) => { if (!s?.sellOptionsDevicesProducts) return s; const arr = [...s.sellOptionsDevicesProducts]; arr[i] = { ...arr[i], name: e.target.value }; return { ...s, sellOptionsDevicesProducts: arr }; })} /></td>
                             <td className="p-2"><Input type="number" min={1} className="h-9 w-full" value={p.deviceCount || ""} onChange={(e) => setSettings((s) => { if (!s?.sellOptionsDevicesProducts) return s; const arr = [...s.sellOptionsDevicesProducts]; arr[i] = { ...arr[i], deviceCount: parseInt(e.target.value, 10) || 0 }; return { ...s, sellOptionsDevicesProducts: arr }; })} /></td>
                             <td className="p-2"><Input type="number" min={0} step={1} className="h-9 w-full" value={p.price || ""} onChange={(e) => setSettings((s) => { if (!s?.sellOptionsDevicesProducts) return s; const arr = [...s.sellOptionsDevicesProducts]; arr[i] = { ...arr[i], price: parseFloat(e.target.value) || 0 }; return { ...s, sellOptionsDevicesProducts: arr }; })} /></td>
@@ -3092,7 +3094,7 @@ export function SettingsPage() {
                     </table>
                   </div>
                   <div className="mt-3">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setSettings((s) => (s ? { ...s, sellOptionsDevicesProducts: [...(s.sellOptionsDevicesProducts ?? []), { id: `devices_${Date.now()}`, name: "", deviceCount: 1, price: 0, currency: "rub" }] } : s))}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setSettings((s) => (s ? { ...s, sellOptionsDevicesProducts: [...(s.sellOptionsDevicesProducts ?? []), { id: `devices_${Date.now()}`, name: "", deviceCount: 1, price: 0, currency: "rub", emoji: "" }] } : s))}>
                       <Plus className="h-4 w-4 mr-1" /> Добавить
                     </Button>
                   </div>

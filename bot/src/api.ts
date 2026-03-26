@@ -135,7 +135,7 @@ export async function getPublicConfig(): Promise<{
   sellOptionsEnabled?: boolean;
   sellOptions?: Array<
     | { kind: "traffic"; id: string; name: string; trafficGb: number; price: number; currency: string }
-    | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string }
+    | { kind: "devices"; id: string; name: string; deviceCount: number; price: number; currency: string; emoji?: string }
     | { kind: "servers"; id: string; name: string; squadUuid: string; trafficGb?: number; price: number; currency: string }
   >;
   useRemnaSubscriptionPage?: boolean;
