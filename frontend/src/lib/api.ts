@@ -1417,6 +1417,7 @@ export type UpdateSettingsPayload = {
   botTariffsText?: string | null;
   botTariffsFields?: string | null;
   botPaymentText?: string | null;
+  botExtraOptionsText?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;
@@ -1695,6 +1696,8 @@ export interface AdminSettings {
   botTariffsFields?: Record<string, boolean> | null;
   /** Текст окна оплаты в боте */
   botPaymentText?: string | null;
+  /** Текст экрана доп. опций в боте */
+  botExtraOptionsText?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */

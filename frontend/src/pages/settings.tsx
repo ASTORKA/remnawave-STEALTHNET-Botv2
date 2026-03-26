@@ -70,6 +70,7 @@ const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
 
 const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\nВыберите тариф для оплаты:";
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
+const DEFAULT_BOT_EXTRA_OPTIONS_TEXT = "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -121,6 +122,7 @@ const BOT_MENU_LINE_LABELS: Record<string, string> = {
 const DEFAULT_BOT_INNER_STYLES: Record<string, string> = {
   tariffPay: "success",
   topup: "primary",
+  extraOptionsItem: "success",
   back: "danger",
   profile: "primary",
   trialConfirm: "success",
@@ -227,6 +229,7 @@ export function SettingsPage() {
         botTariffsText: (data as AdminSettings).botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
+        botExtraOptionsText: (data as AdminSettings).botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
           const loaded =
@@ -460,6 +463,11 @@ export function SettingsPage() {
         sellOptionsDevicesProducts: (settings.sellOptionsDevicesProducts?.length ? JSON.stringify(settings.sellOptionsDevicesProducts) : "") as string | null,
         sellOptionsServersEnabled: settings.sellOptionsServersEnabled ?? false,
         sellOptionsServersProducts: (settings.sellOptionsServersProducts?.length ? JSON.stringify(settings.sellOptionsServersProducts) : "") as string | null,
+        botExtraOptionsText: settings.botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
+        botInnerButtonStyles: JSON.stringify({
+          ...DEFAULT_BOT_INNER_STYLES,
+          ...(settings.botInnerButtonStyles ?? {}),
+        }),
       };
       const updated = await api.updateSettings(token, payload);
       const u = updated as AdminSettings;
@@ -550,6 +558,7 @@ export function SettingsPage() {
         botTariffsText: settings.botTariffsText ?? undefined,
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
+        botExtraOptionsText: settings.botExtraOptionsText ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
           ...(settings.botInnerButtonStyles ?? {}),
@@ -1488,6 +1497,7 @@ export function SettingsPage() {
                     {[
                       { key: "tariffPay", label: "Кнопки тарифов (оплата)" },
                       { key: "topup", label: "Кнопки сумм пополнения" },
+                      { key: "extraOptionsItem", label: "Кнопки списка «Доп. опции»" },
                       { key: "back", label: "Кнопка «Назад» / «В меню»" },
                       { key: "profile", label: "Кнопки в профиле (язык, валюта)" },
                       { key: "trialConfirm", label: "Кнопка «Активировать триал»" },
@@ -2951,6 +2961,42 @@ export function SettingsPage() {
                   onCheckedChange={(c: boolean) => setSettings((s) => (s ? { ...s, sellOptionsEnabled: !!c } : s))}
                 />
                 <Label htmlFor="sell-options-enabled" className="cursor-pointer">Включить продажу опций</Label>
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
+                <Label className="text-base font-medium">Экран «Доп. опции» в боте</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Текст сообщения</Label>
+                  <Textarea
+                    rows={4}
+                    value={settings.botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT}
+                    onChange={(e) => setSettings((s) => (s ? { ...s, botExtraOptionsText: e.target.value } : s))}
+                    placeholder={DEFAULT_BOT_EXTRA_OPTIONS_TEXT}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm w-56 shrink-0">Цвет кнопок списка опций</Label>
+                  <select
+                    className="flex h-9 w-32 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    value={(settings.botInnerButtonStyles ?? {})["extraOptionsItem"] ?? "success"}
+                    onChange={(e) =>
+                      setSettings((s) => {
+                        if (!s) return s;
+                        const next = {
+                          ...DEFAULT_BOT_INNER_STYLES,
+                          ...(s.botInnerButtonStyles ?? {}),
+                          extraOptionsItem: e.target.value,
+                        };
+                        return { ...s, botInnerButtonStyles: next };
+                      })
+                    }
+                  >
+                    <option value="">—</option>
+                    <option value="primary">primary</option>
+                    <option value="success">success</option>
+                    <option value="danger">danger</option>
+                  </select>
+                </div>
               </div>
 
               <Collapsible defaultOpen>

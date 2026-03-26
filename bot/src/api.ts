@@ -118,6 +118,7 @@ export async function getPublicConfig(): Promise<{
   botTariffsText?: string | null;
   botTariffsFields?: Record<string, boolean> | null;
   botPaymentText?: string | null;
+  botExtraOptionsText?: string | null;
   activeLanguages?: string[];
   activeCurrencies?: string[];
   defaultReferralPercent?: number;

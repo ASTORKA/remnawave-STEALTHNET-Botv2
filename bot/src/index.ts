@@ -1543,6 +1543,7 @@ bot.on("callback_query:data", async (ctx) => {
     const innerStyles = {
       tariffPay: rawStyles?.tariffPay !== undefined ? rawStyles.tariffPay : "success",
       topup: rawStyles?.topup !== undefined ? rawStyles.topup : "primary",
+      extraOptionsItem: rawStyles?.extraOptionsItem !== undefined ? rawStyles.extraOptionsItem : "success",
       back: rawStyles?.back !== undefined ? rawStyles.back : "danger",
       profile: rawStyles?.profile !== undefined ? rawStyles.profile : "primary",
       trialConfirm: rawStyles?.trialConfirm !== undefined ? rawStyles.trialConfirm : "success",
@@ -2176,7 +2177,10 @@ bot.on("callback_query:data", async (ctx) => {
         await editMessageContent(ctx, "Доп. опции пока не доступны. Оформите подписку в разделе «Тарифы».", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
         return;
       }
-      const { text, entities } = titleWithEmoji("PACKAGE", "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:", config?.botEmojis);
+      const extraOptionsText =
+        config?.botExtraOptionsText?.trim() ||
+        "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
+      const { text, entities } = titleWithEmoji("PACKAGE", extraOptionsText, config?.botEmojis);
       await editMessageContent(ctx, text, extraOptionsButtons(options, config?.botBackLabel ?? null, innerStyles, innerEmojiIds), entities);
       return;
     }

@@ -1067,6 +1067,7 @@ const updateSettingsSchema = z.object({
   botTariffsText: z.string().max(8000).nullable().optional(),
   botTariffsFields: z.union([z.string().max(2000), z.record(z.boolean())]).nullable().optional(),
   botPaymentText: z.string().max(8000).nullable().optional(),
+  botExtraOptionsText: z.string().max(8000).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),

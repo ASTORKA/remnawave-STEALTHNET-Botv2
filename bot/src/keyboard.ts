@@ -81,6 +81,7 @@ function toStyle(s: string | undefined): ButtonStyle | undefined | null {
 export type InnerButtonStyles = {
   tariffPay?: string;
   topup?: string;
+  extraOptionsItem?: string;
   back?: string;
   profile?: string;
   trialConfirm?: string;
@@ -605,12 +606,13 @@ export function extraOptionsButtons(
   emojiIds?: InnerEmojiIds
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
+  const optionSty = resolveStyle(toStyle(innerStyles?.extraOptionsItem), "success");
   const backSty = resolveStyle(toStyle(innerStyles?.back), "danger");
   const cardId = emojiIds?.card;
   const rows: InlineButton[][] = options.map((o) => {
     const extra = o.kind === "servers" && (o.trafficGb ?? 0) > 0 ? ` + ${o.trafficGb} ГБ` : "";
-    const label = `${o.name || o.kind}${extra} — ${o.price} ${o.currency}`.slice(0, 64);
-    return [btn(label, `pay_option:${o.kind}:${o.id}`, "success", cardId)];
+    const label = `${o.name || o.kind}${extra} — ${o.price} ${formatCurrencyHuman(o.currency)}`.slice(0, 64);
+    return [btn(label, `pay_option:${o.kind}:${o.id}`, optionSty, cardId)];
   });
   rows.push([btn(back, "menu:main", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
