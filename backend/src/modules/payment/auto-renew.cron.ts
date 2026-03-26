@@ -6,6 +6,7 @@ import { remnaGetUser, isRemnaConfigured } from "../remna/remna.client.js";
 import { getSystemConfig } from "../client/client.service.js";
 import { createYookassaAutopayment } from "../yookassa/yookassa.service.js";
 import {
+  notifyAutoRenewDisabledByLimit,
   notifyAutoRenewSuccess,
   notifyAutoRenewFailed,
   notifyAutoRenewUpcoming,
@@ -53,7 +54,15 @@ export async function processAutoRenewals() {
       remnawaveUuid: { not: null },
       isBlocked: false,
     },
-    include: { autoRenewTariff: true },
+    include: {
+      autoRenewTariff: {
+        include: {
+          category: {
+            select: { id: true, name: true, maxPurchasesPerClient: true },
+          },
+        },
+      },
+    },
   });
 
   const now = Date.now();
@@ -62,6 +71,43 @@ export async function processAutoRenewals() {
     if (!client.remnawaveUuid || !client.autoRenewTariff) continue;
 
     try {
+      const autoRenewTariff = client.autoRenewTariff;
+      const categoryId = autoRenewTariff.categoryId;
+      const max = autoRenewTariff.category?.maxPurchasesPerClient;
+
+      // If the category has a purchase limit, do not renew past the limit.
+      // Example: maxPurchasesPerClient = 1 => only one renewal/activation allowed.
+      if (max != null && max >= 1 && categoryId) {
+        const bought = await prisma.payment.count({
+          where: {
+            clientId: client.id,
+            status: "PAID",
+            tariff: { is: { categoryId } },
+          },
+        });
+
+        if (bought >= max) {
+          await prisma.client.update({
+            where: { id: client.id },
+            data: {
+              autoRenewEnabled: false,
+              autoRenewRetryCount: 0,
+              autoRenewNotifiedAt: null,
+            },
+          });
+
+          await notifyAutoRenewDisabledByLimit(
+            client.id,
+            autoRenewTariff.name,
+            autoRenewTariff.category?.name ?? "Категория",
+            max,
+            bought,
+          ).catch(() => {});
+
+          continue;
+        }
+      }
+
       // Get current expireAt from Remna
       const remnaUser = await remnaGetUser(client.remnawaveUuid);
       if (remnaUser.error) {

@@ -436,6 +436,28 @@ export async function notifyAutoRenewFailed(clientId: string, tariffName: string
 }
 
 /**
+ * Notification when auto-renew is disabled due to a category purchase limit.
+ */
+export async function notifyAutoRenewDisabledByLimit(
+  clientId: string,
+  tariffName: string,
+  categoryName: string,
+  maxPurchases: number,
+  bought: number,
+): Promise<void> {
+  const client = await prisma.client.findUnique({ where: { id: clientId }, select: { telegramId: true } });
+  if (!client?.telegramId) return;
+
+  const text =
+    `❌ <b>Автопродление отключено</b>\n\n` +
+    `Достигнут лимит покупок категории «${escapeHtml(categoryName)}».` +
+    `\nТариф «${escapeHtml(tariffName)}» больше не будет продлеваться автоматически.\n\n` +
+    `Куплено: <b>${bought}</b> из <b>${maxPurchases}</b>.`;
+
+  await sendTelegramToUser(client.telegramId, text);
+}
+
+/**
  * Уведомление об успешном автоплатеже через ЮKassa.
  */
 export async function notifyAutoRenewYookassaSuccess(

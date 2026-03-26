@@ -1562,7 +1562,7 @@ clientRouter.post("/promo-code/activate", async (req, res) => {
 /** Определить отображаемое имя тарифа: Триал, название с сайта или «Тариф не выбран».
  *  Поддерживает activeInternalSquads как массив строк (uuid) или объектов { uuid }.
  *  Приоритет: сначала ищем совпадение с оплаченным тарифом, затем — триал. */
-async function resolveTariffDisplayName(remnaUserData: unknown): Promise<string> {
+function extractActiveInternalSquads(remnaUserData: unknown): string[] {
   const raw = remnaUserData as { response?: { activeInternalSquads?: unknown[] }; activeInternalSquads?: unknown[] };
   const user = raw?.response ?? raw;
   const ais = user?.activeInternalSquads;
@@ -1573,6 +1573,11 @@ async function resolveTariffDisplayName(remnaUserData: unknown): Promise<string>
       if (typeof u === "string") squadUuids.push(u);
     }
   }
+  return squadUuids;
+}
+
+async function resolveTariffDisplayName(remnaUserData: unknown): Promise<string> {
+  const squadUuids = extractActiveInternalSquads(remnaUserData);
   if (squadUuids.length === 0) return "Тариф не выбран";
   const config = await getSystemConfig();
   const trialUuid = config.trialSquadUuid?.trim() || null;
@@ -1668,16 +1673,27 @@ clientRouter.get("/subscription", async (req, res) => {
   if (result.error) {
     return res.json({ subscription: null, tariffDisplayName: null, message: result.error });
   }
+  const activeSquadUuids = extractActiveInternalSquads(result.data ?? null);
+
   let tariffDisplayName = await resolveTariffDisplayName(result.data ?? null);
-  // Если по Remna показывается «Триал» или «Тариф не выбран», но клиент оплачивал тариф — берём название из последней оплаты
-  if (tariffDisplayName === "Триал" || tariffDisplayName === "Тариф не выбран") {
-    const lastPaidTariff = await prisma.payment.findFirst({
-      where: { clientId: client.id, status: "PAID", tariffId: { not: null } },
-      orderBy: { paidAt: "desc" },
-      select: { tariff: { select: { name: true } } },
-    });
-    const name = lastPaidTariff?.tariff?.name?.trim();
-    if (name) tariffDisplayName = name;
+
+  // Prefer the name from the most recent PAID payment, if its internalSquadUuids
+  // intersect with the active squad-uuids in Remna. This protects from cases where
+  // resolveTariffDisplayName picks the wrong tariff based on activeInternalSquads.
+  const lastPaidTariff = await prisma.payment.findFirst({
+    where: { clientId: client.id, status: "PAID", tariffId: { not: null } },
+    orderBy: { paidAt: "desc" },
+    select: { paidAt: true, tariff: { select: { name: true, internalSquadUuids: true } } },
+  });
+  const lastPaidName = lastPaidTariff?.tariff?.name?.trim();
+  const lastPaidSquads = lastPaidTariff?.tariff?.internalSquadUuids ?? [];
+  const intersects = lastPaidSquads.length > 0 && activeSquadUuids.some((u) => lastPaidSquads.includes(u));
+
+  if (lastPaidName && intersects) {
+    tariffDisplayName = lastPaidName;
+  } else if (tariffDisplayName === "Триал" || tariffDisplayName === "Тариф не выбран") {
+    // If Remna shows “Trial”/“Tariff not selected”, but the client paid — keep the fallback to the latest payment.
+    if (lastPaidName) tariffDisplayName = lastPaidName;
   }
   return res.json({ subscription: result.data ?? null, tariffDisplayName });
 });
