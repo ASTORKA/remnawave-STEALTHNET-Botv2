@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Package, Calendar, Wifi, Smartphone, CreditCard, Loader2, Gift, Tag, Check, Wallet, ChevronDown, Shield, Zap, ArrowLeft } from "lucide-react";
 import { useClientAuth } from "@/contexts/client-auth";
@@ -61,6 +61,34 @@ export function ClientTariffsPage() {
   const isMobileOrMiniapp = useCabinetMiniapp();
   const useCategoryCardLayout = isMobileOrMiniapp;
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+  const tariffsRequestIdRef = useRef(0);
+
+  async function refreshTariffs(silent = false) {
+    if (useCategoryCardLayout && !token) {
+      if (!silent) {
+        setLoading(true);
+        setTariffs([]);
+        setPayModal(null);
+        setExpandedCategoryId(null);
+      }
+      return;
+    }
+
+    const requestId = ++tariffsRequestIdRef.current;
+    if (!silent) setLoading(true);
+
+    try {
+      const r = await api.getPublicTariffs(token ?? undefined);
+      if (requestId !== tariffsRequestIdRef.current) return;
+      setTariffs(r.items ?? []);
+    } catch {
+      if (requestId !== tariffsRequestIdRef.current) return;
+      setTariffs([]);
+    } finally {
+      if (requestId !== tariffsRequestIdRef.current) return;
+      if (!silent) setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (useCategoryCardLayout && tariffs.length > 0) {
@@ -69,11 +97,33 @@ export function ClientTariffsPage() {
   }, [useCategoryCardLayout, tariffs]);
 
   useEffect(() => {
-    api.getPublicTariffs(token ?? undefined).then((r) => {
-      setTariffs(r.items ?? []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    void refreshTariffs(false);
   }, [token]);
+
+  // In the miniapp, after external payment the user can return to the same page,
+  // but the list may not be updated yet. Periodically refresh only in the miniapp.
+  useEffect(() => {
+    if (!useCategoryCardLayout || !token) return;
+    const id = window.setInterval(() => refreshTariffs(true), 15000);
+    return () => window.clearInterval(id);
+  }, [useCategoryCardLayout, token]);
+
+  useEffect(() => {
+    if (!tariffs.length) {
+      setExpandedCategoryId(null);
+      return;
+    }
+
+    // If the currently open category disappeared, switch to the first available one.
+    setExpandedCategoryId((prev) => (prev && tariffs.some((c) => c.id === prev) ? prev : tariffs[0]!.id));
+
+    // If payModal refers to a tariff that is no longer available, close it.
+    setPayModal((prev) => {
+      if (!prev) return prev;
+      const exists = tariffs.some((c) => c.tariffs.some((t) => t.id === prev.tariff.id));
+      return exists ? prev : null;
+    });
+  }, [tariffs]);
 
   useEffect(() => {
     api.getPublicConfig().then((c) => {
@@ -177,6 +227,8 @@ export function ClientTariffsPage() {
       setPromoResult(null);
       alert(res.message);
       await refreshProfile();
+      // After successful payment, refresh available categories/tariffs right away.
+      await refreshTariffs(true);
     } catch (e) {
       setPayError(e instanceof Error ? e.message : "Ошибка оплаты");
     } finally {
