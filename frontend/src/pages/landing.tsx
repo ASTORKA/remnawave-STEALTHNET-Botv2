@@ -332,7 +332,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const heroHeadline1 = lc?.heroHeadline1 ?? "STEALTHNET";
   const heroHeadline2 = lc?.heroHeadline2 ?? "VPN";
   const headerBadge = lc?.headerBadge ?? "";
-  const buttonLogin = lc?.buttonLogin ?? "Вход";
   const buttonLoginCabinet = lc?.buttonLoginCabinet ?? "Войти в кабинет";
   const defaultPaymentText = lc?.defaultPaymentText ?? "Карта, СБП, крипта и быстрый старт";
   const buttonChooseTariff = lc?.buttonChooseTariff ?? "Выбрать тариф";
@@ -340,6 +339,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const buttonStart = lc?.buttonStart ?? "Начать";
   const buttonOpenCabinet = lc?.buttonOpenCabinet ?? "Открыть кабинет и подключиться";
   const noTariffsMessage = lc?.noTariffsMessage ?? "Тарифы пока не опубликованы.";
+  const telegramLink = config.telegramBotUsername?.trim() ? `https://t.me/${config.telegramBotUsername.trim().replace(/^@/, "")}` : null;
 
   const comfortTitle = lc?.comfortTitle ?? "Минимум слов. Максимум пользы.";
   const comfortBadge = lc?.comfortBadge ?? "";
@@ -541,18 +541,17 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                   style={primaryButtonStyle}
                   asChild
                 >
-                  <Link to={buildLink("/cabinet/register")} className="flex flex-row items-center justify-center gap-2">
-                    {ctaText}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 rounded-full border-slate-200/80 dark:border-white/12 bg-white/70 px-7 text-base text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:bg-white dark:border-white/15 dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
-                  asChild
-                >
-                  <Link to={buildLink("/cabinet/login")}>{buttonLoginCabinet}</Link>
+                  {telegramLink ? (
+                    <a href={telegramLink} target="_blank" rel="noreferrer" className="flex flex-row items-center justify-center gap-2">
+                      {ctaText}
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </a>
+                  ) : (
+                    <span className="flex flex-row items-center justify-center gap-2">
+                      {ctaText}
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  )}
                 </Button>
               </div>
 
@@ -651,7 +650,13 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                       <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{pulseTitle}</p>
                     </div>
                     <Button className="h-12 rounded-full px-5 text-white" style={primaryButtonStyle} asChild>
-                      <Link to={lc.showTariffs ? "#tariffs" : buildLink("/cabinet/register")}>{lc.showTariffs ? buttonWatchTariffs : buttonStart}</Link>
+                      {lc.showTariffs ? (
+                        <Link to="#tariffs">{buttonWatchTariffs}</Link>
+                      ) : telegramLink ? (
+                        <a href={telegramLink} target="_blank" rel="noreferrer">{buttonStart}</a>
+                      ) : (
+                        <span>{buttonStart}</span>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -940,7 +945,11 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                               </div>
 
                               <Button className="mt-6 h-12 rounded-full text-white" style={primaryButtonStyle} asChild>
-                                <Link to={buildLink("/cabinet/register")}>{buttonChooseTariff}</Link>
+                                {telegramLink ? (
+                                  <a href={telegramLink} target="_blank" rel="noreferrer">{buttonChooseTariff}</a>
+                                ) : (
+                                  <span>{buttonChooseTariff}</span>
+                                )}
                               </Button>
                             </div>
                           );
@@ -1050,7 +1059,11 @@ export function LandingPage({ config }: { config: PublicConfig }) {
               </div>
 
               <Button className="mt-8 h-13 rounded-full px-6 text-white" style={primaryButtonStyle} asChild>
-                <Link to={buildLink("/cabinet/register")}>{buttonOpenCabinet}</Link>
+                {telegramLink ? (
+                  <a href={telegramLink} target="_blank" rel="noreferrer">{buttonOpenCabinet}</a>
+                ) : (
+                  <span>{buttonOpenCabinet}</span>
+                )}
               </Button>
             </motion.div>
           </div>
@@ -1235,10 +1248,11 @@ export function LandingPage({ config }: { config: PublicConfig }) {
 
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
                 <Button className="h-13 rounded-full px-6 text-white" style={primaryButtonStyle} asChild>
-                  <Link to={buildLink("/cabinet/register")}>{ctaText}</Link>
-                </Button>
-                <Button variant="outline" className="h-13 rounded-full border-white/20 bg-white/8 px-6 text-white hover:bg-white/12" asChild>
-                  <Link to={buildLink("/cabinet/login")}>У меня уже есть аккаунт</Link>
+                  {telegramLink ? (
+                    <a href={telegramLink} target="_blank" rel="noreferrer">{ctaText}</a>
+                  ) : (
+                    <span>{ctaText}</span>
+                  )}
                 </Button>
               </div>
             </div>
