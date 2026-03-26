@@ -1633,7 +1633,7 @@ bot.on("callback_query:data", async (ctx) => {
     }
 
     if (data === "menu:tariffs") {
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       if (!items?.length) {
         await editMessageContent(ctx, "Тарифы пока не настроены.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
         return;
@@ -1662,7 +1662,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (data.startsWith("cat_tariffs:")) {
       const categoryId = data.slice("cat_tariffs:".length);
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       const category = items?.find((c: TariffCategory) => c.id === categoryId);
       if (!category?.tariffs?.length) {
         await editMessageContent(ctx, "Категория не найдена.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2084,7 +2084,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (data.startsWith("pay_tariff_yoomoney:")) {
       const tariffId = data.slice("pay_tariff_yoomoney:".length);
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       const tariff = items?.flatMap((c: TariffCategory) => c.tariffs).find((t: TariffItem) => t.id === tariffId);
       if (!tariff) {
         await editMessageContent(ctx, "Тариф не найден.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2116,7 +2116,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (data.startsWith("pay_tariff_yookassa:")) {
       const tariffId = data.slice("pay_tariff_yookassa:".length);
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       const tariff = items?.flatMap((c: TariffCategory) => c.tariffs).find((t: TariffItem) => t.id === tariffId);
       if (!tariff) {
         await editMessageContent(ctx, "Тариф не найден.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2152,7 +2152,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     if (data.startsWith("pay_tariff_cryptopay:")) {
       const tariffId = data.slice("pay_tariff_cryptopay:".length);
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       const tariff = items?.flatMap((c: TariffCategory) => c.tariffs).find((t: TariffItem) => t.id === tariffId);
       if (!tariff) {
         await editMessageContent(ctx, "Тариф не найден.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2396,7 +2396,7 @@ bot.on("callback_query:data", async (ctx) => {
       const parts = rest.split(":");
       const tariffId = parts[0];
       const methodIdFromBtn = parts.length >= 2 ? Number(parts[1]) : null;
-      const { items } = await api.getPublicTariffs();
+      const { items } = await api.getPublicTariffs(token);
       const tariff = items?.flatMap((c: TariffCategory) => c.tariffs).find((t: TariffItem) => t.id === tariffId);
       if (!tariff) {
         await editMessageContent(ctx, "Тариф не найден.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));

@@ -69,11 +69,11 @@ export function ClientTariffsPage() {
   }, [useCategoryCardLayout, tariffs]);
 
   useEffect(() => {
-    api.getPublicTariffs().then((r) => {
+    api.getPublicTariffs(token ?? undefined).then((r) => {
       setTariffs(r.items ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     api.getPublicConfig().then((c) => {

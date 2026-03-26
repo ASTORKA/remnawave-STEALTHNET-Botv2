@@ -514,23 +514,30 @@ function CategoryModal({
   const editCat = isEdit ? (modal as { edit: TariffCategoryWithTariffs }).edit : null;
   const [name, setName] = useState(editCat?.name ?? "");
   const [emojiKey, setEmojiKey] = useState<string>(editCat?.emojiKey ?? "");
+  const [maxPurchasesPerClient, setMaxPurchasesPerClient] = useState<string>(
+    editCat?.maxPurchasesPerClient != null ? String(editCat.maxPurchasesPerClient) : "",
+  );
 
   useEffect(() => {
     if (isEdit && editCat) {
       setName(editCat.name);
       setEmojiKey(editCat.emojiKey ?? "");
+      setMaxPurchasesPerClient(editCat.maxPurchasesPerClient != null ? String(editCat.maxPurchasesPerClient) : "");
     } else {
       setName("");
       setEmojiKey("");
+      setMaxPurchasesPerClient("");
     }
-  }, [modal, isEdit, editCat?.name, editCat?.emojiKey]);
+  }, [modal, isEdit, editCat?.name, editCat?.emojiKey, editCat?.maxPurchasesPerClient]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !name.trim()) return;
     setSaving(true);
     try {
-      const payload = { name: name.trim(), emojiKey: emojiKey.trim() || null };
+      const maxRaw = maxPurchasesPerClient.trim();
+      const maxValue = maxRaw === "" ? null : Math.max(1, Math.floor(Number(maxRaw) || 1));
+      const payload = { name: name.trim(), emojiKey: emojiKey.trim() || null, maxPurchasesPerClient: maxValue };
       if (isEdit) {
         await api.updateTariffCategory(token, (modal as { edit: TariffCategoryWithTariffs }).edit.id, payload);
       } else {
@@ -572,6 +579,18 @@ function CategoryModal({
             <option value="ordinary">ordinary — 📦</option>
             <option value="premium">premium — ⭐</option>
           </select>
+          <Label htmlFor="cat-max-purchases" className="mt-2 block">Сколько раз можно купить тариф из категории</Label>
+          <Input
+            id="cat-max-purchases"
+            type="number"
+            min={1}
+            step={1}
+            value={maxPurchasesPerClient}
+            onChange={(e) => setMaxPurchasesPerClient(e.target.value)}
+            placeholder="Пусто = без ограничений"
+            className="mt-1 mb-2"
+          />
+          <p className="text-xs text-muted-foreground">Если указать 1, после первой покупки категория исчезнет у пользователя.</p>
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>Отмена</Button>
             <Button type="submit" disabled={saving}>

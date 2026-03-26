@@ -9,6 +9,7 @@ import {
   hashPassword,
   verifyPassword,
   signClientToken,
+  verifyClientToken,
   signClient2FAPendingToken,
   verifyClient2FAPendingToken,
   generateReferralCode,
@@ -1808,6 +1809,9 @@ clientRouter.post("/payments/platega", async (req, res) => {
     if (tariffId) {
       const tariff = await prisma.tariff.findUnique({ where: { id: tariffId } });
       if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+      if (!(await isTariffCategoryPurchaseAllowed(clientId, tariffId))) {
+        return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+      }
       tariffIdToStore = tariffId;
     }
     if (proxyTariffId) {
@@ -2024,6 +2028,9 @@ clientRouter.post("/payments/balance", async (req, res) => {
 
   const tariff = await prisma.tariff.findUnique({ where: { id: tariffId! } });
   if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+  if (!(await isTariffCategoryPurchaseAllowed(clientRaw.id, tariff.id))) {
+    return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+  }
 
   let finalPrice = tariff.price;
 
@@ -2517,6 +2524,9 @@ clientRouter.post("/yoomoney/create-form-payment", async (req, res) => {
     if (tariffIdBody) {
       const tariff = await prisma.tariff.findUnique({ where: { id: tariffIdBody } });
       if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+      if (!(await isTariffCategoryPurchaseAllowed(clientId, tariff.id))) {
+        return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+      }
       tariffIdToStore = tariffIdBody;
       amountRounded = Math.round((amountBody ?? tariff.price) * 100) / 100;
       if (promoCodeStr?.trim()) {
@@ -2749,6 +2759,9 @@ clientRouter.post("/yookassa/create-payment", async (req, res) => {
       if (tariffIdBody) {
         const tariff = await prisma.tariff.findUnique({ where: { id: tariffIdBody } });
         if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+        if (!(await isTariffCategoryPurchaseAllowed(clientId, tariff.id))) {
+          return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+        }
         tariffIdToStore = tariffIdBody;
         amountRounded = Math.round((amountBody ?? tariff.price) * 100) / 100;
       } else if (proxyTariffIdBody) {
@@ -2939,6 +2952,9 @@ clientRouter.post("/cryptopay/create-payment", async (req, res) => {
       if (tariffIdBody) {
         const tariff = await prisma.tariff.findUnique({ where: { id: tariffIdBody } });
         if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+        if (!(await isTariffCategoryPurchaseAllowed(clientId, tariff.id))) {
+          return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+        }
         tariffIdToStore = tariffIdBody;
         amountRounded = Math.round((amountBody ?? tariff.price) * 100) / 100;
       } else if (proxyTariffIdBody) {
@@ -3100,6 +3116,9 @@ clientRouter.post("/heleket/create-payment", async (req, res) => {
       if (tariffIdBody) {
         const tariff = await prisma.tariff.findUnique({ where: { id: tariffIdBody } });
         if (!tariff) return res.status(400).json({ message: "Тариф не найден" });
+        if (!(await isTariffCategoryPurchaseAllowed(clientId, tariff.id))) {
+          return res.status(400).json({ message: "Лимит покупок для этой категории тарифов исчерпан" });
+        }
         tariffIdToStore = tariffIdBody;
         amountRounded = Math.round((amountBody ?? tariff.price) * 100) / 100;
       } else if (proxyTariffIdBody) {
@@ -3600,28 +3619,103 @@ function tariffToJson(t: { id: string; name: string; description: string | null;
   };
 }
 
+async function getTariffCategoryPurchaseCount(clientId: string, categoryId: string): Promise<number> {
+  return prisma.payment.count({
+    where: {
+      clientId,
+      status: "PAID",
+      tariff: { is: { categoryId } },
+    },
+  });
+}
+
+async function isTariffCategoryPurchaseAllowed(clientId: string, tariffId: string): Promise<boolean> {
+  const tariff = await prisma.tariff.findUnique({
+    where: { id: tariffId },
+    select: { id: true, categoryId: true, category: { select: { maxPurchasesPerClient: true } } },
+  });
+  if (!tariff) return false;
+  const max = tariff.category.maxPurchasesPerClient;
+  if (max == null || max < 1) return true;
+  const bought = await getTariffCategoryPurchaseCount(clientId, tariff.categoryId);
+  return bought < max;
+}
+
+async function getTariffCategoriesForClient(clientId: string | null) {
+  const config = await getSystemConfig();
+  const categoryEmojis = config.categoryEmojis ?? { ordinary: "📦", premium: "⭐" };
+  const list = await prisma.tariffCategory.findMany({
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: { tariffs: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+  });
+
+  let hiddenCategoryIds = new Set<string>();
+  if (clientId) {
+    const paidByCategory = await prisma.payment.groupBy({
+      by: ["tariffId"],
+      where: { clientId, status: "PAID", tariffId: { not: null } },
+      _count: { _all: true },
+    });
+    const tariffIds = paidByCategory.map((x) => x.tariffId).filter((x): x is string => Boolean(x));
+    const tariffs = tariffIds.length
+      ? await prisma.tariff.findMany({ where: { id: { in: tariffIds } }, select: { id: true, categoryId: true } })
+      : [];
+    const tariffToCategory = new Map(tariffs.map((t) => [t.id, t.categoryId]));
+    const countsByCategory = new Map<string, number>();
+    for (const row of paidByCategory) {
+      if (!row.tariffId) continue;
+      const categoryId = tariffToCategory.get(row.tariffId);
+      if (!categoryId) continue;
+      countsByCategory.set(categoryId, (countsByCategory.get(categoryId) ?? 0) + row._count._all);
+    }
+    hiddenCategoryIds = new Set(
+      list
+        .filter((c) => c.maxPurchasesPerClient != null && c.maxPurchasesPerClient > 0 && (countsByCategory.get(c.id) ?? 0) >= c.maxPurchasesPerClient)
+        .map((c) => c.id),
+    );
+  }
+
+  return list
+    .filter((c) => !hiddenCategoryIds.has(c.id))
+    .map((c) => {
+      const emoji = (c.emojiKey && categoryEmojis[c.emojiKey]) ? categoryEmojis[c.emojiKey] : "";
+      return {
+        id: c.id,
+        name: c.name,
+        emojiKey: c.emojiKey ?? null,
+        emoji,
+        maxPurchasesPerClient: c.maxPurchasesPerClient ?? null,
+        tariffs: c.tariffs.map(tariffToJson),
+      };
+    });
+}
+
 publicConfigRouter.get("/tariffs", async (_req, res) => {
   try {
-    const config = await getSystemConfig();
-    const categoryEmojis = config.categoryEmojis ?? { ordinary: "📦", premium: "⭐" };
-    const list = await prisma.tariffCategory.findMany({
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      include: { tariffs: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
-    });
+    let clientId: string | null = null;
+    const raw = _req.headers.authorization;
+    const token = typeof raw === "string" && raw.startsWith("Bearer ") ? raw.slice("Bearer ".length) : null;
+    if (token) {
+      const payload = verifyClientToken(token);
+      if (payload?.clientId) clientId = payload.clientId;
+    }
+    const items = await getTariffCategoriesForClient(clientId);
     return res.json({
-      items: list.map((c) => {
-        const emoji = (c.emojiKey && categoryEmojis[c.emojiKey]) ? categoryEmojis[c.emojiKey] : "";
-        return {
-          id: c.id,
-          name: c.name,
-          emojiKey: c.emojiKey ?? null,
-          emoji,
-          tariffs: c.tariffs.map(tariffToJson),
-        };
-      }),
+      items,
     });
   } catch (e) {
     console.error("GET /public/tariffs error:", e);
+    return res.status(500).json({ message: "Ошибка загрузки тарифов" });
+  }
+});
+
+clientRouter.get("/tariffs", async (req, res) => {
+  try {
+    const clientId = (req as unknown as { clientId: string }).clientId;
+    const items = await getTariffCategoriesForClient(clientId);
+    return res.json({ items });
+  } catch (e) {
+    console.error("GET /client/tariffs error:", e);
     return res.status(500).json({ message: "Ошибка загрузки тарифов" });
   }
 });

@@ -37,6 +37,25 @@ export async function markPaymentPaid(paymentId: string): Promise<MarkPaymentPai
   if (!payment) {
     return { ok: false, payment: null, error: "Payment not found" };
   }
+  if (payment.tariffId) {
+    const tariff = await prisma.tariff.findUnique({
+      where: { id: payment.tariffId },
+      select: { categoryId: true, category: { select: { maxPurchasesPerClient: true } } },
+    });
+    const max = tariff?.category.maxPurchasesPerClient;
+    if (tariff && max != null && max > 0) {
+      const paidInCategory = await prisma.payment.count({
+        where: {
+          clientId: payment.clientId,
+          status: "PAID",
+          tariff: { is: { categoryId: tariff.categoryId } },
+        },
+      });
+      if (paidInCategory >= max) {
+        return { ok: false, payment, error: "Purchase limit reached for tariff category" };
+      }
+    }
+  }
   if (payment.status === "PAID") {
     const result = await distributeReferralRewards(paymentId);
     const updated = await prisma.payment.findUnique({ where: { id: paymentId } });

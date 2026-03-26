@@ -831,11 +831,11 @@ export const api = {
     return request("/admin/tariff-categories", { token });
   },
 
-  async createTariffCategory(token: string, data: { name: string; sortOrder?: number; emojiKey?: string | null }): Promise<TariffCategoryRecord> {
+  async createTariffCategory(token: string, data: { name: string; sortOrder?: number; emojiKey?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
     return request("/admin/tariff-categories", { method: "POST", body: JSON.stringify(data), token });
   },
 
-  async updateTariffCategory(token: string, id: string, data: { name?: string; sortOrder?: number; emojiKey?: string | null }): Promise<TariffCategoryRecord> {
+  async updateTariffCategory(token: string, id: string, data: { name?: string; sortOrder?: number; emojiKey?: string | null; maxPurchasesPerClient?: number | null }): Promise<TariffCategoryRecord> {
     return request(`/admin/tariff-categories/${id}`, { method: "PATCH", body: JSON.stringify(data), token });
   },
 
@@ -974,7 +974,8 @@ export const api = {
     return request("/client/payments/platega", { method: "POST", body: JSON.stringify(data), token });
   },
 
-  async getPublicTariffs(): Promise<{ items: PublicTariffCategory[] }> {
+  async getPublicTariffs(token?: string): Promise<{ items: PublicTariffCategory[] }> {
+    if (token) return request("/client/tariffs", { token });
     return request("/public/tariffs");
   },
 
@@ -2194,6 +2195,7 @@ export interface TariffCategoryRecord {
   id: string;
   name: string;
   emojiKey: string | null;
+  maxPurchasesPerClient: number | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -2312,6 +2314,7 @@ export interface PublicTariffCategory {
   name: string;
   emojiKey: string | null;
   emoji: string;
+  maxPurchasesPerClient?: number | null;
   tariffs: { id: string; name: string; description: string | null; durationDays: number; price: number; currency: string; trafficLimitBytes: number | null; trafficResetMode?: string; deviceLimit: number | null }[];
 }
 

@@ -233,7 +233,7 @@ export async function getSingboxSlots(token: string): Promise<{
 }
 
 /** Публичный список тарифов по категориям (emoji из админки по коду ordinary/premium) */
-export async function getPublicTariffs(): Promise<{
+export async function getPublicTariffs(token?: string): Promise<{
   items: {
     id: string;
     name: string;
@@ -242,6 +242,7 @@ export async function getPublicTariffs(): Promise<{
     tariffs: { id: string; name: string; description?: string | null; durationDays: number; trafficLimitBytes?: number | null; trafficResetMode?: string; deviceLimit?: number | null; price: number; currency: string }[];
   }[];
 }> {
+  if (token) return fetchJson("/api/client/tariffs", { token });
   return fetchJson("/api/public/tariffs");
 }
 
