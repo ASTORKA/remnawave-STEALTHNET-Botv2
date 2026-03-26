@@ -111,17 +111,20 @@ export function ClientTariffsPage() {
   useEffect(() => {
     if (!tariffs.length) {
       setExpandedCategoryId(null);
+      setPayModal(null);
       return;
     }
 
     // If the currently open category disappeared, switch to the first available one.
     setExpandedCategoryId((prev) => (prev && tariffs.some((c) => c.id === prev) ? prev : tariffs[0]!.id));
 
-    // If payModal refers to a tariff that is no longer available, close it.
+    // Keep modal content in sync with the latest tariffs fetch (e.g., tariff name changed in admin).
     setPayModal((prev) => {
       if (!prev) return prev;
-      const exists = tariffs.some((c) => c.tariffs.some((t) => t.id === prev.tariff.id));
-      return exists ? prev : null;
+      const latest = tariffs
+        .flatMap((c) => c.tariffs)
+        .find((t) => t.id === prev.tariff.id);
+      return latest ? { tariff: latest } : null;
     });
   }, [tariffs]);
 
