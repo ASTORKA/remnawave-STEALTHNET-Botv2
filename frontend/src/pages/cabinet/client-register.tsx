@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { UserPlus, Shield, Mail, Loader2 } from "lucide-react";
+import { UserPlus, Shield, Loader2 } from "lucide-react";
 import { useClientAuth } from "@/contexts/client-auth";
 import { api } from "@/lib/api";
 import type { PublicConfig } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -78,23 +75,13 @@ declare global {
 }
 
 export function ClientRegisterPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [brand, setBrand] = useState<{ serviceName: string; logo: string | null }>({
     serviceName: "",
     logo: null,
   });
-  const [defaults, setDefaults] = useState<{ lang: string; currency: string }>({ lang: "ru", currency: "usd" });
   const [telegramBotUsername, setTelegramBotUsername] = useState<string | null>(null);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const [publicAppUrl, setPublicAppUrl] = useState<string | null>(null);
-  const [appleEnabled, setAppleEnabled] = useState(false);
   const [tgAuthPending, setTgAuthPending] = useState(false);
   const [showTgFallback, setShowTgFallback] = useState(false);
   const [telegramBotId, setTelegramBotId] = useState<string | null>(null);
@@ -103,63 +90,16 @@ export function ClientRegisterPage() {
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get("ref")?.trim() || undefined;
   const utm = useUtmCapture(searchParams);
-  const { register, loginByGoogle, loginByApple, loginByTelegramDeepLink, registerByTelegram } = useClientAuth();
+  const { loginByTelegramDeepLink, registerByTelegram } = useClientAuth();
   const navigate = useNavigate();
-
-  function validateEmail(value: string): string {
-    if (!value.trim()) return "Email обязателен";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return "Введите корректный email";
-    return "";
-  }
-
-  function validatePassword(value: string): string {
-    if (!value) return "Пароль обязателен";
-    if (value.length < 6) return "Пароль должен быть минимум 6 символов";
-    return "";
-  }
-
-  function handleEmailBlur() {
-    setEmailError(validateEmail(email));
-  }
-
-  function handlePasswordBlur() {
-    setPasswordError(validatePassword(password));
-  }
-
-  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setEmail(e.target.value);
-    if (emailError) setEmailError("");
-  }
-
-  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setPassword(e.target.value);
-    if (passwordError) setPasswordError("");
-  }
-
-  function validateAll(): boolean {
-    const emailErr = validateEmail(email);
-    const passwordErr = validatePassword(password);
-    setEmailError(emailErr);
-    setPasswordError(passwordErr);
-    return !emailErr && !passwordErr;
-  }
 
   useEffect(() => {
     api
       .getPublicConfig()
       .then((c: PublicConfig) => {
         setBrand({ serviceName: c.serviceName ?? "", logo: c.logo ?? null });
-        setDefaults({
-          lang: c.defaultLanguage || "ru",
-          currency: (c.defaultCurrency || "usd").toLowerCase(),
-        });
         setTelegramBotUsername(c.telegramBotUsername ?? null);
         setTelegramBotId(c.telegramBotId ?? null);
-        setGoogleEnabled(!!c.googleLoginEnabled);
-        setGoogleClientId(c.googleClientId ?? null);
-        setPublicAppUrl(c.publicAppUrl ?? null);
-        setAppleEnabled(!!c.appleLoginEnabled);
       })
       .catch(() => {});
   }, []);
@@ -311,123 +251,6 @@ export function ClientRegisterPage() {
     }
   }, [telegramBotId, handleTgOAuthResult]);
 
-  const handleGoogleLogin = useCallback(() => {
-    if (!googleEnabled || !googleClientId) return;
-    setError("");
-    const state = "google_" + Math.random().toString(36).slice(2);
-    const nonce = Math.random().toString(36).slice(2);
-    try {
-      sessionStorage.setItem("stealthnet_google_oauth_state", state);
-      sessionStorage.setItem("stealthnet_google_oauth_nonce", nonce);
-    } catch {
-      // ignore
-    }
-    const baseUrl = (publicAppUrl ?? "").trim().replace(/\/$/, "") || window.location.origin;
-    const redirectUri = baseUrl + "/cabinet/register";
-    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    url.searchParams.set("client_id", googleClientId);
-    url.searchParams.set("redirect_uri", redirectUri);
-    url.searchParams.set("response_type", "id_token");
-    url.searchParams.set("scope", "openid email");
-    url.searchParams.set("nonce", nonce);
-    url.searchParams.set("state", state);
-    window.location.href = url.toString();
-  }, [googleEnabled, googleClientId, publicAppUrl]);
-
-  useEffect(() => {
-    const hash = window.location.hash?.replace("#", "") || "";
-    const params = new URLSearchParams(hash);
-    const state = params.get("state") || "";
-    if (!state.startsWith("google_") || !params.get("id_token")) return;
-    const idToken = params.get("id_token");
-    if (!idToken) return;
-    try {
-      const saved = sessionStorage.getItem("stealthnet_google_oauth_state");
-      if (saved !== state) return;
-      sessionStorage.removeItem("stealthnet_google_oauth_state");
-      sessionStorage.removeItem("stealthnet_google_oauth_nonce");
-    } catch {
-      /* ignore */
-    }
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    setLoading(true);
-    loginByGoogle(idToken)
-      .then(() => navigate("/cabinet/dashboard", { replace: true }))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Ошибка Google"))
-      .finally(() => setLoading(false));
-  }, [loginByGoogle, navigate]);
-
-  const handleAppleLogin = useCallback(async () => {
-    if (!appleEnabled) return;
-    setError("");
-    setLoading(true);
-    try {
-      const cfg = await api.getPublicConfig();
-      const appleClientIdVal = cfg.appleClientId;
-      if (!appleClientIdVal) throw new Error("Apple Sign In not configured");
-      const baseUrl = (cfg.publicAppUrl ?? "").trim().replace(/\/$/, "") || window.location.origin;
-      const redirectUri = baseUrl + "/cabinet/register";
-      const state = Math.random().toString(36).slice(2);
-      const url = new URL("https://appleid.apple.com/auth/authorize");
-      url.searchParams.set("client_id", appleClientIdVal);
-      url.searchParams.set("redirect_uri", redirectUri);
-      url.searchParams.set("response_type", "code id_token");
-      url.searchParams.set("response_mode", "fragment");
-      url.searchParams.set("scope", "email");
-      url.searchParams.set("state", state);
-      window.location.href = url.toString();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка Apple");
-      setLoading(false);
-    }
-  }, [appleEnabled]);
-
-  useEffect(() => {
-    const hash = window.location.hash?.replace("#", "") || "";
-    const params = new URLSearchParams(hash);
-    if (params.get("state")?.startsWith("google_")) return;
-    if (!params.get("id_token")) return;
-    const idToken = params.get("id_token");
-    if (!idToken) return;
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    setLoading(true);
-    loginByApple(idToken)
-      .then(() => navigate("/cabinet/dashboard", { replace: true }))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Ошибка Apple"))
-      .finally(() => setLoading(false));
-  }, [loginByApple, navigate]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setEmailSent(false);
-    
-    if (!validateAll()) {
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const result = await register({
-        email,
-        password,
-        preferredLang: defaults.lang,
-        preferredCurrency: defaults.currency,
-        referralCode: refCode,
-        ...utm,
-      });
-      if (result?.requiresVerification) {
-        setEmailSent(true);
-      } else {
-        navigate("/cabinet/dashboard", { replace: true });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка регистрации");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-svh flex flex-col items-center justify-center bg-transparent p-4">
       <motion.div
@@ -459,138 +282,49 @@ export function ClientRegisterPage() {
             <p className="text-muted-foreground text-sm">Создайте аккаунт в кабинете</p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Скрытое поле: iOS/Safari реже выводит панель автозаполнения на каждый символ */}
-              <input type="text" name="prevent_autofill" autoComplete="off" tabIndex={-1} className="absolute opacity-0 pointer-events-none h-0 w-0 overflow-hidden" aria-hidden />
+            <div className="space-y-4">
               {error && (
                 <div className="rounded-md bg-destructive/10 text-destructive text-sm p-3">
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  name="register_email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={handleEmailChange}
-                  onBlur={handleEmailBlur}
-                  required
-                  autoComplete="off"
-                  data-form-type="other"
-                  className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-                {emailError && <p className="text-xs text-destructive">{emailError}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Пароль</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  name="register_password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  onBlur={handlePasswordBlur}
-                  required
-                  autoComplete="off"
-                  data-form-type="other"
-                  className={passwordError ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-                {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
-                {!passwordError && password && (
-                  <p className="text-xs text-green-500">Пароль принят</p>
-                )}
-              </div>
-              {emailSent && (
-                <div className="rounded-md bg-green-500/10 text-green-700 dark:text-green-400 text-sm p-3 flex items-center gap-2">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  На вашу почту отправлена ссылка для подтверждения. Перейдите по ней, чтобы завершить регистрацию.
-                </div>
-              )}
-              <Button type="submit" className="w-full" disabled={loading || !email || !password}>
-                {loading ? "Регистрация…" : "Зарегистрироваться"}
-              </Button>
-              {(telegramBotUsername || googleEnabled || appleEnabled) && (
+              {telegramBotUsername && (
                 <div className="space-y-3">
-                  <div className="relative flex items-center gap-2">
-                    <div className="flex-1 border-t border-border" />
-                    <span className="text-xs text-muted-foreground px-2">или</span>
-                    <div className="flex-1 border-t border-border" />
-                  </div>
-                  {googleEnabled && googleClientId && (
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleGoogleLogin}
-                        disabled={loading}
-                        title="Зарегистрироваться через Google"
-                        className={cn(
-                          "h-11 w-11 shrink-0 rounded-full flex items-center justify-center",
-                          "border border-border bg-muted/50 hover:bg-muted transition-colors",
-                          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        )}
-                      >
-                        <GoogleIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  )}
-                  {appleEnabled && (
+                  <div className="space-y-2">
                     <Button
                       type="button"
                       variant="outline"
                       className="w-full h-11 gap-2"
-                      onClick={handleAppleLogin}
-                      disabled={loading}
+                      onClick={handleTelegramRegister}
+                      disabled={loading || tgAuthPending}
                     >
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-                      Зарегистрироваться через Apple
+                      {tgAuthPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Ожидаем подтверждение…
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                          Зарегистрироваться через Telegram
+                        </>
+                      )}
                     </Button>
-                  )}
-                  {telegramBotUsername && (
-                    <div className="space-y-2">
+                    {showTgFallback && telegramBotId && (
                       <Button
                         type="button"
-                        variant="outline"
-                        className="w-full h-11 gap-2"
-                        onClick={handleTelegramRegister}
-                        disabled={loading || tgAuthPending}
+                        variant="ghost"
+                        className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={handleTelegramOAuthFallback}
                       >
-                        {tgAuthPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Ожидаем подтверждение…
-                          </>
-                        ) : (
-                          <>
-                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                            Зарегистрироваться через Telegram
-                          </>
-                        )}
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                        Не открылся Telegram? Войти через веб-версию
                       </Button>
-                      {showTgFallback && telegramBotId && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-foreground"
-                          onClick={handleTelegramOAuthFallback}
-                        >
-                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                          Не открылся Telegram? Войти через веб-версию
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
-              <p className="text-center text-sm text-muted-foreground">
-                Уже есть аккаунт?{" "}
-                <Link to="/cabinet/login" className="text-primary hover:underline">
-                  Войти
-                </Link>
-              </p>
-            </form>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

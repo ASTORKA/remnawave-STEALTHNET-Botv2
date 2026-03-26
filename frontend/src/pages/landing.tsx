@@ -321,7 +321,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
       .catch(() => setTariffs({ items: [] }));
   }, [lc?.showTariffs]);
 
-  const title = lc?.heroTitle || config.serviceName || "STEALTHNET";
+  const title = lc?.heroTitle || config.serviceName || "Casper VPN";
   const subtitle =
     lc?.heroSubtitle ||
     "Быстрый и аккуратный доступ к нужным сервисам.";
@@ -329,7 +329,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const heroBadge = lc?.heroBadge ?? "Приватность · Скорость";
   const heroHint = lc?.heroHint ?? "Регистрация за минуту · Оплата картой, СБП или криптой";
 
-  const heroHeadline1 = lc?.heroHeadline1 ?? "STEALTHNET";
+  const heroHeadline1 = lc?.heroHeadline1 ?? "Casper";
   const heroHeadline2 = lc?.heroHeadline2 ?? "VPN";
   const headerBadge = lc?.headerBadge ?? "";
   const buttonLogin = lc?.buttonLogin ?? "Вход";
