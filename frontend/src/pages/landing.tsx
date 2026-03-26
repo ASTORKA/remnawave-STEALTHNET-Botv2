@@ -332,8 +332,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const heroHeadline1 = lc?.heroHeadline1 ?? "Casper";
   const heroHeadline2 = lc?.heroHeadline2 ?? "VPN";
   const headerBadge = lc?.headerBadge ?? "";
-  const buttonLogin = lc?.buttonLogin ?? "Вход";
-  const buttonLoginCabinet = lc?.buttonLoginCabinet ?? "Войти в кабинет";
   const defaultPaymentText = lc?.defaultPaymentText ?? "Карта, СБП, крипта и быстрый старт";
   const buttonChooseTariff = lc?.buttonChooseTariff ?? "Выбрать тариф";
   const buttonWatchTariffs = lc?.buttonWatchTariffs ?? "Смотреть тарифы";
@@ -510,18 +508,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
             </nav>
           )}
 
-          <nav className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" className="rounded-full px-4 text-slate-700 hover:bg-white/80 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10" asChild>
-              <Link to={buildLink("/cabinet/login")}>{buttonLogin}</Link>
-            </Button>
-            <Button
-              className="rounded-full border px-5 text-white shadow-lg"
-              style={primaryButtonStyle}
-              asChild
-            >
-              <Link to={buildLink("/cabinet/register")}>{ctaText}</Link>
-            </Button>
-          </nav>
         </div>
       </header>
 
@@ -556,14 +542,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
                     {ctaText}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 rounded-full border-slate-200/80 dark:border-white/12 bg-white/70 px-7 text-base text-slate-900 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:bg-white dark:border-white/15 dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
-                  asChild
-                >
-                  <Link to={buildLink("/cabinet/login")}>{buttonLoginCabinet}</Link>
                 </Button>
               </div>
 
@@ -623,7 +601,7 @@ export function LandingPage({ config }: { config: PublicConfig }) {
 
             <motion.div {...fadeUp} transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }} className="relative">
               <div className="relative overflow-hidden rounded-[32px] border border-slate-200/70 dark:border-white/10 bg-white p-6 shadow-lg backdrop-blur-2xl dark:bg-white/5 md:p-7">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-emerald-300/70" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200/80 to-transparent dark:via-white/20" />
                 {/* Removed: informational block "Доступ к нужным сервисам" */}
 
                 <div className="mt-6 grid gap-3">
