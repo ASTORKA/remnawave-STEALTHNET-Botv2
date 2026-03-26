@@ -19,11 +19,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 const ALLOWED_LANGS = ["ru", "en"];
 const ALLOWED_CURRENCIES = ["usd", "rub"];
 
-const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string }[] = [
-  { id: 2, enabled: true, label: "СПБ" },
-  { id: 11, enabled: false, label: "Карты" },
-  { id: 12, enabled: false, label: "Международный" },
-  { id: 13, enabled: false, label: "Криптовалюта" },
+const DEFAULT_PLATEGA_METHODS: { id: number; enabled: boolean; label: string; tgEmojiId?: string | null }[] = [
+  { id: 2, enabled: true, label: "СПБ", tgEmojiId: null },
+  { id: 11, enabled: false, label: "Карты", tgEmojiId: null },
+  { id: 12, enabled: false, label: "Международный", tgEmojiId: null },
+  { id: 13, enabled: false, label: "Криптовалюта", tgEmojiId: null },
 ];
 
 type BotButtonItem = { id: string; visible: boolean; label: string; order: number; style?: string; emojiKey?: string; onePerRow?: boolean };
