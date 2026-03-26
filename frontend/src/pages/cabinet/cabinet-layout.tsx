@@ -144,13 +144,13 @@ function Client2FAStepScreen() {
 const ALL_NAV_ITEMS = [
   { to: "/cabinet/dashboard", label: "Главная", icon: LayoutDashboard },
   { to: "/cabinet/tariffs", label: "Тарифы", icon: Package },
-  { to: "/cabinet/custom-build", label: "Гибкий тариф", icon: Layers },
   { to: "/cabinet/extra-options", label: "Опции", icon: PlusCircle },
+  { to: "/cabinet/referral", label: "Рефералы", icon: Users },
   { to: "/cabinet/proxy", label: "Прокси", icon: Globe },
   { to: "/cabinet/singbox", label: "Доступы", icon: KeyRound },
-  { to: "/cabinet/referral", label: "Рефералы", icon: Users },
   { to: "/cabinet/tickets", label: "Тикеты", icon: MessageSquare },
   { to: "/cabinet/profile", label: "Профиль", icon: User },
+  { to: "/cabinet/custom-build", label: "Гибкий тариф", icon: Layers },
 ];
 
 const MODE_OPTIONS: { value: ThemeMode; icon: typeof Sun; label: string }[] = [
@@ -387,7 +387,7 @@ function resolveNavItems(config: { sellOptionsEnabled?: boolean; showProxyEnable
 }
 
 const MAX_VISIBLE_NAV = 4;
-const MAX_VISIBLE_DESKTOP = 5;
+const MAX_VISIBLE_DESKTOP = 10;
 
 function MobileCabinetShell() {
   const location = useLocation();
