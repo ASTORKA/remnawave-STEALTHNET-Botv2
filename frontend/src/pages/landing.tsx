@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api, type PublicConfig, type PublicTariffCategory } from "@/lib/api";
@@ -345,7 +345,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const comfortBadge = lc?.comfortBadge ?? "";
   const principlesTitle = lc?.principlesTitle ?? "Стабильный доступ и аккуратный UX.";
   const pulseTitle = lc?.pulseTitle ?? "Подключайся и пользуйся.";
-  const infraTitle = lc?.infraTitle ?? "Доступ к нужным сервисам";
   const techTitle = lc?.techTitle ?? "Стабильно и просто.";
   const techDesc = lc?.techDesc ?? "Современные протоколы и понятный кабинет.";
   const categorySubtitle = lc?.categorySubtitle ?? "";
@@ -353,7 +352,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
   const tariffBullet1 = lc?.tariffBullet1 ?? "Подключение через личный кабинет";
   const tariffBullet2 = lc?.tariffBullet2 ?? "Поддержка и инструкции внутри сервиса";
   const tariffBullet3 = lc?.tariffBullet3 ?? "Автоматическая активация после оплаты";
-  const lowestTariffDesc = lc?.lowestTariffDesc ?? null;
   const devicesCockpitText = lc?.devicesCockpitText ?? "Один аккаунт — все устройства";
   const universalityTitle = lc?.universalityTitle ?? "Для всех устройств";
   const universalityDesc = lc?.universalityDesc ?? "Подключай телефон и ноутбук в одном кабинете.";
@@ -426,17 +424,6 @@ export function LandingPage({ config }: { config: PublicConfig }) {
 
   const paymentLabels = getPaymentLabels(config);
   const totalTariffs = tariffs?.items.reduce((sum, category) => sum + category.tariffs.length, 0) ?? 0;
-  const lowestTariff = useMemo(() => {
-    if (!tariffs?.items.length) return null;
-
-    const allTariffs = tariffs.items.flatMap((category) =>
-      category.tariffs.map((tariff) => ({ tariff, category })),
-    );
-
-    if (!allTariffs.length) return null;
-
-    return allTariffs.reduce((min, current) => (current.tariff.price < min.tariff.price ? current : min));
-  }, [tariffs]);
 
   const statsPlatforms = lc?.statsPlatforms ?? "платформ";
   const statsTariffsLabel = lc?.statsTariffsLabel ?? "тарифов онлайн";
