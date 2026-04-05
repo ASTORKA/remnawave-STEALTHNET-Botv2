@@ -47,6 +47,8 @@ const DEFAULT_BOT_BUTTONS: BotButtonItem[] = [
 ];
 
 const BOT_EMOJI_KEYS = ["HEADER", "MAIN_MENU", "STATUS", "BALANCE", "TARIFFS", "PACKAGE", "PROFILE", "CARD", "PAY", "TRIAL", "LINK", "SERVERS", "BACK", "PUZZLE", "DATE", "TIME", "TRAFFIC", "ACTIVE_GREEN", "ACTIVE_YELLOW", "INACTIVE", "CONNECT", "NOTE", "STAR", "CROWN", "DURATION", "DEVICES", "LOCATION", "CUSTOM_1", "CUSTOM_2", "CUSTOM_3", "CUSTOM_4", "CUSTOM_5"] as const;
+/** В общей таблице ключ PAY не показываем — для него отдельный блок «Кнопка Оплатить» ниже */
+const BOT_EMOJI_TABLE_KEYS = BOT_EMOJI_KEYS.filter((k) => k !== "PAY");
 
 const DEFAULT_BOT_MENU_TEXTS: Record<string, string> = {
   welcomeTitlePrefix: "🛡 ",
@@ -1277,9 +1279,47 @@ export function SettingsPage() {
                   <p className="text-xs text-muted-foreground mb-2">
                     Меняйте Unicode и TG ID (премиум) для каждого ключа — они подставятся в кнопки меню и в текст сообщений (если в «Тексты меню» используются плейсхолдеры вроде {'{{BALANCE}}'}). Аналог EMOJI_* / EMOJI_*_TG_ID из remnawave env.
                   </p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Ключ <span className="font-mono">PAY</span> — только TG ID премиум-эмодзи для кнопки «Оплатить» при оплате по ссылке (СБП, ЮKassa, Crypto Bot и т.д.): в тексте кнопки остаётся «Оплатить», иконка — из ID. Unicode для PAY в этой кнопке не используется (чтобы не дублировать иконку).
-                  </p>
+                  <div className="rounded-lg border border-primary/20 bg-primary/[0.04] dark:bg-primary/10 p-4 space-y-3 mb-3">
+                    <div className="space-y-1">
+                      <Label className="text-base font-medium">Кнопка «Оплатить» (ссылка на оплату)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Премиум-эмодзи для inline-кнопки «Оплатить» после выбора СБП, ЮKassa, Crypto Bot и т.п. Текст кнопки — только «Оплатить»; иконка задаётся одним полем ниже (Unicode здесь не используется).
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bot-emoji-pay-tg" className="text-xs font-normal text-muted-foreground">
+                        TG ID премиум-эмодзи
+                      </Label>
+                      <Input
+                        id="bot-emoji-pay-tg"
+                        className="font-mono text-sm max-w-md"
+                        placeholder="например 5289722755871162900"
+                        value={(() => {
+                          const raw = (settings.botEmojis ?? {}).PAY;
+                          const o = typeof raw === "object" && raw !== null ? raw : null;
+                          return o?.tgEmojiId ?? "";
+                        })()}
+                        onChange={(e) =>
+                          setSettings((s) => {
+                            if (!s) return s;
+                            const raw = (s.botEmojis ?? {}).PAY;
+                            const prevObj =
+                              typeof raw === "object" && raw !== null
+                                ? raw
+                                : { unicode: typeof raw === "string" ? raw : undefined, tgEmojiId: undefined };
+                            const v = e.target.value.trim();
+                            return {
+                              ...s,
+                              botEmojis: {
+                                ...(s.botEmojis ?? {}),
+                                PAY: { ...prevObj, tgEmojiId: v || undefined },
+                              },
+                            };
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 rounded-md bg-amber-50 dark:bg-amber-950/40 p-2 border border-amber-200 dark:border-amber-800">
                     Премиум-эмодзи (TG ID) отображаются только если владелец бота имеет Telegram Premium (аккаунт, создавший бота в @BotFather). Иначе в кнопках и тексте будет виден только Unicode.
                   </p>
@@ -1293,7 +1333,7 @@ export function SettingsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {BOT_EMOJI_KEYS.map((key) => {
+                        {BOT_EMOJI_TABLE_KEYS.map((key) => {
                           const raw = (settings.botEmojis ?? {})[key];
                           const entry = typeof raw === "object" && raw !== null ? raw : { unicode: typeof raw === "string" ? raw : undefined, tgEmojiId: undefined };
                           return (

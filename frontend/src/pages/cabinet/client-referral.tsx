@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Percent, Wallet, Link2, Copy, Check, Loader2, Globe, Send, Info } from "lucide-react";
+import { Users, Percent, Wallet, Link2, Copy, Check, Loader2, Send, Info } from "lucide-react";
 import { useClientAuth } from "@/contexts/client-auth";
 import { useCabinetConfig } from "@/contexts/cabinet-config";
 import { api } from "@/lib/api";
@@ -28,18 +28,13 @@ export function ClientReferralPage() {
   const [stats, setStats] = useState<ClientReferralStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copiedRef, setCopiedRef] = useState<"site" | "bot" | null>(null);
+  const [copiedRef, setCopiedRef] = useState(false);
 
-  const siteOrigin = config?.publicAppUrl?.replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "");
-  const referralLinkSite =
-    stats?.referralCode && siteOrigin
-      ? `${siteOrigin}/cabinet/register?ref=${encodeURIComponent(stats.referralCode)}`
-      : null;
   const referralLinkBot =
     stats?.referralCode && config?.telegramBotUsername
       ? `https://t.me/${config.telegramBotUsername.replace(/^@/, "")}?start=ref_${stats.referralCode}`
       : null;
-  const hasReferralLinks = Boolean(referralLinkSite || referralLinkBot);
+  const hasReferralLinks = Boolean(referralLinkBot);
 
   useEffect(() => {
     if (!token) return;
@@ -52,12 +47,11 @@ export function ClientReferralPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const copyLink = (which: "site" | "bot") => {
-    const url = which === "site" ? referralLinkSite : referralLinkBot;
-    if (url) {
-      navigator.clipboard.writeText(url);
-      setCopiedRef(which);
-      setTimeout(() => setCopiedRef(null), 2000);
+  const copyBotLink = () => {
+    if (referralLinkBot) {
+      navigator.clipboard.writeText(referralLinkBot);
+      setCopiedRef(true);
+      setTimeout(() => setCopiedRef(false), 2000);
     }
   };
 
@@ -196,29 +190,6 @@ export function ClientReferralPage() {
               </div>
 
               <div className="space-y-3">
-                {referralLinkSite && (
-                  <div
-                    className={cn(
-                      "flex flex-col gap-2 p-3 sm:p-4 rounded-2xl transition-colors",
-                      isMini
-                        ? cabinetMiniGlassCardClass
-                        : "bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 hover:bg-muted/60 dark:hover:bg-white/10"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 shrink-0 text-muted-foreground">
-                        <Globe className="w-4 h-4" />
-                      </div>
-                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Сайт</div>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <code className="flex-1 min-w-0 truncate text-xs font-mono text-primary/80 select-all bg-background/50 px-3 py-2 rounded-xl border border-border/50">{referralLinkSite}</code>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl" onClick={() => copyLink("site")}>
-                        {copiedRef === "site" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                )}
                 {referralLinkBot && (
                   <div
                     className={cn(
@@ -236,8 +207,8 @@ export function ClientReferralPage() {
                     </div>
                     <div className="flex items-center gap-2 min-w-0">
                       <code className="flex-1 min-w-0 truncate text-xs font-mono text-primary/80 select-all bg-background/50 px-3 py-2 rounded-xl border border-border/50">{referralLinkBot}</code>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl" onClick={() => copyLink("bot")}>
-                        {copiedRef === "bot" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl" onClick={copyBotLink}>
+                        {copiedRef ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                       </Button>
                     </div>
                   </div>
