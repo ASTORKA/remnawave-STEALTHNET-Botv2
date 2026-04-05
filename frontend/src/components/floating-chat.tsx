@@ -132,21 +132,28 @@ const ChatHeader = ({
   supportUnread,
   showAiTab = true,
   isMiniApp = false,
-}: any) => (
+}: any) => {
+  const supportMiniChrome = activeChat === "support" && isMiniApp;
+  return (
   <>
     <div className="px-4 py-3 sm:py-4 border-b border-white/5 bg-black/5 dark:bg-white/5 shrink-0 relative overflow-hidden pt-[max(env(safe-area-inset-top),16px)] sm:pt-4">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
-      <div className="relative flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
+      <div
+        className={cn(
+          "relative gap-3",
+          supportMiniChrome ? "grid grid-cols-[minmax(0,1fr)_auto] items-start" : "flex items-center justify-between"
+        )}
+      >
+        <div className={cn("flex min-w-0 items-center gap-3", !supportMiniChrome && "flex-1 pr-2")}>
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-inner">
             {activeChat === "ai" ? <Sparkles className="h-5 w-5" /> : <Headset className="h-5 w-5" />}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 overflow-hidden">
             <p className="truncate text-base font-bold text-foreground leading-tight">
               {activeChat === "ai" ? "AI Ассистент" : "Поддержка"}
             </p>
-            {activeChat === "support" && isMiniApp ? (
-              <p className="text-xs text-muted-foreground mt-0.5 font-medium leading-snug">
+            {supportMiniChrome ? (
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium leading-snug line-clamp-2 break-words">
                 Создавайте тикеты для связи с администрацией.
               </p>
             ) : (
@@ -160,7 +167,7 @@ const ChatHeader = ({
             )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className={cn("flex shrink-0 items-center gap-1 sm:gap-2", supportMiniChrome && "pt-0.5")}>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="hidden sm:flex rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
@@ -171,13 +178,13 @@ const ChatHeader = ({
             type="button"
             onClick={() => setIsOpen(false)}
             className={cn(
-              "rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground",
-              activeChat === "support" && isMiniApp && "flex items-center gap-1.5 pr-3 pl-2 rounded-full"
+              "shrink-0 rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground",
+              supportMiniChrome && "flex items-center gap-1 rounded-xl px-2.5 py-2 h-10"
             )}
           >
             <X className="h-5 w-5 shrink-0" />
-            {activeChat === "support" && isMiniApp ? (
-              <span className="text-sm font-semibold">Закрыть</span>
+            {supportMiniChrome ? (
+              <span className="text-sm font-semibold whitespace-nowrap">Закрыть</span>
             ) : null}
           </button>
         </div>
@@ -191,7 +198,8 @@ const ChatHeader = ({
       </div>
     )}
   </>
-);
+  );
+};
 
 function SupportTab({
   headerProps,
