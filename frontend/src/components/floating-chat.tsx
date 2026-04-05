@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, User, Sparkles, Headset, ArrowLeft, MessageSquarePlus, CircleDot, CircleCheck, Inbox, Loader2, Maximize2, Minimize2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -483,12 +484,21 @@ export function FloatingChat() {
   const { state } = useClientAuth();
   const config = useCabinetConfig();
   const token = state.token ?? null;
+  const [searchParams, setSearchParams] = useSearchParams();
   const serviceName = config?.serviceName?.trim() || "Сервис";
   const aiChatEnabled = config?.aiChatEnabled !== false;
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeChat, setActiveChat] = useState<ChatType>(() => (config?.aiChatEnabled !== false ? "ai" : "support"));
   const [hasOpenDialog, setHasOpenDialog] = useState(false);
+  useEffect(() => {
+    if (searchParams.get("support") !== "1" || !token) return;
+    setIsOpen(true);
+    setActiveChat("support");
+    const next = new URLSearchParams(searchParams);
+    next.delete("support");
+    setSearchParams(next, { replace: true });
+  }, [token, searchParams, setSearchParams]);
   useEffect(() => {
     if (!aiChatEnabled && activeChat === "ai") setActiveChat("support");
   }, [aiChatEnabled, activeChat]);

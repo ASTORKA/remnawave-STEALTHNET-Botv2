@@ -161,7 +161,7 @@ export function mainMenu(opts: {
         items.push({ node: w, onePerRow });
       }
     } else if (b.id === "tickets" && base) {
-      const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/tickets` } };
+      const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/dashboard?support=1` } };
       if (iconId) w.icon_custom_emoji_id = iconId;
       items.push({ node: w, onePerRow });
     } else if (MENU_IDS[b.id]) {

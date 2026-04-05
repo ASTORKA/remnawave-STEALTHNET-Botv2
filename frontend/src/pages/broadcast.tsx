@@ -24,7 +24,7 @@ const BUTTON_ACTIONS = [
   { value: "menu:main", label: "📋 Главное меню" },
   { value: "webapp:/cabinet", label: "🌐 Web кабинет" },
   { value: "webapp:/cabinet/subscribe", label: "🌐 Страница подключения" },
-  { value: "webapp:/cabinet/tickets", label: "🌐 Тикеты" },
+  { value: "webapp:/cabinet/dashboard?support=1", label: "🌐 Тикеты" },
   { value: "__custom_url__", label: "🔗 Своя ссылка (URL)" },
 ];
 
