@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 function formatDate(s: string | null) {
   if (!s) return "—";
@@ -216,8 +217,13 @@ export function ClientDashboardPage() {
   if (!client) return null;
 
   const subParsed = parseSubscription(subscription);
+  const subStatus = subParsed.status?.toUpperCase();
   const hasActiveSubscription =
-    subscription && typeof subscription === "object" && (subParsed.status === "ACTIVE" || subParsed.status === undefined);
+    Boolean(subscription && typeof subscription === "object") &&
+    subStatus !== "EXPIRED" &&
+    subStatus !== "CANCELLED" &&
+    subStatus !== "INACTIVE" &&
+    (subStatus === "ACTIVE" || subParsed.status === undefined);
   const vpnUrl = subParsed.subscriptionUrl || null;
   const [referralCopied, setReferralCopied] = useState<"site" | "bot" | null>(null);
   const siteOrigin = config?.publicAppUrl?.replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "");
@@ -268,63 +274,26 @@ export function ClientDashboardPage() {
   );
 
   if (isMiniapp) {
-    const miniStagger = {
-      hidden: {},
-      show: {
-        transition: {
-          staggerChildren: reduceMotion ? 0 : 0.09,
-          delayChildren: reduceMotion ? 0 : 0.05,
-        },
-      },
-    };
-    const miniItem = {
-      hidden: reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 },
-      show: {
-        opacity: 1,
-        y: 0,
-        transition: reduceMotion
-          ? { duration: 0 }
-          : { type: "spring" as const, stiffness: 320, damping: 28, mass: 0.88 },
-      },
-    };
-
     return (
-      <motion.div
-        className="w-full min-w-0 space-y-3 overflow-x-hidden"
-        initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
-      >
+      <div className="w-full min-w-0 space-y-3 overflow-x-hidden">
         {(paymentMessage === "success" || paymentMessage === "success_topup" || paymentMessage === "success_tariff") && (
-          <motion.div
-            layout
-            initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-xl border border-green-500/30 bg-green-500/[0.1] px-3 py-2.5 text-xs font-medium text-green-800 shadow-[0_0_40px_-16px_rgba(34,197,94,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset] backdrop-blur-md dark:text-green-300 dark:border-green-400/25 dark:bg-green-500/[0.12]"
-          >
+          <div className="rounded-xl border border-green-500/30 bg-green-500/[0.1] px-3 py-2.5 text-xs font-medium text-green-800 shadow-[0_0_40px_-16px_rgba(34,197,94,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset] dark:text-green-300 dark:border-green-400/25 dark:bg-green-500/[0.12]">
             {paymentMessage === "success_topup"
               ? "Оплата прошла успешно. Баланс пополнен."
               : paymentMessage === "success_tariff"
                 ? "Оплата прошла успешно. Тариф активируется автоматически."
                 : "Оплата прошла успешно. Статус обновляется автоматически."}
-          </motion.div>
+          </div>
         )}
         {paymentMessage === "failed" && (
-          <motion.div
-            layout
-            initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-xl border border-destructive/30 bg-destructive/[0.09] px-3 py-2.5 text-xs font-medium text-destructive shadow-[0_0_36px_-14px_hsl(var(--destructive)/0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-md dark:bg-destructive/12"
-          >
+          <div className="rounded-xl border border-destructive/30 bg-destructive/[0.09] px-3 py-2.5 text-xs font-medium text-destructive shadow-[0_0_36px_-14px_hsl(var(--destructive)/0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] dark:bg-destructive/12">
             Оплата не прошла. Попробуйте снова.
-          </motion.div>
+          </div>
         )}
 
-        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-3">
-        {/* 1. Статус, подключение, тариф / дата / трафик — компактно */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
+        <div className="space-y-3">
+        {/* 1. Статус, подключение, тариф / дата / трафик */}
+        <section className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
           <div
             className="cabinet-mini-glass__blob -right-12 -top-16 h-28 w-28 rounded-full bg-gradient-to-bl from-primary/28 via-primary/8 to-transparent blur-2xl dark:from-primary/32"
             aria-hidden
@@ -344,23 +313,40 @@ export function ClientDashboardPage() {
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
             </div>
-          ) : subscriptionError || !hasActiveSubscription ? (
-            <NoSubscriptionState />
+          ) : subscriptionError ? (
+            <p className="text-sm text-destructive">{subscriptionError}</p>
+          ) : !hasActiveSubscription ? (
+            showTrial ? (
+              <div className="space-y-4 py-1 text-center">
+                <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_32px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
+                  <Gift className="h-7 w-7" />
+                </div>
+                <p className="text-[15px] leading-snug text-muted-foreground">
+                  Получите бесплатный доступ на {formatRuDays(trialDays)}.
+                </p>
+                <Button
+                  className="h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-base font-semibold text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] [&_svg]:self-center [&_span]:leading-none"
+                  onClick={activateTrial}
+                  disabled={trialLoading}
+                >
+                  {trialLoading ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> : <Gift className="h-5 w-5 shrink-0" />}
+                  <span className="inline-flex items-center leading-none">Активировать триал</span>
+                </Button>
+                {trialError && <p className="text-sm text-destructive break-words">{trialError}</p>}
+              </div>
+            ) : (
+              <NoSubscriptionState />
+            )
           ) : (
             <div className="min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.12] px-2.5 py-1 text-xs font-semibold text-green-800 backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.12] px-3 py-1.5 text-sm font-semibold text-green-800 backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
                   <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-pulse" />
                   Активна
                 </span>
                 {daysLeft != null && (
-                  <span className="rounded-full border border-white/20 bg-background/50 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur-sm dark:border-white/10">
+                  <span className="rounded-full border border-white/20 bg-background/50 px-3 py-1.5 text-sm font-semibold text-foreground backdrop-blur-sm dark:border-white/10">
                     Осталось {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
-                  </span>
-                )}
-                {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-2.5 py-1 text-xs font-semibold text-primary">
-                    📱 {deviceCount} / {subParsed.hwidDeviceLimit}
                   </span>
                 )}
               </div>
@@ -395,25 +381,44 @@ export function ClientDashboardPage() {
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex flex-col items-center gap-2 pt-1">
-                    <Button
-                      className="h-[4.5rem] w-[4.5rem] shrink-0 rounded-full bg-gradient-to-br from-primary to-primary/85 p-0 text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform duration-300 hover:scale-[1.04] active:scale-[0.98]"
-                      asChild
-                    >
-                      <Link
-                        to="/cabinet/subscribe"
-                        className="inline-flex items-center justify-center"
-                        aria-label="Подключиться к VPN"
+                  <div className="flex w-full flex-col items-center gap-3 pt-2">
+                    <div className="relative mx-auto flex h-[9.5rem] w-[9.5rem] items-center justify-center">
+                      {!reduceMotion && (
+                        <>
+                          <span className="cabinet-vpn-pulse-ring pointer-events-none absolute h-[7rem] w-[7rem] rounded-full border-2 border-primary/40" />
+                          <span className="cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d1 pointer-events-none absolute h-[7rem] w-[7rem] rounded-full border-2 border-primary/30" />
+                          <span className="cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d2 pointer-events-none absolute h-[7rem] w-[7rem] rounded-full border-2 border-primary/25" />
+                        </>
+                      )}
+                      <Button
+                        className={cn(
+                          "relative z-10 h-[7rem] w-[7rem] shrink-0 rounded-full border-0 bg-gradient-to-br from-primary to-primary/85 p-0 text-primary-foreground shadow-[0_14px_44px_-14px_hsl(var(--primary)/0.55),inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform duration-200 active:scale-[0.97]",
+                          !reduceMotion && "cabinet-vpn-pulse-btn"
+                        )}
+                        asChild
                       >
-                        <Wifi className="h-8 w-8 shrink-0" />
-                      </Link>
-                    </Button>
-                    <span className="text-center text-xs font-semibold text-foreground">Подключиться к VPN</span>
+                        <Link
+                          to="/cabinet/subscribe"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Подключиться к VPN"
+                        >
+                          <Wifi className="h-10 w-10 shrink-0" />
+                        </Link>
+                      </Button>
+                    </div>
+                    <span className="text-center text-sm font-semibold text-foreground">Подключиться к VPN</span>
                   </div>
                 </div>
               ) : null}
 
               <div className="space-y-2.5">
+                {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
+                  <div className="flex justify-center sm:justify-start">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-3 py-1.5 text-sm font-semibold text-primary">
+                      📱 {deviceCount} / {subParsed.hwidDeviceLimit}
+                    </span>
+                  </div>
+                )}
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
                   <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
@@ -468,55 +473,10 @@ export function ClientDashboardPage() {
             </div>
           )}
           </div>
-        </motion.section>
+        </section>
 
-        {/* 2. Триал / выбор тарифа — только без активной подписки (при оплаченной подписке без ссылки блок не показываем) */}
-        {!hasActiveSubscription && (
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
-          <div
-            className="cabinet-mini-glass__blob right-0 top-1/2 h-32 w-32 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
-            aria-hidden
-          />
-          <div className="cabinet-mini-glass__body">
-          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            <div className="rounded-xl border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
-              <Wifi className="h-4 w-4 shrink-0 text-primary" />
-            </div>
-            Доступ к VPN
-          </h2>
-          {showTrial ? (
-            <div className="space-y-3 text-center">
-              <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_32px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
-                <Gift className="h-6 w-6" />
-              </div>
-              <p className="text-[13px] leading-snug text-muted-foreground">
-                Получите бесплатный доступ на {formatRuDays(trialDays)}.
-              </p>
-              <Button className="h-10 w-full gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-sm text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] transition-transform duration-300 hover:scale-[1.02] hover:from-green-500 hover:to-emerald-500 [&_svg]:self-center [&_span]:leading-none" onClick={activateTrial} disabled={trialLoading}>
-                {trialLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Gift className="h-4 w-4 shrink-0" />}
-                <span className="inline-flex items-center leading-none font-semibold">Активировать триал</span>
-              </Button>
-              {trialError && <p className="text-xs text-destructive break-words text-center">{trialError}</p>}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2.5 rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] to-transparent p-3 text-[13px] leading-snug text-primary shadow-[0_0_36px_-14px_hsl(var(--primary)/0.35)] ring-1 ring-primary/15 backdrop-blur-sm dark:from-primary/15">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p>Ссылка появится после оплаты. Вкладка «Тарифы».</p>
-              </div>
-              <Button className="h-10 w-full rounded-lg bg-gradient-to-r from-primary to-primary/88 text-sm shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
-                <Link to="/cabinet/tariffs" className="inline-flex w-full items-center justify-center gap-2">
-                  <span className="inline-flex items-center leading-none font-semibold">Выбрать тариф</span>
-                </Link>
-              </Button>
-            </div>
-          )}
-          </div>
-        </motion.section>
-        )}
-
-        {/* 3. Баланс */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-2 self-start overflow-hidden p-3">
+        {/* 2. Баланс */}
+        <section className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-2 self-start overflow-hidden p-3">
           <div
             className="cabinet-mini-glass__blob -left-14 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/14 to-transparent blur-2xl dark:from-amber-300/18"
             aria-hidden
@@ -554,9 +514,9 @@ export function ClientDashboardPage() {
             </Link>
           </Button>
           </div>
-        </motion.section>
-        </motion.div>
-      </motion.div>
+        </section>
+        </div>
+      </div>
     );
   }
 

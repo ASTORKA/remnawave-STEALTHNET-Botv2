@@ -413,7 +413,7 @@ function MobileCabinetShell() {
     <div
       className={cn(
         "cabinet-native-font relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(4.65rem+env(safe-area-inset-bottom))]",
-        isMiniapp && "selection:bg-primary/20"
+        isMiniapp && "cabinet-miniapp-lite selection:bg-primary/20"
       )}
     >
       <div className="cabinet-ambient" aria-hidden>
