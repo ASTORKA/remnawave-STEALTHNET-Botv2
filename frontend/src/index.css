@@ -158,6 +158,13 @@
   }
 }
 
+/* Mini App: контент ниже нативной шапки (Закрыть + меню). Telegram шлёт --tg-content-safe-area-inset-top */
+.cabinet-tg-main-pad {
+  padding-top: calc(
+    max(0.5rem, env(safe-area-inset-top, 0px)) + max(var(--tg-content-safe-area-inset-top, 0px), 52px)
+  );
+}
+
 /* ── Cabinet mobile / mini-app ambient background (GPU-friendly CSS) ── */
 .cabinet-ambient {
   position: fixed;

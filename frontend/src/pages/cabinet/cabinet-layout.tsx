@@ -429,8 +429,10 @@ function MobileCabinetShell() {
       </div>
       <FloatingChat />
       <main
-        className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col items-stretch px-4 pb-2 transition-all duration-300 sm:px-5"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        className={cn(
+          "mx-auto flex w-full min-w-0 flex-1 flex-col items-stretch px-4 pb-2 transition-all duration-300 sm:px-5",
+          isMiniapp ? "cabinet-tg-main-pad max-w-lg sm:mx-auto" : "max-w-7xl pt-[max(0.75rem,env(safe-area-inset-top))]"
+        )}
       >
         <Outlet />
       </main>

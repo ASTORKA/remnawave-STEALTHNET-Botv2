@@ -365,6 +365,48 @@ export function ClientDashboardPage() {
                 )}
               </div>
 
+              {vpnUrl ? (
+                <div className="mt-3 space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                      <Wifi className="h-4 w-4 shrink-0" />
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</p>
+                  </div>
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">
+                    Страница с приложениями и настройкой в один клик — по кнопке ниже или по ссылке.
+                  </p>
+                  <div className="flex min-w-0 gap-2">
+                    <code
+                      className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2 font-mono text-[11px] text-foreground/90 shadow-inner backdrop-blur-sm ring-1 ring-primary/10 dark:border-white/[0.08] dark:bg-background/35"
+                      title={vpnUrl}
+                    >
+                      {vpnUrl}
+                    </code>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9 shrink-0 rounded-xl border-white/25 bg-background/70 hover:border-primary/30 hover:bg-background/90 dark:border-white/10"
+                      onClick={() => {
+                        navigator.clipboard.writeText(vpnUrl);
+                        window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    className="h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/85 text-sm text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none"
+                    asChild
+                  >
+                    <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-2">
+                      <Wifi className="h-5 w-5 shrink-0" />
+                      <span className="inline-flex items-center leading-none">Подключиться к VPN</span>
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
+
               <div className="mt-1 space-y-2.5 border-t border-white/20 pt-3 dark:border-white/[0.08]">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
                   <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
@@ -424,7 +466,8 @@ export function ClientDashboardPage() {
           </div>
         </motion.section>
 
-        {/* 2. Как подключиться — ссылка и кнопка */}
+        {/* 2. Триал / напоминание об оплате (если нет ссылки подключения в блоке статуса) */}
+        {!(hasActiveSubscription && vpnUrl) && (
         <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-4">
           <div
             className="cabinet-mini-glass__blob right-0 top-1/2 h-36 w-36 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
@@ -437,33 +480,7 @@ export function ClientDashboardPage() {
             </div>
             Подключение
           </h2>
-          {vpnUrl ? (
-            <div className="space-y-4">
-              <p className="text-[14px] leading-relaxed text-muted-foreground">Нажмите кнопку ниже — откроется страница с приложениями и настройкой в 1 клик.</p>
-              <div className="flex min-w-0 gap-2">
-                <code className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 font-mono text-xs text-foreground/90 shadow-inner backdrop-blur-sm ring-1 ring-primary/10 dark:border-white/[0.08] dark:bg-background/35" title={vpnUrl}>
-                  {vpnUrl}
-                </code>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-auto w-11 shrink-0 rounded-xl border-white/25 bg-background/70 transition-transform hover:scale-105 hover:border-primary/30 hover:bg-background/90 dark:border-white/10"
-                  onClick={() => {
-                    navigator.clipboard.writeText(vpnUrl);
-                    window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/85 text-base text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_16px_48px_-12px_hsl(var(--primary)/0.5)] [&_svg]:self-center [&_span]:leading-none" asChild>
-                <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-2">
-                  <Wifi className="h-5 w-5 shrink-0" />
-                  <span className="inline-flex items-center leading-none">Подключиться к VPN</span>
-                </Link>
-              </Button>
-            </div>
-          ) : showTrial ? (
+          {showTrial ? (
             <div className="space-y-4 text-center">
               <div className="mx-auto mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_40px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
                 <Gift className="h-7 w-7" />
@@ -492,6 +509,7 @@ export function ClientDashboardPage() {
           )}
           </div>
         </motion.section>
+        )}
 
         {/* 3. Баланс */}
         <motion.section variants={miniItem} className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-3 self-start overflow-hidden p-4">

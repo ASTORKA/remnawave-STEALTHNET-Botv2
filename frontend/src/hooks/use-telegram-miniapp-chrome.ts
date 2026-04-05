@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /** Совпадает с тёмным фоном кабинета / theme-color — шапка Telegram сливается с контентом, выглядит компактнее */
 const TG_SURFACE_HEX = "#0f172a";
+
+const NARROW_MAX_W = 768;
 
 type TelegramWebAppLike = {
   ready: () => void;
@@ -10,15 +12,21 @@ type TelegramWebAppLike = {
   setBackgroundColor: (color: string) => void;
   setBottomBarColor?: (color: string) => void;
   requestFullscreen?: () => void;
+  exitFullscreen?: () => void;
   isVersionAtLeast?: (ver: string) => boolean;
 };
 
+function isNarrowViewport() {
+  return typeof window !== "undefined" && window.innerWidth < NARROW_MAX_W;
+}
+
 /**
- * Настройка нативного UI Telegram Mini App: единый цвет шапки и фона, по возможности полноэкранный режим
- * (меньше «плашка» с названием бота по центру — как на референсах в свежих клиентах).
- * Текст «мини-приложение» задаётся в BotFather у кнопки Web App, из веба не убрать.
+ * Настройка нативного UI Telegram Mini App: единый цвет шапки и фона.
+ * Полноэкранный режим — только на узком экране (телефон), не на Telegram Desktop / широком окне.
  */
 export function useTelegramMiniappChrome(enabled: boolean) {
+  const requestedFs = useRef(false);
+
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
     const tg = (window as Window & { Telegram?: { WebApp?: TelegramWebAppLike } }).Telegram?.WebApp;
@@ -45,12 +53,42 @@ export function useTelegramMiniappChrome(enabled: boolean) {
       /* старые клиенты без hex для header */
     }
 
-    if (tg.isVersionAtLeast?.("8.0") && typeof tg.requestFullscreen === "function") {
+    requestedFs.current = false;
+    if (
+      isNarrowViewport() &&
+      tg.isVersionAtLeast?.("8.0") &&
+      typeof tg.requestFullscreen === "function"
+    ) {
       try {
         tg.requestFullscreen();
+        requestedFs.current = true;
       } catch {
-        /* не все клиенты разрешают сразу */
+        /* ignore */
       }
     }
+
+    const onResize = () => {
+      if (!isNarrowViewport() && requestedFs.current && typeof tg.exitFullscreen === "function") {
+        try {
+          tg.exitFullscreen();
+          requestedFs.current = false;
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (requestedFs.current && typeof tg.exitFullscreen === "function") {
+        try {
+          tg.exitFullscreen();
+        } catch {
+          /* ignore */
+        }
+        requestedFs.current = false;
+      }
+    };
   }, [enabled]);
 }
