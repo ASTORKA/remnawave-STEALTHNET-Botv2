@@ -304,7 +304,7 @@ export function ClientDashboardPage() {
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          {!(hasActiveSubscription && !loading && !subscriptionError) && (
+          {(loading || subscriptionError) && (
             <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               <div className="rounded-xl border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
                 <Zap className="h-4 w-4 shrink-0 text-primary" />
@@ -318,43 +318,23 @@ export function ClientDashboardPage() {
             </div>
           ) : subscriptionError ? (
             <p className="text-sm text-destructive">{subscriptionError}</p>
-          ) : !hasActiveSubscription ? (
-            showTrial ? (
-              <div className="space-y-4 py-1 text-center">
-                <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_32px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
-                  <Gift className="h-7 w-7" />
-                </div>
-                <p className="text-[15px] leading-snug text-muted-foreground">
-                  Получите бесплатный доступ на {formatRuDays(trialDays)}.
-                </p>
-                <Button
-                  className="h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-base font-semibold text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] [&_svg]:self-center [&_span]:leading-none"
-                  onClick={activateTrial}
-                  disabled={trialLoading}
-                >
-                  {trialLoading ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> : <Gift className="h-5 w-5 shrink-0" />}
-                  <span className="inline-flex items-center leading-none">Активировать триал</span>
-                </Button>
-                {trialError && <p className="text-sm text-destructive break-words">{trialError}</p>}
-              </div>
-            ) : (
-              <NoSubscriptionState />
-            )
           ) : (
-            <div className="min-w-0 space-y-4">
-              {(() => {
-                const planNameRaw = (tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim();
-                const tariffHeroTitle =
-                  planNameRaw || (client?.trialUsed ? "Триал" : "Нет тарифа");
-                const daysPhrase =
-                  daysLeft != null
-                    ? `Осталось ${daysLeft} ${daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}`
-                    : null;
-                const tariffHeroSubtitle =
-                  planNameRaw || client?.trialUsed
-                    ? [daysPhrase, "Подписка активна"].filter(Boolean).join(" · ")
-                    : "Выберите подходящий план";
-                return (
+            (() => {
+              const planNameRaw = (tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim();
+              const connectWithTrialTap = showTrial && !hasActiveSubscription;
+              const connectLinkHref =
+                hasActiveSubscription && vpnUrl ? "/cabinet/subscribe" : "/cabinet/tariffs";
+              const pillLabel = connectWithTrialTap ? "Активировать триал" : "Нажмите для подключения";
+              const ringSizeClass = "h-[9rem] w-[9rem]";
+              const btnSizeClass = "h-[9rem] w-[9rem]";
+              const whiteCircleBtnClass = cn(
+                "relative z-10 shrink-0 rounded-full border border-black/10 bg-white p-0 text-primary shadow-[0_20px_50px_-22px_rgba(0,0,0,0.35)] transition-transform duration-200 active:scale-[0.97] dark:bg-white dark:text-primary",
+                btnSizeClass,
+                !reduceMotion && "cabinet-vpn-tap-glow"
+              );
+
+              return (
+                <div className="min-w-0 space-y-4">
                   <div className="space-y-2">
                     <Link
                       to="/cabinet/tariffs"
@@ -364,132 +344,213 @@ export function ClientDashboardPage() {
                         <Package className="h-6 w-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-lg font-bold tracking-tight text-foreground">{tariffHeroTitle}</p>
-                        <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{tariffHeroSubtitle}</p>
+                        {hasActiveSubscription ? (
+                          <>
+                            <p className="truncate text-lg font-bold tracking-tight text-foreground">
+                              {planNameRaw || (client?.trialUsed ? "Триал" : "Нет тарифа")}
+                            </p>
+                            <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
+                              {planNameRaw || client?.trialUsed
+                                ? [
+                                    daysLeft != null
+                                      ? `Осталось ${daysLeft} ${daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}`
+                                      : null,
+                                    "Подписка активна",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")
+                                : "Выберите подходящий план"}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="truncate text-lg font-bold tracking-tight text-foreground">Тариф еще не активен</p>
+                            <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
+                              {showTrial
+                                ? `Можно начать с бесплатного периода на ${formatRuDays(trialDays)} или выбрать платный тариф.`
+                                : "Оформите подписку — после оплаты появится ссылка и настройка VPN."}
+                            </p>
+                          </>
+                        )}
                       </div>
                       <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
                     </Link>
-                    <Link
-                      to="/cabinet/tariffs"
-                      className="block text-center text-sm font-semibold text-primary transition-colors hover:text-primary/90"
-                    >
-                      Выбрать тариф
-                      <span className="ml-1" aria-hidden>
-                        →
-                      </span>
-                    </Link>
-                  </div>
-                );
-              })()}
-
-              {vpnUrl ? (
-                <div className="flex flex-col items-center gap-4 border-t border-white/10 pt-5 dark:border-white/[0.06]">
-                  <p className="max-w-xs text-center text-xs text-muted-foreground">
-                    Ссылка на подписку — скопируйте или откройте настройку в один тап.
-                  </p>
-                  <div className="flex w-full min-w-0 gap-2 px-0.5">
-                    <code
-                      className="font-mono flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 text-[11px] text-foreground/90 shadow-inner dark:border-white/[0.08]"
-                      title={vpnUrl}
-                    >
-                      {vpnUrl}
-                    </code>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-11 w-11 shrink-0 rounded-xl border-white/25 bg-background/70 dark:border-white/10"
-                      onClick={() => {
-                        navigator.clipboard.writeText(vpnUrl);
-                        window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex w-full flex-col items-center gap-4">
-                    <div className="relative mx-auto flex h-[10rem] w-[10rem] items-center justify-center">
-                      {!reduceMotion && (
-                        <>
-                          <span className="cabinet-vpn-pulse-ring pointer-events-none absolute h-[7.5rem] w-[7.5rem] rounded-full border-2 border-primary/40" />
-                          <span className="cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d1 pointer-events-none absolute h-[7.5rem] w-[7.5rem] rounded-full border-2 border-primary/30" />
-                          <span className="cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d2 pointer-events-none absolute h-[7.5rem] w-[7.5rem] rounded-full border-2 border-primary/25" />
-                        </>
-                      )}
-                      <Button
-                        className={cn(
-                          "relative z-10 h-[7.5rem] w-[7.5rem] shrink-0 rounded-full border border-white/10 bg-gradient-to-b from-muted/90 to-muted/50 p-0 text-foreground shadow-[0_14px_44px_-14px_rgba(0,0,0,0.45),inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform duration-200 active:scale-[0.97] dark:from-zinc-700/90 dark:to-zinc-900/80 dark:text-primary",
-                          !reduceMotion && "cabinet-vpn-tap-glow"
-                        )}
-                        asChild
+                    {!hasActiveSubscription && (
+                      <Link
+                        to="/cabinet/tariffs"
+                        className="block text-center text-sm font-semibold text-primary transition-colors hover:text-primary/90"
                       >
-                        <Link
-                          to="/cabinet/subscribe"
-                          className="inline-flex items-center justify-center"
-                          aria-label="Подключиться к VPN"
-                        >
-                          <Zap className="h-11 w-11 shrink-0" strokeWidth={2.25} />
-                        </Link>
-                      </Button>
-                    </div>
-                    <Button
-                      className="h-12 w-full max-w-xs rounded-full border border-white/20 bg-background/45 px-8 text-base font-semibold text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-background/60 dark:border-white/[0.1]"
-                      asChild
-                    >
-                      <Link to="/cabinet/subscribe" className="inline-flex items-center justify-center">
-                        Нажмите для подключения
+                        Выбрать тариф
+                        <span className="ml-1" aria-hidden>
+                          →
+                        </span>
                       </Link>
-                    </Button>
+                    )}
                   </div>
-                </div>
-              ) : null}
 
-              <div className="space-y-2.5 border-t border-white/10 pt-4 dark:border-white/[0.06]">
-                {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
-                  <div className="flex justify-center sm:justify-start">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-3 py-1.5 text-sm font-semibold text-primary">
-                      📱 {deviceCount} / {subParsed.hwidDeviceLimit}
-                    </span>
-                  </div>
-                )}
-                {subParsed.expireAt && (
-                  <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Calendar className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Действует до</p>
-                      <p className="text-[15px] font-semibold text-foreground">{formatDate(subParsed.expireAt)}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Wifi className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Трафик</p>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[15px] font-semibold text-foreground">
-                          {subParsed.trafficLimitBytes != null && subParsed.trafficLimitBytes > 0
-                            ? `${formatBytes(subParsed.trafficUsed ?? 0)} / ${formatBytes(subParsed.trafficLimitBytes)}`
-                            : "Безлимит"}
-                        </p>
-                        {trafficPercent != null && <span className="text-sm font-semibold text-muted-foreground">{trafficPercent}%</span>}
+                  {hasActiveSubscription && vpnUrl ? (
+                    <div className="flex flex-col items-center gap-3 border-t border-white/10 pt-5 dark:border-white/[0.06]">
+                      <p className="max-w-xs text-center text-xs text-muted-foreground">
+                        Ссылка на подписку — скопируйте или откройте настройку в один тап.
+                      </p>
+                      <div className="flex w-full min-w-0 gap-2 px-0.5">
+                        <code
+                          className="font-mono flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 text-[11px] text-foreground/90 shadow-inner dark:border-white/[0.08]"
+                          title={vpnUrl}
+                        >
+                          {vpnUrl}
+                        </code>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-11 w-11 shrink-0 rounded-xl border-white/25 bg-background/70 dark:border-white/10"
+                          onClick={() => {
+                            navigator.clipboard.writeText(vpnUrl);
+                            window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  {trafficPercent != null && (
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-white/10 dark:bg-muted/20">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary via-cyan-400/90 to-primary/90 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out"
-                        style={{ width: `${trafficPercent}%` }}
-                      />
+                  ) : null}
+
+                  <div
+                    className={cn(
+                      "flex flex-col items-center gap-5 pt-2",
+                      !(hasActiveSubscription && vpnUrl) && "border-t border-white/10 pt-6 dark:border-white/[0.06]"
+                    )}
+                  >
+                    <div className="relative mx-auto flex h-[12rem] w-[12rem] items-center justify-center">
+                      {!reduceMotion && (
+                        <>
+                          <span
+                            className={cn(
+                              "cabinet-vpn-pulse-ring pointer-events-none absolute rounded-full border-2 border-primary/40",
+                              ringSizeClass
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d1 pointer-events-none absolute rounded-full border-2 border-primary/30",
+                              ringSizeClass
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "cabinet-vpn-pulse-ring cabinet-vpn-pulse-ring--d2 pointer-events-none absolute rounded-full border-2 border-primary/25",
+                              ringSizeClass
+                            )}
+                          />
+                        </>
+                      )}
+                      {connectWithTrialTap ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => void activateTrial()}
+                          disabled={trialLoading}
+                          className={whiteCircleBtnClass}
+                          aria-label={pillLabel}
+                        >
+                          {trialLoading ? (
+                            <Loader2 className="h-12 w-12 shrink-0 animate-spin text-primary" />
+                          ) : (
+                            <Zap className="h-12 w-12 shrink-0" strokeWidth={2.25} />
+                          )}
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" className={whiteCircleBtnClass} asChild>
+                          <Link
+                            to={connectLinkHref}
+                            className="inline-flex items-center justify-center"
+                            aria-label="Подключиться к VPN"
+                          >
+                            <Zap className="h-12 w-12 shrink-0" strokeWidth={2.25} />
+                          </Link>
+                        </Button>
+                      )}
                     </div>
-                  )}
+                    {connectWithTrialTap ? (
+                      <Button
+                        type="button"
+                        className="h-14 w-full max-w-sm rounded-full border border-white/25 bg-white/90 px-10 text-base font-semibold text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-white dark:border-white/15 dark:bg-white/95"
+                        onClick={() => void activateTrial()}
+                        disabled={trialLoading}
+                      >
+                        {trialLoading ? (
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" />
+                        ) : null}
+                        {pillLabel}
+                      </Button>
+                    ) : (
+                      <Button
+                        className="h-14 w-full max-w-sm rounded-full border border-white/25 bg-white/90 px-10 text-base font-semibold text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-white dark:border-white/15 dark:bg-white/95"
+                        asChild
+                      >
+                        <Link to={connectLinkHref} className="inline-flex items-center justify-center">
+                          {pillLabel}
+                        </Link>
+                      </Button>
+                    )}
+                    {connectWithTrialTap && trialError ? (
+                      <p className="max-w-sm text-center text-sm text-destructive">{trialError}</p>
+                    ) : null}
+                  </div>
+
+                  {hasActiveSubscription ? (
+                    <div className="space-y-2.5 border-t border-white/10 pt-4 dark:border-white/[0.06]">
+                      {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
+                        <div className="flex justify-center sm:justify-start">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-3 py-1.5 text-sm font-semibold text-primary">
+                            📱 {deviceCount} / {subParsed.hwidDeviceLimit}
+                          </span>
+                        </div>
+                      )}
+                      {subParsed.expireAt && (
+                        <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                            <Calendar className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1 leading-tight">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Действует до</p>
+                            <p className="text-[15px] font-semibold text-foreground">{formatDate(subParsed.expireAt)}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                            <Wifi className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1 leading-tight">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Трафик</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[15px] font-semibold text-foreground">
+                                {subParsed.trafficLimitBytes != null && subParsed.trafficLimitBytes > 0
+                                  ? `${formatBytes(subParsed.trafficUsed ?? 0)} / ${formatBytes(subParsed.trafficLimitBytes)}`
+                                  : "Безлимит"}
+                              </p>
+                              {trafficPercent != null && (
+                                <span className="text-sm font-semibold text-muted-foreground">{trafficPercent}%</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {trafficPercent != null && (
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-white/10 dark:bg-muted/20">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-primary via-cyan-400/90 to-primary/90 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out"
+                              style={{ width: `${trafficPercent}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            </div>
+              );
+            })()
           )}
           </div>
         </section>
