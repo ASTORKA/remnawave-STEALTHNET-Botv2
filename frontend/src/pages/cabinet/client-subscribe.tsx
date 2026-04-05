@@ -255,6 +255,16 @@ export function ClientSubscribePage() {
   const platformLabel = PLATFORM_LABELS[platform] ?? platform;
   const showQrNextToAddButton = isMiniapp || isMobileView;
 
+  const miniText = {
+    sectionTitle: "text-xl font-semibold tracking-tight sm:text-2xl",
+    cardTitle: "text-lg font-semibold sm:text-xl",
+    stepTitle: "text-base font-semibold sm:text-sm",
+    body: "text-[15px] leading-relaxed sm:text-sm",
+    stepNum: "flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary sm:h-5 sm:w-5 sm:text-[10px]",
+    indent: "pl-0 sm:pl-7",
+    btnWrap: "flex flex-wrap gap-2 pt-1 sm:pl-7",
+  } as const;
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-6">
@@ -334,10 +344,15 @@ export function ClientSubscribePage() {
       <motion.div 
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex items-center gap-3 px-1"
+        className="flex items-center gap-3 px-0 sm:px-1"
       >
-        <div className="h-8 w-1 rounded-full bg-primary" />
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <div className="h-9 w-1 shrink-0 rounded-full bg-primary sm:h-8" />
+        <h2
+          className={cn(
+            "font-semibold tracking-tight text-slate-900 dark:text-white",
+            isMiniapp ? miniText.sectionTitle : "text-xl sm:text-2xl"
+          )}
+        >
           Приложения для {platformData?.displayName ? getText(platformData.displayName, locale) : platformLabel}
         </h2>
       </motion.div>
@@ -350,33 +365,58 @@ export function ClientSubscribePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: appIndex * 0.1 + 0.2, type: "spring", stiffness: 300, damping: 24 }}
           >
-            <Card className="border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl overflow-hidden group hover:bg-white/60 dark:hover:bg-black/30 transition-all duration-300 hover:scale-[1.01] hover:shadow-xl">
+            <Card
+              className={cn(
+                "border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl overflow-hidden group transition-all duration-300 hover:shadow-xl",
+                isMiniapp ? "hover:bg-white/55 dark:hover:bg-black/35" : "hover:bg-white/60 dark:hover:bg-black/30 hover:scale-[1.01]"
+              )}
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <CardHeader className="pb-3 relative z-10">
-                <CardTitle className="text-lg flex items-center gap-3 text-slate-900 dark:text-white">
-                  <div className="p-2 rounded-lg bg-slate-100/50 dark:bg-white/5 ring-1 ring-slate-200/50 dark:ring-white/10 group-hover:ring-primary/30 group-hover:text-primary transition-all duration-300">
-                    <Smartphone className="h-5 w-5" />
+              <CardHeader className={cn("relative z-10 pb-3", isMiniapp && "px-4 pt-4")}>
+                <CardTitle
+                  className={cn(
+                    "flex items-center gap-3 text-slate-900 dark:text-white",
+                    isMiniapp ? miniText.cardTitle : "text-lg"
+                  )}
+                >
+                  <div className="rounded-lg bg-slate-100/50 p-2 ring-1 ring-slate-200/50 transition-all duration-300 dark:bg-white/5 dark:ring-white/10 group-hover:text-primary group-hover:ring-primary/30">
+                    <Smartphone className={cn(isMiniapp ? "h-6 w-6" : "h-5 w-5")} />
                   </div>
                   {app.name}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 relative z-10">
+              <CardContent className={cn("relative z-10 space-y-6", isMiniapp && "space-y-5 px-4 pb-5 pt-0")}>
                 {app.blocks?.map((block, blockIndex) => (
                   <div key={blockIndex} className="space-y-3">
-                    <div className="space-y-1.5">
-                      <h3 className="text-sm font-semibold text-slate-800 dark:text-foreground/90 flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+                    <div className="space-y-2">
+                      <h3
+                        className={cn(
+                          "flex items-center gap-2.5 text-slate-800 dark:text-foreground/90",
+                          isMiniapp ? miniText.stepTitle : "text-sm font-semibold"
+                        )}
+                      >
+                        <span className={isMiniapp ? miniText.stepNum : "flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary"}>
                           {blockIndex + 1}
                         </span>
                         {getText(block.title, locale)}
                       </h3>
                       {block.description && (
-                        <p className="text-sm text-slate-600 dark:text-muted-foreground pl-7 leading-relaxed">
+                        <p
+                          className={cn(
+                            "text-slate-600 dark:text-muted-foreground leading-relaxed",
+                            isMiniapp ? cn(miniText.body, miniText.indent) : "pl-7 text-sm"
+                          )}
+                        >
                           {getText(block.description, locale)}
                         </p>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2.5 pl-7 pt-1">
+                    <div
+                      className={cn(
+                        "flex flex-wrap gap-2.5 pt-1",
+                        isMiniapp ? miniText.btnWrap : "pl-7"
+                      )}
+                    >
                       {block.buttons?.map((btn, btnIndex) => {
                         const isSubscription = btn.type === "subscriptionLink";
                         const href = isSubscription
@@ -414,20 +454,33 @@ export function ClientSubscribePage() {
                             }
                           };
                           return (
-                            <span key={btnIndex} className="inline-flex flex-wrap gap-2 items-center">
-                              <a href={deeplinkUrl} target="_blank" rel="noopener noreferrer" onClick={handleClick} className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-2 min-h-[40px] shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-[1.02] flex-row !flex-nowrap whitespace-nowrap")}>
-                                  <Plus className="h-4 w-4 shrink-0" />
-                                  {label}
-                                </a>
+                            <span key={btnIndex} className="inline-flex flex-wrap items-center gap-2">
+                              <a
+                                href={deeplinkUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={handleClick}
+                                className={cn(
+                                  buttonVariants({ variant: "default", size: isMiniapp ? "default" : "sm" }),
+                                  "flex-row gap-2 !flex-nowrap whitespace-nowrap shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30",
+                                  isMiniapp ? "min-h-12 px-5 text-base font-semibold" : "min-h-[40px] hover:scale-[1.02]"
+                                )}
+                              >
+                                <Plus className={cn("shrink-0", isMiniapp ? "h-5 w-5" : "h-4 w-4")} />
+                                {label}
+                              </a>
                               {showQrNextToAddButton && (
                                 <Button
                                   variant="outline"
-                                  size="sm"
-                                  className="gap-1.5 min-h-[40px] shrink-0 border-slate-200/50 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 transition-colors"
+                                  size={isMiniapp ? "default" : "sm"}
+                                  className={cn(
+                                    "shrink-0 gap-1.5 border-slate-200/50 bg-white/50 transition-colors dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                                    isMiniapp ? "min-h-12 px-4 text-base font-medium" : "min-h-[40px] hover:bg-white/80"
+                                  )}
                                   onClick={() => setQrModalOpen(true)}
                                   type="button"
                                 >
-                                  <QrCode className="h-4 w-4" />
+                                  <QrCode className={cn(isMiniapp ? "h-5 w-5" : "h-4 w-4")} />
                                   QR
                                 </Button>
                               )}
@@ -435,10 +488,20 @@ export function ClientSubscribePage() {
                           );
                         }
                         return (
-                          <a key={btnIndex} href={href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2 min-h-[40px] border-slate-200/50 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 transition-colors flex-row !flex-nowrap whitespace-nowrap")}>
-                              <ExternalLink className="h-4 w-4 shrink-0" />
-                              {label}
-                            </a>
+                          <a
+                            key={btnIndex}
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              buttonVariants({ variant: "outline", size: isMiniapp ? "default" : "sm" }),
+                              "flex-row gap-2 !flex-nowrap whitespace-nowrap border-slate-200/50 bg-white/50 transition-colors dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
+                              isMiniapp ? "min-h-12 px-5 text-base font-medium" : "min-h-[40px] hover:bg-white/80"
+                            )}
+                          >
+                            <ExternalLink className={cn("shrink-0", isMiniapp ? "h-5 w-5" : "h-4 w-4")} />
+                            {label}
+                          </a>
                         );
                       })}
                     </div>
@@ -460,7 +523,12 @@ export function ClientSubscribePage() {
       className="relative group"
     >
       <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-primary/10 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-500" />
-      <div className="relative rounded-2xl border border-slate-200/50 dark:border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-2xl p-5 sm:p-6 shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-primary/5">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl border border-slate-200/50 bg-white/60 shadow-2xl backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-black/40 hover:shadow-primary/5",
+          isMiniapp ? "p-4 sm:p-5" : "p-5 sm:p-6"
+        )}
+      >
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-primary/20 rounded-full blur-2xl" />
         <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl" />
@@ -468,9 +536,14 @@ export function ClientSubscribePage() {
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
             <div>
-              <h1 className="text-xl font-bold flex items-center gap-2.5 mb-1.5 text-slate-900 dark:text-white">
-                <div className="p-1.5 rounded-md bg-primary/20 text-primary">
-                  <Zap className="h-5 w-5" />
+              <h1
+                className={cn(
+                  "mb-1.5 flex items-center gap-2.5 font-bold text-slate-900 dark:text-white",
+                  isMiniapp ? "text-2xl" : "text-xl"
+                )}
+              >
+                <div className="rounded-md bg-primary/20 p-1.5 text-primary">
+                  <Zap className={cn(isMiniapp ? "h-6 w-6" : "h-5 w-5")} />
                 </div>
                 Ваша подписка
               </h1>
@@ -489,30 +562,39 @@ export function ClientSubscribePage() {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-slate-700 dark:text-white/80">Ссылка конфигурации</h2>
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-muted-foreground font-semibold">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className={cn("font-medium text-slate-700 dark:text-white/80", isMiniapp ? "text-base" : "text-sm")}>
+                Ссылка конфигурации
+              </h2>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-muted-foreground">
                 Auto-update
               </p>
             </div>
             
             <div className="relative flex items-center">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Globe className="h-4 w-4 text-slate-400 dark:text-muted-foreground/50" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <Globe className={cn("text-slate-400 dark:text-muted-foreground/50", isMiniapp ? "h-5 w-5" : "h-4 w-4")} />
               </div>
-              <code className="flex-1 block w-full truncate rounded-xl border border-slate-200/50 dark:border-white/10 bg-slate-50/50 dark:bg-black/50 py-3 pl-10 pr-4 text-sm font-mono text-slate-800 dark:text-white/90 shadow-inner" title={subscriptionUrl || ""}>
+              <code
+                className={cn(
+                  "block w-full flex-1 truncate rounded-xl border border-slate-200/50 bg-slate-50/50 py-3 pl-10 pr-4 font-mono text-slate-800 shadow-inner dark:border-white/10 dark:bg-black/50 dark:text-white/90",
+                  isMiniapp ? "text-sm sm:text-base" : "text-sm"
+                )}
+                title={subscriptionUrl || ""}
+              >
                 {subscriptionUrl}
               </code>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <div className="flex flex-col gap-2.5 pt-2 sm:flex-row">
               <motion.div whileTap={{ scale: 0.95 }} className="flex-1">
                 <Button 
                   variant="default" 
                   onClick={copyLink} 
                   className={cn(
-                    "w-full gap-2 h-11 text-sm font-medium transition-all duration-300",
-                    copied ? "bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30" : "shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02]"
+                    "w-full gap-2 font-medium transition-all duration-300",
+                    isMiniapp ? "h-12 text-base" : "h-11 text-sm hover:scale-[1.02]",
+                    copied ? "bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30" : "shadow-lg shadow-primary/20 hover:shadow-primary/30"
                   )}
                 >
                   <AnimatePresence mode="wait" initial={false}>
@@ -555,7 +637,12 @@ export function ClientSubscribePage() {
               )}
             </div>
             
-            <p className="text-xs text-slate-500 dark:text-muted-foreground/70 text-center sm:text-left pt-2">
+            <p
+              className={cn(
+                "pt-2 text-center text-slate-500 dark:text-muted-foreground/70 sm:text-left",
+                isMiniapp ? "text-sm leading-snug" : "text-xs"
+              )}
+            >
               {isMiniapp ? linkCardRefMiniapp : linkCardRef}
             </p>
           </div>
@@ -586,7 +673,12 @@ export function ClientSubscribePage() {
   );
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto pb-12 px-2 sm:px-0">
+    <div
+      className={cn(
+        "mx-auto w-full max-w-2xl space-y-8 pb-28 sm:pb-12",
+        isMiniapp ? "max-w-none px-0 sm:px-0" : "px-2 sm:px-0"
+      )}
+    >
       <motion.div 
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
@@ -600,9 +692,9 @@ export function ClientSubscribePage() {
       </motion.div>
 
       {isMiniapp ? (
-        <div className="space-y-6">
-          {appsBlock}
+        <div className="w-full min-w-0 space-y-6">
           {linkCard}
+          {appsBlock}
         </div>
       ) : (
         <div className="space-y-8">

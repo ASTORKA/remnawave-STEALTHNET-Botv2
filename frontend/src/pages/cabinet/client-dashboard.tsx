@@ -324,7 +324,7 @@ export function ClientDashboardPage() {
 
         <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-3">
         {/* 1. Статус, подключение, тариф / дата / трафик — компактно */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
           <div
             className="cabinet-mini-glass__blob -right-12 -top-16 h-28 w-28 rounded-full bg-gradient-to-bl from-primary/28 via-primary/8 to-transparent blur-2xl dark:from-primary/32"
             aria-hidden
@@ -334,47 +334,51 @@ export function ClientDashboardPage() {
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          <h2 className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-1.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
-              <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="rounded-xl border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
+              <Zap className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Статус подписки
           </h2>
           {loading ? (
-            <div className="flex items-center justify-center py-5">
-              <Loader2 className="h-7 w-7 animate-spin text-primary/50" />
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
             </div>
           ) : subscriptionError || !hasActiveSubscription ? (
             <NoSubscriptionState />
           ) : (
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full border border-green-500/35 bg-green-500/[0.12] px-2 py-0.5 text-[11px] font-semibold text-green-800 backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
-                  <span className="h-1 w-1 rounded-full bg-current motion-safe:animate-pulse" />
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.12] px-2.5 py-1 text-xs font-semibold text-green-800 backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
+                  <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-pulse" />
                   Активна
                 </span>
                 {daysLeft != null && (
-                  <span className="rounded-full border border-white/20 bg-background/50 px-2 py-0.5 text-[11px] font-semibold text-foreground backdrop-blur-sm dark:border-white/10">
-                    {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
+                  <span className="rounded-full border border-white/20 bg-background/50 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur-sm dark:border-white/10">
+                    Осталось {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
                   </span>
                 )}
                 {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/12 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    📱 {deviceCount}/{subParsed.hwidDeviceLimit}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/12 px-2.5 py-1 text-xs font-semibold text-primary">
+                    📱 {deviceCount} / {subParsed.hwidDeviceLimit}
                   </span>
                 )}
               </div>
 
               {vpnUrl ? (
-                <div className="space-y-2 rounded-xl border border-white/15 bg-background/45 p-2.5 backdrop-blur-md dark:border-white/[0.07]">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</span>
-                    <Wifi className="h-3.5 w-3.5 shrink-0 text-primary/80" />
+                <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/20 dark:border-white/[0.08]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                      <Wifi className="h-5 w-5 shrink-0" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</p>
+                      <p className="text-sm leading-snug text-muted-foreground">Приложения и настройка — по ссылке или кнопке ниже.</p>
+                    </div>
                   </div>
-                  <p className="text-[12px] leading-snug text-muted-foreground">Приложения и настройка — по кнопке или ссылке.</p>
-                  <div className="flex min-w-0 gap-1.5">
+                  <div className="flex min-w-0 gap-2">
                     <code
-                      className="font-mono flex min-w-0 flex-1 items-center truncate rounded-lg border border-white/15 bg-background/50 px-2 py-1.5 text-[10px] text-foreground/90 dark:border-white/[0.06]"
+                      className="font-mono flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 text-xs text-foreground/90 shadow-inner dark:border-white/[0.08]"
                       title={vpnUrl}
                     >
                       {vpnUrl}
@@ -382,71 +386,77 @@ export function ClientDashboardPage() {
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-8 w-8 shrink-0 rounded-lg border-white/20 bg-background/60 p-0 dark:border-white/10"
+                      className="h-11 w-11 shrink-0 rounded-xl border-white/25 bg-background/70 dark:border-white/10"
                       onClick={() => {
                         navigator.clipboard.writeText(vpnUrl);
                         window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
                       }}
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button
-                    className="h-9 w-full gap-1.5 rounded-lg bg-gradient-to-r from-primary to-primary/88 text-xs font-semibold text-primary-foreground shadow-md [&_svg]:self-center [&_span]:leading-none"
-                    asChild
-                  >
-                    <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-1.5">
-                      <Wifi className="h-4 w-4 shrink-0" />
-                      <span>Подключиться к VPN</span>
-                    </Link>
-                  </Button>
+                  <div className="flex flex-col items-center gap-2 pt-1">
+                    <Button
+                      className="h-[4.5rem] w-[4.5rem] shrink-0 rounded-full bg-gradient-to-br from-primary to-primary/85 p-0 text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform duration-300 hover:scale-[1.04] active:scale-[0.98]"
+                      asChild
+                    >
+                      <Link
+                        to="/cabinet/subscribe"
+                        className="inline-flex items-center justify-center"
+                        aria-label="Подключиться к VPN"
+                      >
+                        <Wifi className="h-8 w-8 shrink-0" />
+                      </Link>
+                    </Button>
+                    <span className="text-center text-xs font-semibold text-foreground">Подключиться к VPN</span>
+                  </div>
                 </div>
               ) : null}
 
-              <div className="overflow-hidden rounded-xl border border-white/12 bg-background/35 dark:border-white/[0.06]">
+              <div className="space-y-2.5">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
-                  <div className="flex items-center gap-2.5 border-b border-white/10 px-2.5 py-2 dark:border-white/[0.06]">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
-                      <Package className="h-4 w-4" />
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                      <Package className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Тариф</p>
-                      <p className="truncate text-[13px] font-semibold text-foreground" title={((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Тариф</p>
+                      <p className="truncate text-[15px] font-semibold text-foreground" title={((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}>
                         {((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}
                       </p>
                     </div>
                   </div>
                 )}
                 {subParsed.expireAt && (
-                  <div className="flex items-center gap-2.5 border-b border-white/10 px-2.5 py-2 dark:border-white/[0.06]">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
-                      <Calendar className="h-4 w-4" />
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                      <Calendar className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Действует до</p>
-                      <p className="text-[13px] font-semibold text-foreground">{formatDate(subParsed.expireAt)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Действует до</p>
+                      <p className="text-[15px] font-semibold text-foreground">{formatDate(subParsed.expireAt)}</p>
                     </div>
                   </div>
                 )}
-                <div className="px-2.5 py-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
-                      <Wifi className="h-4 w-4" />
+                <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-colors hover:border-primary/25 dark:border-white/[0.08]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                      <Wifi className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Трафик</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Трафик</p>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[13px] font-semibold text-foreground">
+                        <p className="text-[15px] font-semibold text-foreground">
                           {subParsed.trafficLimitBytes != null && subParsed.trafficLimitBytes > 0
                             ? `${formatBytes(subParsed.trafficUsed ?? 0)} / ${formatBytes(subParsed.trafficLimitBytes)}`
                             : "Безлимит"}
                         </p>
-                        {trafficPercent != null && <span className="text-[11px] font-semibold text-muted-foreground">{trafficPercent}%</span>}
+                        {trafficPercent != null && <span className="text-sm font-semibold text-muted-foreground">{trafficPercent}%</span>}
                       </div>
                     </div>
                   </div>
                   {trafficPercent != null && (
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-white/10 dark:bg-muted/20">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-white/10 dark:bg-muted/20">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary via-cyan-400/90 to-primary/90 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out"
                         style={{ width: `${trafficPercent}%` }}
@@ -460,19 +470,19 @@ export function ClientDashboardPage() {
           </div>
         </motion.section>
 
-        {/* 2. Триал / напоминание об оплате (если нет ссылки подключения в блоке статуса) */}
-        {!(hasActiveSubscription && vpnUrl) && (
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3">
+        {/* 2. Триал / выбор тарифа — только без активной подписки (при оплаченной подписке без ссылки блок не показываем) */}
+        {!hasActiveSubscription && (
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
           <div
             className="cabinet-mini-glass__blob right-0 top-1/2 h-32 w-32 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          <h2 className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-1.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
-              <Wifi className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="rounded-xl border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
+              <Wifi className="h-4 w-4 shrink-0 text-primary" />
             </div>
-            Подключение
+            Доступ к VPN
           </h2>
           {showTrial ? (
             <div className="space-y-3 text-center">
