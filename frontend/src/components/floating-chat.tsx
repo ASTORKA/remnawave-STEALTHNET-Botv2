@@ -136,7 +136,18 @@ const ChatHeader = ({
   const supportMiniChrome = activeChat === "support" && isMiniApp;
   return (
   <>
-    <div className="px-4 py-3 sm:py-4 border-b border-white/5 bg-black/5 dark:bg-white/5 shrink-0 relative overflow-hidden pt-[max(env(safe-area-inset-top),16px)] sm:pt-4">
+    <div
+      className={cn(
+        "py-3 sm:py-4 border-b border-white/5 bg-black/5 dark:bg-white/5 shrink-0 relative overflow-hidden",
+        /* iOS notch + зона под нативной шапкой / «Назад» Telegram (переменные --tg-content-safe-area-inset-*). На телефоне — min ~44px, если инсеты ещё не пришли. */
+        isMiniApp
+          ? "max-sm:pt-[max(2.75rem,calc(env(safe-area-inset-top,0px)+var(--tg-content-safe-area-inset-top,0px)))] sm:pt-[max(1rem,calc(env(safe-area-inset-top,0px)+var(--tg-content-safe-area-inset-top,0px)))]"
+          : "pt-[max(0.75rem,calc(env(safe-area-inset-top,0px)+var(--tg-content-safe-area-inset-top,0px)))] sm:pt-4",
+        isMiniApp
+          ? "pl-[calc(1rem+var(--tg-content-safe-area-inset-left,0px))] pr-[calc(1rem+var(--tg-content-safe-area-inset-right,0px))]"
+          : "px-4"
+      )}
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
       <div
         className={cn(
@@ -167,7 +178,7 @@ const ChatHeader = ({
             )}
           </div>
         </div>
-        <div className={cn("flex shrink-0 items-center gap-1 sm:gap-2", supportMiniChrome && "pt-0.5")}>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="hidden sm:flex rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
@@ -177,15 +188,10 @@ const ChatHeader = ({
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className={cn(
-              "shrink-0 rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground",
-              supportMiniChrome && "flex items-center gap-1 rounded-xl px-2.5 py-2 h-10"
-            )}
+            className="shrink-0 rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+            aria-label={supportMiniChrome ? "Закрыть" : undefined}
           >
             <X className="h-5 w-5 shrink-0" />
-            {supportMiniChrome ? (
-              <span className="text-sm font-semibold whitespace-nowrap">Закрыть</span>
-            ) : null}
           </button>
         </div>
       </div>
