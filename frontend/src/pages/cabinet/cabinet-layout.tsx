@@ -4,6 +4,7 @@ import { useClientAuth } from "@/contexts/client-auth";
 import { CabinetConfigProvider, useCabinetConfig } from "@/contexts/cabinet-config";
 import { createContext, useContext } from "react";
 import { useIsMiniapp } from "@/hooks/use-is-miniapp";
+import { useTelegramMiniappChrome } from "@/hooks/use-telegram-miniapp-chrome";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { GlassSelect } from "@/components/ui/glass-select";
@@ -411,7 +412,7 @@ function MobileCabinetShell() {
   return (
     <div
       className={cn(
-        "relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(4.85rem+env(safe-area-inset-bottom))]",
+        "relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(4.65rem+env(safe-area-inset-bottom))]",
         isMiniapp && "selection:bg-primary/20"
       )}
     >
@@ -434,8 +435,8 @@ function MobileCabinetShell() {
         <Outlet />
       </main>
 
-      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-1.5">
-        <div className="cabinet-mini-dock cabinet-liquid-dock pointer-events-auto relative z-10 mx-auto flex min-h-[3.5rem] max-w-lg items-stretch gap-1 rounded-[1.125rem] p-1">
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:px-5">
+        <div className="cabinet-mini-dock cabinet-liquid-dock pointer-events-auto relative z-10 mx-auto flex min-h-[3.35rem] w-full max-w-lg items-center gap-0.5 rounded-full px-1.5 py-1 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.4)]">
           {visibleItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
@@ -443,17 +444,21 @@ function MobileCabinetShell() {
                 key={to}
                 to={to}
                 className={cn(
-                  "relative z-[1] flex min-w-0 max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.125rem] py-2 transition-all duration-300",
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground active:scale-[0.98] hover:bg-white/[0.06] hover:text-foreground"
+                  "relative z-[1] flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full py-1 transition-all duration-300",
+                  active ? "text-primary" : "text-muted-foreground active:scale-[0.97] hover:text-foreground"
                 )}
               >
-                {active ? (
-                  <span className="absolute inset-0 -z-10 rounded-[1.125rem] border border-white/10 bg-gradient-to-b from-primary/30 to-primary/12 shadow-[0_0_28px_-6px_hsl(var(--primary)/0.55),inset_0_1px_0_0_rgba(255,255,255,0.12)] backdrop-blur-md" />
-                ) : null}
-                <Icon className={cn("relative z-[1] h-[21px] w-[21px] shrink-0 transition-transform duration-300", active && "scale-105")} />
-                <span className="relative z-[1] w-full truncate px-0.5 text-center text-[10px] font-semibold leading-none tracking-tight">{label}</span>
+                <span
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-300",
+                    active
+                      ? "bg-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_0_20px_-4px_hsl(var(--primary)/0.45)] ring-1 ring-white/15"
+                      : "ring-1 ring-transparent hover:bg-white/[0.06] hover:ring-white/10"
+                  )}
+                >
+                  <Icon className={cn("h-[20px] w-[20px] transition-transform duration-300", active && "scale-105")} />
+                </span>
+                <span className="w-full truncate px-0.5 text-center text-[9px] font-semibold leading-none tracking-tight">{label}</span>
               </Link>
             );
           })}
@@ -461,11 +466,13 @@ function MobileCabinetShell() {
             <button
               type="button"
               onClick={() => setMoreMenuOpen(true)}
-              className="relative z-[1] flex min-w-0 max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.125rem] py-2 text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground active:scale-[0.98]"
+              className="relative z-[1] flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full py-1 text-muted-foreground transition-all duration-200 hover:text-foreground active:scale-[0.97]"
               aria-label="Ещё"
             >
-              <MoreHorizontal className="h-[21px] w-[21px] shrink-0" />
-              <span className="w-full truncate px-0.5 text-center text-[10px] font-semibold leading-none">Ещё</span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1 ring-transparent hover:bg-white/[0.06] hover:ring-white/10">
+                <MoreHorizontal className="h-[20px] w-[20px] shrink-0" />
+              </span>
+              <span className="w-full truncate px-0.5 text-center text-[9px] font-semibold leading-none">Ещё</span>
             </button>
           )}
         </div>
@@ -681,6 +688,10 @@ export function CabinetLayout() {
   const isAuthPage = location.pathname === "/cabinet/login" || location.pathname === "/cabinet/register";
   const isLoggedIn = Boolean(state.token);
   const needs2FA = !isLoggedIn && Boolean(state.pending2FAToken);
+  const inTelegramWebApp =
+    typeof window !== "undefined" &&
+    Boolean((window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData);
+  useTelegramMiniappChrome(inTelegramWebApp && location.pathname.startsWith("/cabinet"));
 
   return (
     <>

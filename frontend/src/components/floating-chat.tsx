@@ -625,7 +625,7 @@ export function FloatingChat() {
 
   return (
     <>
-      <div className={cn("fixed bottom-[calc(4.35rem+env(safe-area-inset-bottom))] right-3 z-[100] sm:bottom-6 sm:right-6", hasOpenDialog && !isOpen && "pointer-events-none opacity-0")}>
+      <div className={cn("fixed bottom-[calc(4.05rem+env(safe-area-inset-bottom))] right-3 z-[100] sm:bottom-6 sm:right-6", hasOpenDialog && !isOpen && "pointer-events-none opacity-0")}>
         <AnimatePresence>
           {isOpen && (
             <motion.div
