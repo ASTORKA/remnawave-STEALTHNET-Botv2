@@ -410,26 +410,27 @@ function MobileCabinetShell() {
   return (
     <div
       className={cn(
-        "min-h-svh flex flex-col min-w-0 overflow-x-hidden pb-[calc(5.25rem+env(safe-area-inset-bottom))] relative",
-        "bg-gradient-to-b from-background via-muted/25 to-muted/40 dark:from-background dark:via-background dark:to-muted/15",
+        "relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(5.25rem+env(safe-area-inset-bottom))]",
         isMiniapp && "selection:bg-primary/20"
       )}
     >
-      <div
-        className="pointer-events-none fixed inset-0 -z-10 opacity-40 dark:opacity-25"
-        aria-hidden
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.12), transparent 55%), radial-gradient(ellipse 60% 40% at 100% 0%, hsl(var(--primary) / 0.06), transparent 45%)",
-        }}
-      />
+      <div className="cabinet-ambient" aria-hidden>
+        <div className="cabinet-ambient__base" />
+        <div className="cabinet-ambient__aurora" />
+        <div className="cabinet-ambient__blob cabinet-ambient__blob--a" />
+        <div className="cabinet-ambient__blob cabinet-ambient__blob--b" />
+        <div className="cabinet-ambient__blob cabinet-ambient__blob--c" />
+        <div className="cabinet-ambient__shimmer" />
+        <div className="cabinet-ambient__grain" />
+        <div className="cabinet-ambient__vignette" />
+      </div>
       <FloatingChat />
       <header
         className="sticky top-0 z-50 shrink-0 transition-all duration-300"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="relative mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-3 px-4 min-w-0 sm:h-14">
-          <div className="absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-2xl border-b border-border/40 bg-background/75 shadow-sm backdrop-blur-2xl dark:border-white/[0.06] dark:bg-background/70" />
+          <div className="absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-[1.25rem] border-b border-white/25 bg-background/65 shadow-[0_12px_40px_-28px_hsl(var(--primary)/0.35)] backdrop-blur-2xl dark:border-white/[0.07] dark:bg-background/55 dark:shadow-[0_16px_48px_-32px_rgba(0,0,0,0.65)]" />
           <Link to="/cabinet/dashboard" className="flex min-w-0 shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-foreground">
             {logo ? (
               <span className="flex h-8 shrink-0 items-center justify-center rounded-xl bg-muted/50 px-1.5 dark:bg-white/5">
@@ -463,8 +464,7 @@ function MobileCabinetShell() {
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         <div
           className={cn(
-            "pointer-events-auto mx-auto flex max-w-lg items-center justify-around gap-0.5 rounded-2xl border border-border/50 bg-background/90 px-1 py-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.03)_inset] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-background/80 dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)]",
-            "min-h-[3.75rem]"
+            "cabinet-mini-dock pointer-events-auto mx-auto flex min-h-[3.75rem] max-w-lg items-center justify-around gap-0.5 rounded-[1.35rem] border border-white/30 bg-background/82 px-1 py-1.5 backdrop-blur-2xl dark:border-white/[0.1] dark:bg-background/72"
           )}
         >
           {visibleItems.map(({ to, label, icon: Icon }) => {
@@ -474,16 +474,16 @@ function MobileCabinetShell() {
                 key={to}
                 to={to}
                 className={cn(
-                  "relative flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 transition-all duration-200",
+                  "relative flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 transition-all duration-300",
                   active
                     ? "text-primary"
-                    : "text-muted-foreground active:scale-[0.98] hover:text-foreground"
+                    : "text-muted-foreground active:scale-[0.97] hover:text-foreground"
                 )}
               >
                 {active ? (
-                  <span className="absolute inset-x-1 top-1 bottom-1 -z-10 rounded-xl bg-primary/[0.12] dark:bg-primary/20" />
+                  <span className="absolute inset-x-0.5 top-0.5 bottom-0.5 -z-10 rounded-[0.85rem] bg-gradient-to-b from-primary/25 to-primary/10 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.45)] dark:from-primary/35 dark:to-primary/15" />
                 ) : null}
-                <Icon className={cn("h-[22px] w-[22px] shrink-0 transition-transform duration-200", active && "scale-105")} />
+                <Icon className={cn("h-[22px] w-[22px] shrink-0 transition-transform duration-300", active && "scale-110 drop-shadow-[0_0_12px_hsl(var(--primary)/0.35)]")} />
                 <span className="w-full truncate text-center text-[10px] font-semibold leading-tight tracking-tight">{label}</span>
               </Link>
             );
@@ -504,13 +504,15 @@ function MobileCabinetShell() {
 
       <Dialog open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
         <DialogContent
-          className="max-w-sm gap-0 rounded-[1.35rem] border-border/50 p-0 shadow-2xl sm:rounded-[1.35rem]"
+          className="max-w-sm gap-0 overflow-hidden rounded-[1.35rem] border-white/20 bg-background/92 p-0 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.06)_inset] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-background/90 dark:shadow-[0_28px_90px_-28px_rgba(0,0,0,0.65)] sm:rounded-[1.35rem]"
           showCloseButton={true}
         >
-          <DialogHeader className="border-b border-border/40 px-5 py-4 text-left">
-            <DialogTitle className="text-lg font-semibold tracking-tight">Меню</DialogTitle>
+          <DialogHeader className="border-b border-white/15 bg-gradient-to-r from-primary/[0.08] via-transparent to-violet-500/[0.07] px-5 py-4 text-left dark:border-white/[0.06]">
+            <DialogTitle className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-lg font-semibold tracking-tight text-transparent">
+              Меню
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid max-h-[min(70vh,28rem)] gap-0.5 overflow-y-auto p-2">
+          <div className="grid max-h-[min(70vh,28rem)] gap-1 overflow-y-auto p-2.5">
             {navItems.map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
@@ -519,11 +521,20 @@ function MobileCabinetShell() {
                   to={to}
                   onClick={() => setMoreMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-[15px] transition-colors",
-                    active ? "bg-primary/12 font-semibold text-primary" : "hover:bg-muted/70"
+                    "flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[15px] transition-all duration-200",
+                    active
+                      ? "bg-gradient-to-r from-primary/18 to-primary/8 font-semibold text-primary shadow-[0_0_28px_-12px_hsl(var(--primary)/0.35)]"
+                      : "hover:bg-white/10 dark:hover:bg-white/[0.06]"
                   )}
                 >
-                  <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", active ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground")}>
+                  <span
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                      active
+                        ? "bg-primary/20 text-primary ring-1 ring-primary/25"
+                        : "bg-muted/40 text-muted-foreground ring-1 ring-white/10 dark:bg-white/[0.06]"
+                    )}
+                  >
                     <Icon className="h-5 w-5 shrink-0" />
                   </span>
                   <span>{label}</span>

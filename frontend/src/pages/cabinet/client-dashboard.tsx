@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   
   Package,
@@ -122,6 +122,7 @@ export function ClientDashboardPage() {
 
   const token = state.token;
   const isMiniapp = useCabinetMiniapp();
+  const reduceMotion = useReducedMotion();
   const client = state.client;
   const showTrial = config?.trialEnabled && !client?.trialUsed;
   const trialDays = config?.trialDays ?? 0;
@@ -267,27 +268,73 @@ export function ClientDashboardPage() {
   );
 
   if (isMiniapp) {
+    const miniStagger = {
+      hidden: {},
+      show: {
+        transition: {
+          staggerChildren: reduceMotion ? 0 : 0.09,
+          delayChildren: reduceMotion ? 0 : 0.05,
+        },
+      },
+    };
+    const miniItem = {
+      hidden: reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 },
+      show: {
+        opacity: 1,
+        y: 0,
+        transition: reduceMotion
+          ? { duration: 0 }
+          : { type: "spring" as const, stiffness: 320, damping: 28, mass: 0.88 },
+      },
+    };
+
     return (
-      <div className="w-full min-w-0 overflow-hidden space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <motion.div
+        className="w-full min-w-0 space-y-5 overflow-hidden"
+        initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
+      >
         {(paymentMessage === "success" || paymentMessage === "success_topup" || paymentMessage === "success_tariff") && (
-          <div className="rounded-2xl border border-green-500/25 bg-green-500/[0.08] px-4 py-3.5 text-sm font-medium text-green-800 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-sm dark:text-green-400 dark:border-green-500/20 dark:bg-green-500/10">
+          <motion.div
+            layout
+            initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl border border-green-500/30 bg-green-500/[0.1] px-4 py-3.5 text-sm font-medium text-green-800 shadow-[0_0_40px_-16px_rgba(34,197,94,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset] backdrop-blur-md dark:text-green-300 dark:border-green-400/25 dark:bg-green-500/[0.12]"
+          >
             {paymentMessage === "success_topup"
               ? "Оплата прошла успешно. Баланс пополнен."
               : paymentMessage === "success_tariff"
                 ? "Оплата прошла успешно. Тариф активируется автоматически."
                 : "Оплата прошла успешно. Статус обновляется автоматически."}
-          </div>
+          </motion.div>
         )}
         {paymentMessage === "failed" && (
-          <div className="rounded-2xl border border-destructive/25 bg-destructive/[0.07] px-4 py-3.5 text-sm font-medium text-destructive shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-sm dark:bg-destructive/10">
+          <motion.div
+            layout
+            initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl border border-destructive/30 bg-destructive/[0.09] px-4 py-3.5 text-sm font-medium text-destructive shadow-[0_0_36px_-14px_hsl(var(--destructive)/0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-md dark:bg-destructive/12"
+          >
             Оплата не прошла. Попробуйте снова.
-          </div>
+          </motion.div>
         )}
 
+        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-5">
         {/* 1. Статус, срок, тариф, трафик, устройства — с иконками */}
-        <section className="overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
-          <h2 className="mb-5 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">
-            <div className="rounded-xl bg-primary/12 p-2 ring-1 ring-primary/15">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative overflow-hidden p-5">
+          <div
+            className="pointer-events-none absolute -right-28 -top-32 h-64 w-64 rounded-full bg-gradient-to-bl from-primary/30 via-primary/10 to-transparent blur-3xl dark:from-primary/35"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-gradient-to-tr from-cyan-500/15 to-transparent blur-3xl dark:from-cyan-400/20"
+            aria-hidden
+          />
+          <h2 className="mb-5 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-primary/25">
               <Zap className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Статус Подписки
@@ -299,28 +346,28 @@ export function ClientDashboardPage() {
           ) : subscriptionError || !hasActiveSubscription ? (
             <NoSubscriptionState />
           ) : (
-            <div className="space-y-4 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            <div className="min-w-0 space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.14] px-3 py-1.5 text-xs font-semibold text-green-800 shadow-[0_0_28px_-12px_rgba(34,197,94,0.45)] backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
+                  <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-pulse" />
                   Активна
                 </span>
                 {daysLeft != null && (
-                  <span className="text-sm font-semibold text-foreground bg-foreground/5 px-3 py-1.5 rounded-full border border-border/50">
+                  <span className="rounded-full border border-white/25 bg-background/60 px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-background/40">
                     Осталось {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
                   </span>
                 )}
                 {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
-                  <span className="text-sm font-semibold text-foreground bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20 flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5 text-sm font-semibold text-primary shadow-[0_0_24px_-10px_hsl(var(--primary)/0.4)] backdrop-blur-sm">
                     📱 {deviceCount} / {subParsed.hwidDeviceLimit}
                   </span>
                 )}
               </div>
 
-              <div className="mt-2 space-y-3 border-t border-border/35 pt-4">
+              <div className="mt-2 space-y-3 border-t border-white/15 pt-4 dark:border-white/[0.06]">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
-                  <div className="flex items-center gap-4 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
+                  <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
                       <Package className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -332,8 +379,8 @@ export function ClientDashboardPage() {
                   </div>
                 )}
                 {subParsed.expireAt && (
-                  <div className="flex items-center gap-4 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
+                  <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
                       <Calendar className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -344,9 +391,9 @@ export function ClientDashboardPage() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
+                <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
                       <Wifi className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -362,35 +409,42 @@ export function ClientDashboardPage() {
                     </div>
                   </div>
                   {trafficPercent != null && (
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-border/30 dark:bg-muted/25">
-                      <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 ease-in-out" style={{ width: `${trafficPercent}%` }} />
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/50 ring-1 ring-white/20 dark:bg-muted/20 dark:ring-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary via-cyan-400/90 to-primary/90 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out"
+                        style={{ width: `${trafficPercent}%` }}
+                      />
                     </div>
                   )}
                 </div>
               </div>
             </div>
           )}
-        </section>
+        </motion.section>
 
         {/* 2. Как подключиться — ссылка и кнопка */}
-        <section className="overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
-          <h2 className="mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">
-            <div className="rounded-xl bg-primary/12 p-2 ring-1 ring-primary/15">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative overflow-hidden p-5">
+          <div
+            className="pointer-events-none absolute -right-16 top-1/2 h-44 w-44 -translate-y-1/2 rounded-full bg-gradient-to-l from-violet-500/15 to-transparent blur-3xl dark:from-violet-400/20"
+            aria-hidden
+          />
+          <h2 className="mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-primary/25">
               <Wifi className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Подключение
           </h2>
           {vpnUrl ? (
             <div className="space-y-4">
-              <p className="text-[14px] text-muted-foreground leading-relaxed">Нажмите кнопку ниже — откроется страница с приложениями и настройкой в 1 клик.</p>
-              <div className="flex gap-2 min-w-0">
-                <code className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-border/40 bg-muted/30 px-3 py-2.5 font-mono text-xs text-foreground/85 ring-1 ring-black/[0.03] dark:bg-background/40 dark:ring-white/[0.04]" title={vpnUrl}>
+              <p className="text-[14px] leading-relaxed text-muted-foreground">Нажмите кнопку ниже — откроется страница с приложениями и настройкой в 1 клик.</p>
+              <div className="flex min-w-0 gap-2">
+                <code className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 font-mono text-xs text-foreground/90 shadow-inner backdrop-blur-sm ring-1 ring-primary/10 dark:border-white/[0.08] dark:bg-background/35" title={vpnUrl}>
                   {vpnUrl}
                 </code>
                 <Button
                   size="icon"
                   variant="outline"
-                  className="h-auto w-11 shrink-0 rounded-xl border-border/40 bg-background/60 transition-transform hover:scale-105 hover:bg-background/90"
+                  className="h-auto w-11 shrink-0 rounded-xl border-white/25 bg-background/70 transition-transform hover:scale-105 hover:border-primary/30 hover:bg-background/90 dark:border-white/10"
                   onClick={() => {
                     navigator.clipboard.writeText(vpnUrl);
                     window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
@@ -399,7 +453,7 @@ export function ClientDashboardPage() {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <Button className="h-12 w-full gap-2 rounded-xl text-base shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" asChild>
+              <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/85 text-base text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_16px_48px_-12px_hsl(var(--primary)/0.5)] [&_svg]:self-center [&_span]:leading-none" asChild>
                 <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-2">
                   <Wifi className="h-5 w-5 shrink-0" />
                   <span className="inline-flex items-center leading-none">Подключиться к VPN</span>
@@ -408,13 +462,13 @@ export function ClientDashboardPage() {
             </div>
           ) : showTrial ? (
             <div className="space-y-4 text-center">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-600 mb-2">
-                 <Gift className="h-6 w-6" />
+              <div className="mx-auto mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_40px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
+                <Gift className="h-7 w-7" />
               </div>
               <p className="text-[14px] text-muted-foreground">
                 Получите бесплатный доступ на {formatRuDays(trialDays)}.
               </p>
-              <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg h-12 rounded-xl hover:scale-[1.02] transition-transform duration-300 [&_svg]:self-center [&_span]:leading-none" onClick={activateTrial} disabled={trialLoading}>
+              <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] transition-transform duration-300 hover:scale-[1.02] hover:from-green-500 hover:to-emerald-500 [&_svg]:self-center [&_span]:leading-none" onClick={activateTrial} disabled={trialLoading}>
                 {trialLoading ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> : <Gift className="h-5 w-5 shrink-0" />}
                 <span className="inline-flex items-center leading-none font-medium text-base">Активировать триал</span>
               </Button>
@@ -422,31 +476,35 @@ export function ClientDashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.07] p-4 text-[14px] text-primary ring-1 ring-primary/10 dark:bg-primary/10">
+              <div className="flex items-start gap-3 rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] to-transparent p-4 text-[14px] text-primary shadow-[0_0_36px_-14px_hsl(var(--primary)/0.35)] ring-1 ring-primary/15 backdrop-blur-sm dark:from-primary/15">
                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                 <p className="leading-relaxed">Ссылка появится после оплаты тарифа. Перейдите во вкладку «Тарифы» и оплатите.</p>
               </div>
-              <Button className="h-12 w-full rounded-xl shadow-md transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
+              <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-primary to-primary/88 shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
                 <Link to="/cabinet/tariffs" className="inline-flex w-full items-center justify-center gap-2">
                   <span className="inline-flex items-center leading-none">Выбрать тариф</span>
                 </Link>
               </Button>
             </div>
           )}
-        </section>
+        </motion.section>
 
         {/* 3. Баланс */}
-        <section className="flex flex-col gap-4 overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex flex-col gap-4 overflow-hidden p-5">
+          <div
+            className="pointer-events-none absolute -left-24 top-0 h-52 w-52 rounded-full bg-gradient-to-br from-amber-400/12 to-transparent blur-3xl dark:from-amber-300/15"
+            aria-hidden
+          />
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-primary/12 p-2.5 ring-1 ring-primary/15">
+            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] ring-1 ring-primary/25">
               <Wallet className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">Мой баланс</h2>
-              <p className="mt-1 text-2xl font-bold leading-none tracking-tight text-foreground tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Мой баланс</h2>
+              <p className="mt-1 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-2xl font-bold leading-none tracking-tight text-transparent tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-2xl border border-border/35 bg-background/45 p-3.5 dark:border-white/[0.05]">
+          <div className="flex items-center justify-between rounded-2xl border border-white/20 bg-background/55 p-3.5 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
             <div className="flex flex-col">
               <Label className="text-sm font-semibold">Автопродление</Label>
               <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
@@ -462,14 +520,15 @@ export function ClientDashboardPage() {
               onCheckedChange={toggleAutoRenew}
             />
           </div>
-          <Button className="h-12 w-full gap-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" asChild>
+          <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-primary/95 to-primary/80 text-primary-foreground shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" asChild>
             <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-2">
               <PlusCircle className="h-5 w-5 shrink-0" />
               <span className="inline-flex items-center leading-none">Пополнить баланс</span>
             </Link>
           </Button>
-        </section>
-      </div>
+        </motion.section>
+        </motion.div>
+      </motion.div>
     );
   }
 
