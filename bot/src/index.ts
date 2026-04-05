@@ -445,7 +445,8 @@ type CustomEmojiEntity =
   | { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string }
   | { type: "bold"; offset: number; length: number }
   | { type: "blockquote"; offset: number; length: number }
-  | { type: "url"; offset: number; length: number };
+  | { type: "url"; offset: number; length: number }
+  | { type: "text_link"; offset: number; length: number; url: string };
 
 /** Длина первого символа в UTF-16 (для entity) */
 function firstCharLengthUtf16(s: string): number {
@@ -713,6 +714,9 @@ function buildMainMenuText(opts: {
     }
     if (url) {
       if (shouldShow("linkLabel")) {
+        lines.push("");
+        lineStartKeys.push(null);
+        lineEntitiesByIndex.push([]);
         const { text: label, entities: labelEntities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
         const block = `${label}\n${url}`;
         const urlOffset = label.length + 1;
@@ -720,7 +724,7 @@ function buildMainMenuText(opts: {
         const blockEntities: CustomEmojiEntity[] = [
           { type: "blockquote", offset: 0, length: block.length },
           ...labelEntities,
-          { type: "url", offset: urlOffset, length: url.length },
+          { type: "text_link", offset: urlOffset, length: url.length, url },
         ];
         lines.push(block);
         lineStartKeys.push("linkLabel");
