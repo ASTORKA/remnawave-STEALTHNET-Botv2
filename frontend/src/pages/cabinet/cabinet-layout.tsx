@@ -391,26 +391,27 @@ const MAX_VISIBLE_DESKTOP = 10;
 
 function MobileCabinetShell() {
   const location = useLocation();
-  const { state, logout, refreshProfile } = useClientAuth();
+  const { state, refreshProfile } = useClientAuth();
+  const { setConfig } = useTheme();
   const config = useCabinetConfig();
   const navItems = useMemo(() => resolveNavItems(config), [config?.sellOptionsEnabled, config?.showProxyEnabled, config?.showSingboxEnabled, config?.ticketsEnabled, config?.customBuildConfig]);
-  const [logoError, setLogoError] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const visibleItems = navItems.slice(0, MAX_VISIBLE_NAV);
   const hasMore = navItems.length > MAX_VISIBLE_NAV;
   const isMiniapp = useIsMiniapp();
 
-  useEffect(() => { setLogoError(false); }, [config?.logo]);
+  useEffect(() => {
+    setConfig({ mode: "dark", accent: "default" });
+  }, [setConfig]);
+
   useEffect(() => {
     if (state.token) refreshProfile().catch(() => { });
   }, [state.token, refreshProfile]);
-  const serviceName = config?.serviceName ?? "";
-  const logo = config?.logo && !logoError ? config.logo : null;
 
   return (
     <div
       className={cn(
-        "relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(5.25rem+env(safe-area-inset-bottom))]",
+        "relative flex min-h-svh min-w-0 flex-col overflow-x-hidden bg-background pb-[calc(4.85rem+env(safe-area-inset-bottom))]",
         isMiniapp && "selection:bg-primary/20"
       )}
     >
@@ -426,48 +427,15 @@ function MobileCabinetShell() {
         <div className="cabinet-ambient__vignette" />
       </div>
       <FloatingChat />
-      <header
-        className="sticky top-0 z-50 shrink-0 transition-all duration-300"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      <main
+        className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col items-stretch px-4 pb-2 transition-all duration-300 sm:px-5"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
-        <div className="relative mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-3 px-4 min-w-0 sm:h-14">
-          <div className="cabinet-liquid-header absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-[1.35rem]" />
-          <Link to="/cabinet/dashboard" className="flex min-w-0 shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-foreground">
-            {logo ? (
-              <span className="flex h-8 shrink-0 items-center justify-center rounded-xl border border-white/40 bg-white/35 px-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/10">
-                <img src={logo} alt="" className="h-6 max-w-[100px] object-contain" onError={() => setLogoError(true)} />
-              </span>
-            ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/12 text-primary shadow-sm ring-1 ring-white/30 backdrop-blur-sm dark:ring-white/10">
-                <Shield className="h-4 w-4" />
-              </span>
-            )}
-            {serviceName ? <span className="truncate">{serviceName}</span> : null}
-          </Link>
-          <div className="flex shrink-0 items-center gap-1">
-            <ThemePopover />
-            <SettingsPopover />
-            {!isMiniapp && (
-              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground" asChild>
-                <Link to="/cabinet/login" onClick={() => logout()} title="Выйти">
-                  <LogOut className="h-5 w-5" />
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col items-stretch px-4 pb-2 pt-4 transition-all duration-300 sm:px-5 sm:pt-5">
         <Outlet />
       </main>
 
-      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-        <div
-          className={cn(
-            "cabinet-mini-dock cabinet-liquid-dock pointer-events-auto mx-auto flex min-h-[3.65rem] max-w-lg items-center justify-around gap-0.5 rounded-[1.4rem] px-1 py-1.5"
-          )}
-        >
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.45rem,env(safe-area-inset-bottom))] pt-1.5">
+        <div className="cabinet-mini-dock cabinet-liquid-dock pointer-events-auto relative z-10 mx-auto flex min-h-[3.5rem] max-w-lg items-stretch gap-1 rounded-[1.125rem] p-1">
           {visibleItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
@@ -475,17 +443,17 @@ function MobileCabinetShell() {
                 key={to}
                 to={to}
                 className={cn(
-                  "relative flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 transition-all duration-300",
+                  "relative z-[1] flex min-w-0 max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.125rem] py-2 transition-all duration-300",
                   active
                     ? "text-primary"
-                    : "text-muted-foreground active:scale-[0.97] hover:text-foreground"
+                    : "text-muted-foreground active:scale-[0.98] hover:bg-white/[0.06] hover:text-foreground"
                 )}
               >
                 {active ? (
-                  <span className="absolute inset-x-0.5 top-0.5 bottom-0.5 -z-10 rounded-[0.85rem] bg-gradient-to-b from-primary/25 to-primary/10 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.45)] dark:from-primary/35 dark:to-primary/15" />
+                  <span className="absolute inset-0 -z-10 rounded-[1.125rem] border border-white/10 bg-gradient-to-b from-primary/30 to-primary/12 shadow-[0_0_28px_-6px_hsl(var(--primary)/0.55),inset_0_1px_0_0_rgba(255,255,255,0.12)] backdrop-blur-md" />
                 ) : null}
-                <Icon className={cn("h-[22px] w-[22px] shrink-0 transition-transform duration-300", active && "scale-110 drop-shadow-[0_0_12px_hsl(var(--primary)/0.35)]")} />
-                <span className="w-full truncate text-center text-[10px] font-semibold leading-tight tracking-tight">{label}</span>
+                <Icon className={cn("relative z-[1] h-[21px] w-[21px] shrink-0 transition-transform duration-300", active && "scale-105")} />
+                <span className="relative z-[1] w-full truncate px-0.5 text-center text-[10px] font-semibold leading-none tracking-tight">{label}</span>
               </Link>
             );
           })}
@@ -493,11 +461,11 @@ function MobileCabinetShell() {
             <button
               type="button"
               onClick={() => setMoreMenuOpen(true)}
-              className="flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-muted-foreground transition-all duration-200 hover:text-foreground active:scale-[0.98]"
+              className="relative z-[1] flex min-w-0 max-w-[5.5rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.125rem] py-2 text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground active:scale-[0.98]"
               aria-label="Ещё"
             >
-              <MoreHorizontal className="h-[22px] w-[22px] shrink-0" />
-              <span className="text-[10px] font-semibold leading-tight">Ещё</span>
+              <MoreHorizontal className="h-[21px] w-[21px] shrink-0" />
+              <span className="w-full truncate px-0.5 text-center text-[10px] font-semibold leading-none">Ещё</span>
             </button>
           )}
         </div>

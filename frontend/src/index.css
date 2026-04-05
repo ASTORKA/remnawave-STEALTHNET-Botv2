@@ -570,29 +570,69 @@
     0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
 }
 
-/* Liquid glass — нижний док (базовые тени + анимация cabinet-mini-dock) */
+/* Liquid glass — нижний док */
 .cabinet-liquid-dock {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    175deg,
+    color-mix(in srgb, hsl(var(--background)) 52%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 32%, transparent) 100%
+  );
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.2) inset,
+    0 -16px 48px -12px rgba(0, 0, 0, 0.5),
+    0 0 64px -20px hsl(var(--primary) / 0.15);
+}
+
+.cabinet-liquid-dock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    hsl(var(--primary) / 0.25) 35%,
+    transparent 55%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cabinet-liquid-dock::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, hsl(var(--background)) 78%, transparent) 0%,
-    color-mix(in srgb, hsl(var(--background)) 55%, transparent) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 42%
   );
-  backdrop-filter: blur(32px) saturate(190%);
-  -webkit-backdrop-filter: blur(32px) saturate(190%);
-  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
-    0 -8px 32px -12px color-mix(in srgb, hsl(var(--foreground)) 15%, transparent);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .dark .cabinet-liquid-dock {
   background: linear-gradient(
-    180deg,
-    color-mix(in srgb, hsl(var(--background)) 62%, transparent) 0%,
-    color-mix(in srgb, hsl(var(--background)) 42%, transparent) 100%
+    175deg,
+    color-mix(in srgb, hsl(var(--background)) 48%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 26%, transparent) 100%
   );
-  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
-    0 -12px 40px -14px rgba(0, 0, 0, 0.45);
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.35) inset,
+    0 -20px 56px -14px rgba(0, 0, 0, 0.55),
+    0 0 72px -24px hsl(var(--primary) / 0.18);
 }
