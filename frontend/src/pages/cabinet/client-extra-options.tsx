@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCabinetMiniapp } from "@/pages/cabinet/cabinet-layout";
 import { openPaymentInBrowser } from "@/lib/open-payment-url";
-import { cn } from "@/lib/utils";
+import { cabinetMiniGlassCardClass, cabinetMiniGlassPanelClass, cabinetMiniWhitePayButtonClass, cn, isSbpOrCryptoPaymentLabel } from "@/lib/utils";
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("ru-RU", {
@@ -292,14 +292,14 @@ export function ClientExtraOptionsPage() {
                   variant="outline"
                   onClick={() => startYookassaPayment(payModal)}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
                >
                   {isMobileOrMiniapp ? (
                      <>
-                     <div className="p-2 rounded-xl bg-blue-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-blue-500" /> : <CreditCard className="h-6 w-6 text-blue-500" />}
+                     <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <CreditCard className="h-6 w-6 text-zinc-700" />}
                      </div>
-                     <span className="text-base font-bold">СБП / Карты РФ</span>
+                     <span className="text-base font-bold text-zinc-900">СБП / Карты РФ</span>
                      </>
                   ) : (
                      <>
@@ -318,14 +318,14 @@ export function ClientExtraOptionsPage() {
                   variant="outline"
                   onClick={() => startCryptopayPayment(payModal)}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
                >
                   {isMobileOrMiniapp ? (
                      <>
-                     <div className="p-2 rounded-xl bg-yellow-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-yellow-500" /> : <Zap className="h-6 w-6 text-yellow-500" />}
+                     <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <Zap className="h-6 w-6 text-zinc-700" />}
                      </div>
-                     <span className="text-base font-bold">Crypto Bot</span>
+                     <span className="text-base font-bold text-zinc-900">Crypto Bot</span>
                      </>
                   ) : (
                      <>
@@ -371,14 +371,37 @@ export function ClientExtraOptionsPage() {
                   variant="outline"
                   onClick={() => startPlategaPayment(payModal, m.id)}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn(
+                    "w-full",
+                    isMobileOrMiniapp
+                      ? isSbpOrCryptoPaymentLabel(m.label)
+                        ? cabinetMiniWhitePayButtonClass
+                        : "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60"
+                      : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative"
+                  )}
                >
                   {isMobileOrMiniapp ? (
                      <>
-                     <div className="p-2 rounded-xl bg-green-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-green-500" /> : <CreditCard className="h-6 w-6 text-green-500" />}
+                     <div
+                        className={cn(
+                          "p-2 rounded-xl",
+                          isSbpOrCryptoPaymentLabel(m.label) ? "bg-zinc-100 dark:bg-zinc-100" : "bg-green-500/10"
+                        )}
+                     >
+                        {payLoading ? (
+                          <Loader2
+                            className={cn(
+                              "h-6 w-6 animate-spin",
+                              isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500"
+                            )}
+                          />
+                        ) : (
+                          <CreditCard
+                            className={cn("h-6 w-6", isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500")}
+                          />
+                        )}
                      </div>
-                     <span className="text-base font-bold">{m.label}</span>
+                     <span className={cn("text-base font-bold", isSbpOrCryptoPaymentLabel(m.label) && "text-zinc-900")}>{m.label}</span>
                      </>
                   ) : (
                      <>
@@ -466,11 +489,18 @@ export function ClientExtraOptionsPage() {
             transition={{ duration: 0.2 }}
             className="space-y-8 max-w-6xl mx-auto pb-24"
           >
-            <div className="relative overflow-hidden rounded-3xl bg-card/40 backdrop-blur-2xl border border-border/50 p-8 sm:p-10 shadow-xl">
+            <div
+              className={cn(
+                "relative overflow-hidden",
+                isMobileOrMiniapp
+                  ? cn(cabinetMiniGlassPanelClass, "p-6")
+                  : "rounded-3xl bg-card/40 backdrop-blur-2xl border border-border/50 p-8 sm:p-10 shadow-xl"
+              )}
+            >
               <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-primary/20 blur-[80px] pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground flex items-center gap-3">
+                  <h1 className={cn("font-bold tracking-tight text-foreground flex items-center gap-3", isMobileOrMiniapp ? "text-2xl" : "text-3xl sm:text-4xl")}>
                     <Layers className="h-8 w-8 text-primary" />
                     Доп. опции
                   </h1>
@@ -490,7 +520,13 @@ export function ClientExtraOptionsPage() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {trafficOptions.map((opt) => (
-                    <Card key={`traffic-${opt.id}`} className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1">
+                    <Card
+                      key={`traffic-${opt.id}`}
+                      className={cn(
+                        "flex flex-col group transition-all duration-300",
+                        isMobileOrMiniapp ? cabinetMiniGlassCardClass : "rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl hover:-translate-y-1"
+                      )}
+                    >
                       <CardContent className="flex-1 flex flex-col p-5 min-h-0 min-w-0">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
@@ -525,7 +561,13 @@ export function ClientExtraOptionsPage() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {deviceOptions.map((opt) => (
-                    <Card key={`devices-${opt.id}`} className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1">
+                    <Card
+                      key={`devices-${opt.id}`}
+                      className={cn(
+                        "flex flex-col group transition-all duration-300",
+                        isMobileOrMiniapp ? cabinetMiniGlassCardClass : "rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl hover:-translate-y-1"
+                      )}
+                    >
                       <CardContent className="flex-1 flex flex-col p-5 min-h-0 min-w-0">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
@@ -560,7 +602,13 @@ export function ClientExtraOptionsPage() {
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {serverOptions.map((opt) => (
-                    <Card key={`servers-${opt.id}`} className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1">
+                    <Card
+                      key={`servers-${opt.id}`}
+                      className={cn(
+                        "flex flex-col group transition-all duration-300",
+                        isMobileOrMiniapp ? cabinetMiniGlassCardClass : "rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg hover:shadow-xl hover:-translate-y-1"
+                      )}
+                    >
                       <CardContent className="flex-1 flex flex-col p-5 min-h-0 min-w-0">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">

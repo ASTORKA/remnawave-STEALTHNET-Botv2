@@ -89,10 +89,12 @@ export type InnerButtonStyles = {
   currency?: string;
 };
 
-/** ID премиум-эмодзи для внутренних кнопок (из botEmojis: BACK, CARD, PACKAGE, TRIAL, PUZZLE, SERVERS) */
+/** ID премиум-эмодзи для внутренних кнопок (из botEmojis: BACK, CARD, PAY, PACKAGE, TRIAL, PUZZLE, SERVERS) */
 export type InnerEmojiIds = {
   back?: string;
   card?: string;
+  /** Кнопка «Оплатить» по ссылке (СБП, крипта и т.д.) — только TG ID, без Unicode в text (иначе дубль с иконкой) */
+  pay?: string;
   tariff?: string;
   trial?: string;
   profile?: string;
@@ -227,8 +229,9 @@ export function payUrlMarkup(
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
-  const payBtn: UrlButton = { text: "💳 Оплатить", url: paymentUrl };
-  if (emojiIds?.card) payBtn.icon_custom_emoji_id = emojiIds.card;
+  const payIcon = emojiIds?.pay?.trim();
+  const payBtn: UrlButton = { text: "Оплатить", url: paymentUrl };
+  if (payIcon) payBtn.icon_custom_emoji_id = payIcon;
   return {
     inline_keyboard: [
       [payBtn],
@@ -563,6 +566,12 @@ export function singboxPaymentMethodButtons(
   return { inline_keyboard: rows };
 }
 
+/** Стиль кнопки пополнения: СБП/крипта — нейтральная (как «белая» в TG), остальные Platega — primary */
+function topupPlategaMethodStyle(label: string): ButtonStyle | undefined {
+  if (/сбп|спб|крипт|crypto/i.test(label)) return undefined;
+  return "primary";
+}
+
 /** Кнопки выбора способа оплаты для пополнения на сумму + ЮMoney */
 export function topupPaymentMethodButtons(
   amount: string,
@@ -582,13 +591,13 @@ export function topupPaymentMethodButtons(
     rows.push([btn("💳 ЮMoney — оплата картой", `topup_yoomoney:${amount}`, "primary", cardId)]);
   }
   if (yookassaEnabled) {
-    rows.push([btn("💳 ЮKassa — карта / СБП", `topup_yookassa:${amount}`, "primary", cardId)]);
+    rows.push([btn("💳 ЮKassa — карта / СБП", `topup_yookassa:${amount}`, undefined, cardId)]);
   }
   if (cryptopayEnabled) {
-    rows.push([btn("💳 Crypto Bot — криптовалюта", `topup_cryptopay:${amount}`, "primary", cardId)]);
+    rows.push([btn("💳 Crypto Bot — криптовалюта", `topup_cryptopay:${amount}`, undefined, cardId)]);
   }
   for (const m of methods) {
-    rows.push([btn(m.label, `topup:${amount}:${m.id}`, "primary", m.tgEmojiId ?? cardId)]);
+    rows.push([btn(m.label, `topup:${amount}:${m.id}`, topupPlategaMethodStyle(m.label), m.tgEmojiId ?? cardId)]);
   }
   rows.push([btn(back, "menu:topup", backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };

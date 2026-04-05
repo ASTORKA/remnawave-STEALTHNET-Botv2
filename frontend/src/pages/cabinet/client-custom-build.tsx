@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCabinetMiniapp } from "@/pages/cabinet/cabinet-layout";
 import { openPaymentInBrowser } from "@/lib/open-payment-url";
-import { cn } from "@/lib/utils";
+import { cabinetMiniWhitePayButtonClass, cn, isSbpOrCryptoPaymentLabel } from "@/lib/utils";
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("ru-RU", {
@@ -404,14 +404,14 @@ export function ClientCustomBuildPage() {
                   variant="outline"
                   onClick={payByCryptopay}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
                 >
                   {isMobileOrMiniapp ? (
                     <>
-                      <div className="p-2 rounded-xl bg-yellow-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-yellow-500" /> : <Zap className="h-6 w-6 text-yellow-500" />}
+                      <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <Zap className="h-6 w-6 text-zinc-700" />}
                       </div>
-                      <span className="text-base font-bold">Crypto Bot</span>
+                      <span className="text-base font-bold text-zinc-900">Crypto Bot</span>
                     </>
                   ) : (
                     <>
@@ -456,14 +456,14 @@ export function ClientCustomBuildPage() {
                   variant="outline"
                   onClick={payByYookassa}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
                 >
                   {isMobileOrMiniapp ? (
                     <>
-                      <div className="p-2 rounded-xl bg-green-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-green-500" /> : <CreditCard className="h-6 w-6 text-green-500" />}
+                      <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <CreditCard className="h-6 w-6 text-zinc-700" />}
                       </div>
-                      <span className="text-base font-bold">СБП / Карты РФ</span>
+                      <span className="text-base font-bold text-zinc-900">СБП / Карты РФ</span>
                     </>
                   ) : (
                     <>
@@ -509,14 +509,37 @@ export function ClientCustomBuildPage() {
                   variant="outline"
                   onClick={() => payByPlatega(m.id)}
                   disabled={payLoading}
-                  className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                  className={cn(
+                    "w-full",
+                    isMobileOrMiniapp
+                      ? isSbpOrCryptoPaymentLabel(m.label)
+                        ? cabinetMiniWhitePayButtonClass
+                        : "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60"
+                      : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative"
+                  )}
                 >
                   {isMobileOrMiniapp ? (
                     <>
-                      <div className="p-2 rounded-xl bg-green-500/10">
-                        {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-green-500" /> : <CreditCard className="h-6 w-6 text-green-500" />}
+                      <div
+                        className={cn(
+                          "p-2 rounded-xl",
+                          isSbpOrCryptoPaymentLabel(m.label) ? "bg-zinc-100 dark:bg-zinc-100" : "bg-green-500/10"
+                        )}
+                      >
+                        {payLoading ? (
+                          <Loader2
+                            className={cn(
+                              "h-6 w-6 animate-spin",
+                              isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500"
+                            )}
+                          />
+                        ) : (
+                          <CreditCard
+                            className={cn("h-6 w-6", isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500")}
+                          />
+                        )}
                       </div>
-                      <span className="text-base font-bold">{m.label}</span>
+                      <span className={cn("text-base font-bold", isSbpOrCryptoPaymentLabel(m.label) && "text-zinc-900")}>{m.label}</span>
                     </>
                   ) : (
                     <>

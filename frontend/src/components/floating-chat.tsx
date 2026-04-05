@@ -119,25 +119,25 @@ const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setI
   <>
     <div className="px-4 py-3 sm:py-4 border-b border-white/5 bg-black/5 dark:bg-white/5 shrink-0 relative overflow-hidden pt-[max(env(safe-area-inset-top),16px)] sm:pt-4">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
-      <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-inner">
+      <div className="relative flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-inner">
             {activeChat === "ai" ? <Sparkles className="h-5 w-5" /> : <Headset className="h-5 w-5" />}
           </div>
-          <div>
-            <p className="text-base font-bold text-foreground leading-tight">
+          <div className="min-w-0">
+            <p className="truncate text-base font-bold text-foreground leading-tight">
               {activeChat === "ai" ? "AI Ассистент" : "Поддержка"}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
+            <p className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1.5 min-w-0">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              {activeChat === "ai" ? "Бот онлайн" : "Операторы онлайн"}
+              <span className="truncate">{activeChat === "ai" ? "Бот онлайн" : "Операторы онлайн"}</span>
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="hidden sm:flex rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"

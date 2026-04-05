@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCabinetMiniapp } from "@/pages/cabinet/cabinet-layout";
 import { openPaymentInBrowser } from "@/lib/open-payment-url";
-import { cn } from "@/lib/utils";
+import { cabinetMiniGlassCardClass, cabinetMiniGlassPanelClass, cabinetMiniWhitePayButtonClass, cn, isSbpOrCryptoPaymentLabel } from "@/lib/utils";
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("ru-RU", {
@@ -516,14 +516,14 @@ export function ClientTariffsPage() {
                 variant="outline"
                 onClick={() => startCryptopayPayment(tariff)}
                 disabled={payLoading}
-                className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
               >
                 {isMobileOrMiniapp ? (
                   <>
-                    <div className="p-2 rounded-xl bg-yellow-500/10">
-                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-yellow-500" /> : <Zap className="h-6 w-6 text-yellow-500" />}
+                    <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <Zap className="h-6 w-6 text-zinc-700" />}
                     </div>
-                    <span className="text-base font-bold">Crypto Bot</span>
+                    <span className="text-base font-bold text-zinc-900">Crypto Bot</span>
                   </>
                 ) : (
                   <>
@@ -568,14 +568,14 @@ export function ClientTariffsPage() {
                 variant="outline"
                 onClick={() => startYookassaPayment(tariff)}
                 disabled={payLoading}
-                className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                className={cn("w-full", isMobileOrMiniapp ? cabinetMiniWhitePayButtonClass : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
               >
                  {isMobileOrMiniapp ? (
                   <>
-                    <div className="p-2 rounded-xl bg-green-500/10">
-                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-green-500" /> : <CreditCard className="h-6 w-6 text-green-500" />}
+                    <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-100">
+                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <CreditCard className="h-6 w-6 text-zinc-700" />}
                     </div>
-                    <span className="text-base font-bold">СБП / Карты РФ</span>
+                    <span className="text-base font-bold text-zinc-900">СБП / Карты РФ</span>
                   </>
                 ) : (
                   <>
@@ -621,14 +621,37 @@ export function ClientTariffsPage() {
                 variant="outline"
                 onClick={() => startPayment(tariff, m.id)}
                 disabled={payLoading}
-                className={cn("w-full", isMobileOrMiniapp ? "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60" : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative")}
+                className={cn(
+                  "w-full",
+                  isMobileOrMiniapp
+                    ? isSbpOrCryptoPaymentLabel(m.label)
+                      ? cabinetMiniWhitePayButtonClass
+                      : "justify-start gap-4 px-6 h-16 rounded-2xl border-white/5 bg-card/40 hover:bg-card/60"
+                    : "gap-3 hover:bg-background/80 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-xl h-14 border-border/50 group justify-center px-6 relative"
+                )}
               >
                 {isMobileOrMiniapp ? (
                   <>
-                    <div className="p-2 rounded-xl bg-green-500/10">
-                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-green-500" /> : <CreditCard className="h-6 w-6 text-green-500" />}
+                    <div
+                      className={cn(
+                        "p-2 rounded-xl",
+                        isSbpOrCryptoPaymentLabel(m.label) ? "bg-zinc-100 dark:bg-zinc-100" : "bg-green-500/10"
+                      )}
+                    >
+                      {payLoading ? (
+                        <Loader2
+                          className={cn(
+                            "h-6 w-6 animate-spin",
+                            isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500"
+                          )}
+                        />
+                      ) : (
+                        <CreditCard
+                          className={cn("h-6 w-6", isSbpOrCryptoPaymentLabel(m.label) ? "text-zinc-700" : "text-green-500")}
+                        />
+                      )}
                     </div>
-                    <span className="text-base font-bold">{m.label}</span>
+                    <span className={cn("text-base font-bold", isSbpOrCryptoPaymentLabel(m.label) && "text-zinc-900")}>{m.label}</span>
                   </>
                 ) : (
                   <>
@@ -748,7 +771,7 @@ export function ClientTariffsPage() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25, delay: catIndex * 0.03 }}
-                      className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-lg overflow-hidden transition-all duration-300"
+                      className={cn("overflow-hidden transition-all duration-300", cabinetMiniGlassPanelClass)}
                     >
                       <CollapsibleTrigger asChild>
                         <button
@@ -769,7 +792,7 @@ export function ClientTariffsPage() {
                       <CollapsibleContent>
                         <div className="px-3 pb-4 pt-1 flex flex-col gap-3">
                           {cat.tariffs.map((t) => (
-                            <Card key={t.id} className="rounded-2xl border border-border/50 bg-background/50 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
+                            <Card key={t.id} className={cn(cabinetMiniGlassCardClass)}>
                               <CardContent className="flex flex-row items-center gap-4 py-4 px-4 min-h-0 min-w-0">
                                 <div className="flex-1 min-w-0 space-y-1.5">
                                   <p className="text-[15px] font-bold leading-tight truncate text-foreground">{t.name}</p>

@@ -6,6 +6,8 @@ import { useCabinetConfig } from "@/contexts/cabinet-config";
 import { api } from "@/lib/api";
 import type { ClientReferralStats } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { useCabinetMiniapp } from "@/pages/cabinet/cabinet-layout";
+import { cabinetMiniGlassCardClass, cabinetMiniGlassPanelClass, cn } from "@/lib/utils";
 function formatMoney(amount: number, currency: string = "usd") {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",
@@ -18,6 +20,7 @@ function formatMoney(amount: number, currency: string = "usd") {
 export function ClientReferralPage() {
   const { state } = useClientAuth();
   const config = useCabinetConfig();
+  const isMini = useCabinetMiniapp();
   const token = state.token ?? null;
   const client = state.client;
   const currency = (client?.preferredCurrency ?? "usd").toLowerCase();
@@ -96,7 +99,10 @@ export function ClientReferralPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.05 }}
-          className="relative p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10 overflow-hidden group"
+          className={cn(
+            "relative overflow-hidden group p-4 sm:p-6",
+            isMini ? cabinetMiniGlassPanelClass : "rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10"
+          )}
         >
           <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-blue-500/10 blur-[40px] pointer-events-none group-hover:bg-blue-500/20 transition-colors duration-500" />
           <div className="relative flex items-center sm:block gap-4 sm:gap-0">
@@ -117,7 +123,12 @@ export function ClientReferralPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="relative p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10 overflow-hidden group"
+          className={cn(
+            "relative overflow-hidden group p-4 sm:p-6",
+            isMini
+              ? cabinetMiniGlassPanelClass
+              : "rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10"
+          )}
         >
           <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/10 blur-[40px] pointer-events-none group-hover:bg-indigo-500/20 transition-colors duration-500" />
           <div className="relative flex items-center sm:block gap-4 sm:gap-0">
@@ -138,7 +149,12 @@ export function ClientReferralPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
-          className="relative p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10 overflow-hidden group"
+          className={cn(
+            "relative overflow-hidden group p-4 sm:p-6",
+            isMini
+              ? cabinetMiniGlassPanelClass
+              : "rounded-[1.5rem] sm:rounded-[2rem] bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10"
+          )}
         >
           <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-green-500/10 blur-[40px] pointer-events-none group-hover:bg-green-500/20 transition-colors duration-500" />
           <div className="relative flex items-center sm:block gap-4 sm:gap-0">
@@ -181,7 +197,14 @@ export function ClientReferralPage() {
 
               <div className="space-y-3">
                 {referralLinkSite && (
-                  <div className="flex flex-col gap-2 p-3 sm:p-4 rounded-2xl bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10">
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 p-3 sm:p-4 rounded-2xl transition-colors",
+                      isMini
+                        ? cabinetMiniGlassCardClass
+                        : "bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 hover:bg-muted/60 dark:hover:bg-white/10"
+                    )}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 shrink-0 text-muted-foreground">
                         <Globe className="w-4 h-4" />
@@ -197,7 +220,14 @@ export function ClientReferralPage() {
                   </div>
                 )}
                 {referralLinkBot && (
-                  <div className="flex flex-col gap-2 p-3 sm:p-4 rounded-2xl bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 transition-colors hover:bg-muted/60 dark:hover:bg-white/10">
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 p-3 sm:p-4 rounded-2xl transition-colors",
+                      isMini
+                        ? cabinetMiniGlassCardClass
+                        : "bg-muted/40 border border-border/50 dark:bg-white/5 dark:border-white/5 hover:bg-muted/60 dark:hover:bg-white/10"
+                    )}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#0088cc]/10 text-[#0088cc] shrink-0">
                         <Send className="w-4 h-4 ml-[-2px] mt-[1px]" />
@@ -238,7 +268,12 @@ export function ClientReferralPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-background/60 border border-border/50 shadow-sm">
+            <div
+              className={cn(
+                "flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl shadow-sm",
+                isMini ? cabinetMiniGlassCardClass : "bg-background/60 border border-border/50"
+              )}
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 font-bold">1</div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground mb-0.5">Уровень 1 <span className="text-primary font-bold ml-1">({s.referralPercent}%)</span></p>
@@ -246,7 +281,12 @@ export function ClientReferralPage() {
               </div>
             </div>
             {(s.referralPercentLevel2 ?? 0) > 0 && (
-              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-background/60 border border-border/50 shadow-sm">
+              <div
+                className={cn(
+                  "flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl shadow-sm",
+                  isMini ? cabinetMiniGlassCardClass : "bg-background/60 border border-border/50"
+                )}
+              >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 font-bold">2</div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground mb-0.5">Уровень 2 <span className="text-primary font-bold ml-1">({s.referralPercentLevel2}%)</span></p>
@@ -255,7 +295,12 @@ export function ClientReferralPage() {
               </div>
             )}
             {(s.referralPercentLevel3 ?? 0) > 0 && (
-              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-background/60 border border-border/50 shadow-sm">
+              <div
+                className={cn(
+                  "flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl shadow-sm",
+                  isMini ? cabinetMiniGlassCardClass : "bg-background/60 border border-border/50"
+                )}
+              >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 font-bold">3</div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground mb-0.5">Уровень 3 <span className="text-primary font-bold ml-1">({s.referralPercentLevel3}%)</span></p>
@@ -263,7 +308,12 @@ export function ClientReferralPage() {
                 </div>
               </div>
             )}
-            <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-background/60 border border-border/50 shadow-sm w-full">
+            <div
+              className={cn(
+                "flex w-full items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl shadow-sm",
+                isMini ? cabinetMiniGlassCardClass : "bg-background/60 border border-border/50"
+              )}
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-500 shrink-0">
                 <Wallet className="h-4 w-4" />
               </div>

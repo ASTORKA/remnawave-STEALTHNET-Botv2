@@ -1556,6 +1556,7 @@ bot.on("callback_query:data", async (ctx) => {
       ? {
           back: botEmojis.BACK?.tgEmojiId,
           card: botEmojis.CARD?.tgEmojiId,
+          pay: botEmojis.PAY?.tgEmojiId,
           tariff: botEmojis.PACKAGE?.tgEmojiId || botEmojis.TARIFFS?.tgEmojiId,
           trial: botEmojis.TRIAL?.tgEmojiId,
           profile: botEmojis.PUZZLE?.tgEmojiId || botEmojis.PROFILE?.tgEmojiId,
@@ -2974,6 +2975,7 @@ bot.on("message:text", async (ctx) => {
       ? {
           back: botEmojis.BACK?.tgEmojiId,
           card: botEmojis.CARD?.tgEmojiId,
+          pay: botEmojis.PAY?.tgEmojiId,
           tariff: botEmojis.PACKAGE?.tgEmojiId || botEmojis.TARIFFS?.tgEmojiId,
           trial: botEmojis.TRIAL?.tgEmojiId,
           profile: botEmojis.PUZZLE?.tgEmojiId || botEmojis.PROFILE?.tgEmojiId,
