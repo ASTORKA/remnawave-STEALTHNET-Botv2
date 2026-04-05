@@ -62,6 +62,18 @@ function formatBytes(bytes: number) {
   return (bytes / 1024).toFixed(0) + " КБ";
 }
 
+/** Сообщение API «нет привязанной подписки» — не блокируем UI мини-кабинета */
+function isInformationalNoSubscriptionMessage(msg: string | null | undefined): boolean {
+  if (!msg || typeof msg !== "string") return false;
+  const m = msg.toLowerCase();
+  return (
+    m.includes("не привязан") ||
+    m.includes("not linked") ||
+    m.includes("no subscription") ||
+    m.includes("subscription not found")
+  );
+}
+
 
 function getSubscriptionPayload(sub: unknown): Record<string, unknown> | null {
   if (!sub || typeof sub !== "object") return null;
@@ -169,7 +181,9 @@ export function ClientDashboardPage() {
         if (cancelled) return;
         setSubscription(subRes.subscription ?? null);
         setTariffDisplayName(subRes.tariffDisplayName ?? null);
-        if (subRes.message) setSubscriptionError(subRes.message);
+        if (subRes.message && !isInformationalNoSubscriptionMessage(subRes.message)) {
+          setSubscriptionError(subRes.message);
+        }
         setPayments(payRes.items ?? []);
         setDeviceCount(devRes.total ?? null);
       })
@@ -275,6 +289,10 @@ export function ClientDashboardPage() {
   );
 
   if (isMiniapp) {
+    const miniBlockingSubError = Boolean(
+      subscriptionError && !isInformationalNoSubscriptionMessage(subscriptionError)
+    );
+
     return (
       <div className="w-full min-w-0 space-y-3 overflow-x-hidden">
         {(paymentMessage === "success" || paymentMessage === "success_topup" || paymentMessage === "success_tariff") && (
@@ -304,7 +322,7 @@ export function ClientDashboardPage() {
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          {(loading || subscriptionError) && (
+          {(loading || miniBlockingSubError) && (
             <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               <div className="rounded-xl border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
                 <Zap className="h-4 w-4 shrink-0 text-primary" />
@@ -316,7 +334,7 @@ export function ClientDashboardPage() {
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
             </div>
-          ) : subscriptionError ? (
+          ) : miniBlockingSubError ? (
             <p className="text-sm text-destructive">{subscriptionError}</p>
           ) : (
             (() => {
@@ -324,14 +342,20 @@ export function ClientDashboardPage() {
               const connectWithTrialTap = showTrial && !hasActiveSubscription;
               const connectLinkHref =
                 hasActiveSubscription && vpnUrl ? "/cabinet/subscribe" : "/cabinet/tariffs";
-              const pillLabel = connectWithTrialTap ? "Активировать триал" : "Нажмите для подключения";
+              const pillLabel = connectWithTrialTap
+                ? "Активировать триал"
+                : !hasActiveSubscription
+                  ? "Подключиться"
+                  : "Нажмите для подключения";
               const ringSizeClass = "h-[9rem] w-[9rem]";
               const btnSizeClass = "h-[9rem] w-[9rem]";
               const whiteCircleBtnClass = cn(
-                "relative z-10 shrink-0 rounded-full border border-black/10 bg-white p-0 text-primary shadow-[0_20px_50px_-22px_rgba(0,0,0,0.35)] transition-transform duration-200 active:scale-[0.97] dark:bg-white dark:text-primary",
+                "relative z-10 shrink-0 rounded-full border border-black/10 bg-white p-0 text-zinc-900 shadow-[0_20px_50px_-22px_rgba(0,0,0,0.35)] ring-2 ring-primary/25 transition-transform duration-200 active:scale-[0.97] dark:bg-white dark:text-zinc-900",
                 btnSizeClass,
                 !reduceMotion && "cabinet-vpn-tap-glow"
               );
+              const whitePillBtnClass =
+                "h-14 w-full max-w-sm rounded-full border border-black/10 bg-white px-10 text-base font-semibold text-zinc-900 shadow-md transition-colors hover:bg-zinc-50 dark:border-black/10 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-50";
 
               return (
                 <div className="min-w-0 space-y-4">
@@ -389,11 +413,17 @@ export function ClientDashboardPage() {
                   </div>
 
                   {hasActiveSubscription && vpnUrl ? (
-                    <div className="flex flex-col items-center gap-3 border-t border-white/10 pt-5 dark:border-white/[0.06]">
-                      <p className="max-w-xs text-center text-xs text-muted-foreground">
+                    <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                          <Wifi className="h-4 w-4" />
+                        </div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</p>
+                      </div>
+                      <p className="text-xs leading-snug text-muted-foreground">
                         Ссылка на подписку — скопируйте или откройте настройку в один тап.
                       </p>
-                      <div className="flex w-full min-w-0 gap-2 px-0.5">
+                      <div className="flex w-full min-w-0 gap-2">
                         <code
                           className="font-mono flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2.5 text-[11px] text-foreground/90 shadow-inner dark:border-white/[0.08]"
                           title={vpnUrl}
@@ -454,9 +484,9 @@ export function ClientDashboardPage() {
                           aria-label={pillLabel}
                         >
                           {trialLoading ? (
-                            <Loader2 className="h-12 w-12 shrink-0 animate-spin text-primary" />
+                            <Loader2 className="h-12 w-12 shrink-0 animate-spin text-zinc-900" />
                           ) : (
-                            <Zap className="h-12 w-12 shrink-0" strokeWidth={2.25} />
+                            <Zap className="h-12 w-12 shrink-0 text-zinc-900" strokeWidth={2.25} />
                           )}
                         </Button>
                       ) : (
@@ -466,7 +496,7 @@ export function ClientDashboardPage() {
                             className="inline-flex items-center justify-center"
                             aria-label="Подключиться к VPN"
                           >
-                            <Zap className="h-12 w-12 shrink-0" strokeWidth={2.25} />
+                            <Zap className="h-12 w-12 shrink-0 text-zinc-900" strokeWidth={2.25} />
                           </Link>
                         </Button>
                       )}
@@ -474,20 +504,17 @@ export function ClientDashboardPage() {
                     {connectWithTrialTap ? (
                       <Button
                         type="button"
-                        className="h-14 w-full max-w-sm rounded-full border border-white/25 bg-white/90 px-10 text-base font-semibold text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-white dark:border-white/15 dark:bg-white/95"
+                        className={whitePillBtnClass}
                         onClick={() => void activateTrial()}
                         disabled={trialLoading}
                       >
                         {trialLoading ? (
-                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" />
+                          <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin text-zinc-900" />
                         ) : null}
                         {pillLabel}
                       </Button>
                     ) : (
-                      <Button
-                        className="h-14 w-full max-w-sm rounded-full border border-white/25 bg-white/90 px-10 text-base font-semibold text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-white dark:border-white/15 dark:bg-white/95"
-                        asChild
-                      >
+                      <Button className={whitePillBtnClass} asChild>
                         <Link to={connectLinkHref} className="inline-flex items-center justify-center">
                           {pillLabel}
                         </Link>
