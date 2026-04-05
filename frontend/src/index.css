@@ -174,7 +174,8 @@
     linear-gradient(
       165deg,
       hsl(var(--background)) 0%,
-      color-mix(in srgb, hsl(var(--muted)) 55%, hsl(var(--background))) 45%,
+      color-mix(in srgb, hsl(var(--primary)) 6%, hsl(var(--muted))) 38%,
+      color-mix(in srgb, hsl(var(--muted)) 40%, hsl(var(--background))) 72%,
       hsl(var(--background)) 100%
     );
 }
@@ -197,7 +198,7 @@
   height: 200vmin;
   margin-left: -100vmin;
   margin-top: -100vmin;
-  opacity: 0.38;
+  opacity: 0.48;
   background: conic-gradient(
     from 220deg at 50% 50%,
     hsl(var(--primary) / 0.22) 0deg,
@@ -231,7 +232,7 @@
   height: min(72vw, 28rem);
   left: -18%;
   top: -8%;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.35) 0%, transparent 68%);
+  background: radial-gradient(circle, hsl(var(--primary) / 0.42) 0%, transparent 68%);
   animation: cabinet-ambient-drift-a 26s ease-in-out infinite alternate;
 }
 
@@ -352,10 +353,49 @@
   }
 }
 
+/* Мягкое «дыхание» света на фоне (лёгкая анимация) */
+.cabinet-ambient__liquid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background: radial-gradient(
+    ellipse 120% 80% at 30% 20%,
+    hsl(var(--primary) / 0.14) 0%,
+    transparent 50%
+  ),
+    radial-gradient(ellipse 100% 70% at 80% 80%, hsl(210 90% 55% / 0.1) 0%, transparent 45%);
+  animation: cabinet-ambient-liquid-morph 20s ease-in-out infinite alternate;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.dark .cabinet-ambient__liquid {
+  opacity: 0.4;
+  mix-blend-mode: plus-lighter;
+  background: radial-gradient(
+    ellipse 120% 80% at 25% 15%,
+    hsl(var(--primary) / 0.12) 0%,
+    transparent 55%
+  ),
+    radial-gradient(ellipse 90% 60% at 85% 75%, hsl(265 70% 50% / 0.14) 0%, transparent 50%);
+}
+
+@keyframes cabinet-ambient-liquid-morph {
+  0% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.08) translate(2%, -1.5%);
+    opacity: 0.75;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cabinet-ambient__aurora,
   .cabinet-ambient__blob,
-  .cabinet-ambient__shimmer {
+  .cabinet-ambient__shimmer,
+  .cabinet-ambient__liquid {
     animation: none !important;
   }
 
@@ -363,35 +403,47 @@
     transform: rotate(18deg);
   }
 
+  .cabinet-ambient__liquid {
+    transform: none;
+    opacity: 0.45;
+  }
+
   .cabinet-mini-dock {
     animation: none !important;
   }
 }
 
-/* Mini-app glass section: gradient edge glow */
+/* Liquid glass — карточки мини-кабинета (не трогаем position у декора: только слой контента) */
 .cabinet-mini-glass {
   position: relative;
-  border-radius: 1.5rem;
+  isolation: isolate;
+  border-radius: 1.35rem;
   background: linear-gradient(
-    145deg,
-    color-mix(in srgb, hsl(var(--card)) 72%, transparent) 0%,
-    color-mix(in srgb, hsl(var(--card)) 42%, transparent) 100%
+    155deg,
+    color-mix(in srgb, hsl(var(--card)) 58%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--card)) 28%, transparent) 100%
   );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(28px) saturate(185%);
+  -webkit-backdrop-filter: blur(28px) saturate(185%);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 18%, transparent),
-    0 1px 0 0 color-mix(in srgb, hsl(var(--foreground)) 6%, transparent) inset,
-    0 24px 64px -32px color-mix(in srgb, hsl(var(--foreground)) 25%, transparent),
-    0 0 80px -40px hsl(var(--primary) / 0.22);
+    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 22%, transparent),
+    0 1px 0 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 0 rgba(255, 255, 255, 0.12) inset,
+    0 20px 56px -28px color-mix(in srgb, hsl(var(--foreground)) 18%, transparent),
+    0 0 72px -36px hsl(var(--primary) / 0.28);
 }
 
 .dark .cabinet-mini-glass {
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, hsl(var(--card)) 45%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--card)) 22%, transparent) 100%
+  );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 22%, transparent),
-    0 1px 0 0 color-mix(in srgb, hsl(var(--foreground)) 8%, transparent) inset,
-    0 28px 72px -36px rgba(0, 0, 0, 0.55),
-    0 0 100px -48px hsl(var(--primary) / 0.18);
+    0 0 0 1px color-mix(in srgb, hsl(var(--primary)) 28%, transparent),
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 24px 64px -32px rgba(0, 0, 0, 0.55),
+    0 0 88px -40px hsl(var(--primary) / 0.22);
 }
 
 .cabinet-mini-glass::before {
@@ -402,9 +454,9 @@
   padding: 1px;
   background: linear-gradient(
     155deg,
-    hsl(var(--primary) / 0.45) 0%,
-    transparent 42%,
-    hsl(265 60% 55% / 0.12) 72%,
+    hsl(var(--primary) / 0.5) 0%,
+    transparent 38%,
+    hsl(265 60% 55% / 0.14) 68%,
     transparent 100%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -412,11 +464,40 @@
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   pointer-events: none;
+  z-index: 2;
 }
 
-.cabinet-mini-glass > * {
-  position: relative;
+.cabinet-mini-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 42%,
+    transparent 100%
+  );
+  opacity: 0.45;
+  pointer-events: none;
   z-index: 1;
+}
+
+.dark .cabinet-mini-glass::after {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.06) 0%, transparent 45%, transparent 100%);
+  opacity: 0.9;
+}
+
+/* Декоративные блики внутри карточки — вне потока (правило > * ломало position:absolute у Tailwind) */
+.cabinet-mini-glass__blob {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.cabinet-mini-glass__body {
+  position: relative;
+  z-index: 3;
 }
 
 /* Floating bottom bar: slow breathing glow */
@@ -460,4 +541,58 @@
       0 0 0 1px rgba(255, 255, 255, 0.08) inset,
       0 0 80px -20px hsl(var(--primary) / 0.28);
   }
+}
+
+/* Liquid glass — верхняя панель мини-кабинета */
+.cabinet-liquid-header {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, hsl(var(--background)) 72%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 52%, transparent) 100%
+  );
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  border-bottom: 1px solid color-mix(in srgb, hsl(var(--foreground)) 8%, transparent);
+  box-shadow:
+    0 10px 40px -18px color-mix(in srgb, hsl(var(--foreground)) 20%, transparent),
+    0 1px 0 0 rgba(255, 255, 255, 0.65) inset;
+}
+
+.dark .cabinet-liquid-header {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, hsl(var(--background)) 58%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 38%, transparent) 100%
+  );
+  border-bottom-color: color-mix(in srgb, hsl(var(--foreground)) 12%, transparent);
+  box-shadow:
+    0 12px 48px -20px rgba(0, 0, 0, 0.55),
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Liquid glass — нижний док (базовые тени + анимация cabinet-mini-dock) */
+.cabinet-liquid-dock {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, hsl(var(--background)) 78%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 55%, transparent) 100%
+  );
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+    0 -8px 32px -12px color-mix(in srgb, hsl(var(--foreground)) 15%, transparent);
+}
+
+.dark .cabinet-liquid-dock {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, hsl(var(--background)) 62%, transparent) 0%,
+    color-mix(in srgb, hsl(var(--background)) 42%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, hsl(var(--foreground)) 14%, transparent);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 -12px 40px -14px rgba(0, 0, 0, 0.45);
 }

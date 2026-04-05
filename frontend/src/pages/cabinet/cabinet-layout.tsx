@@ -421,6 +421,7 @@ function MobileCabinetShell() {
         <div className="cabinet-ambient__blob cabinet-ambient__blob--b" />
         <div className="cabinet-ambient__blob cabinet-ambient__blob--c" />
         <div className="cabinet-ambient__shimmer" />
+        <div className="cabinet-ambient__liquid" />
         <div className="cabinet-ambient__grain" />
         <div className="cabinet-ambient__vignette" />
       </div>
@@ -430,14 +431,14 @@ function MobileCabinetShell() {
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="relative mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-3 px-4 min-w-0 sm:h-14">
-          <div className="absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-[1.25rem] border-b border-white/25 bg-background/65 shadow-[0_12px_40px_-28px_hsl(var(--primary)/0.35)] backdrop-blur-2xl dark:border-white/[0.07] dark:bg-background/55 dark:shadow-[0_16px_48px_-32px_rgba(0,0,0,0.65)]" />
+          <div className="cabinet-liquid-header absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-[1.35rem]" />
           <Link to="/cabinet/dashboard" className="flex min-w-0 shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-foreground">
             {logo ? (
-              <span className="flex h-8 shrink-0 items-center justify-center rounded-xl bg-muted/50 px-1.5 dark:bg-white/5">
+              <span className="flex h-8 shrink-0 items-center justify-center rounded-xl border border-white/40 bg-white/35 px-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/10">
                 <img src={logo} alt="" className="h-6 max-w-[100px] object-contain" onError={() => setLogoError(true)} />
               </span>
             ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/12 text-primary shadow-sm ring-1 ring-white/30 backdrop-blur-sm dark:ring-white/10">
                 <Shield className="h-4 w-4" />
               </span>
             )}
@@ -457,14 +458,14 @@ function MobileCabinetShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 pb-2 pt-4 transition-all duration-300 sm:px-5 sm:pt-5">
+      <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col items-stretch px-4 pb-2 pt-4 transition-all duration-300 sm:px-5 sm:pt-5">
         <Outlet />
       </main>
 
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         <div
           className={cn(
-            "cabinet-mini-dock pointer-events-auto mx-auto flex min-h-[3.75rem] max-w-lg items-center justify-around gap-0.5 rounded-[1.35rem] border border-white/30 bg-background/82 px-1 py-1.5 backdrop-blur-2xl dark:border-white/[0.1] dark:bg-background/72"
+            "cabinet-mini-dock cabinet-liquid-dock pointer-events-auto mx-auto flex min-h-[3.65rem] max-w-lg items-center justify-around gap-0.5 rounded-[1.4rem] px-1 py-1.5"
           )}
         >
           {visibleItems.map(({ to, label, icon: Icon }) => {

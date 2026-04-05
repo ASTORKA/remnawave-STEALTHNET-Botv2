@@ -249,7 +249,7 @@ export function ClientDashboardPage() {
 
   // Компонент-состояние отсутствия подписки
   const NoSubscriptionState = () => (
-    <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
+    <div className="flex flex-col items-center justify-center space-y-3 py-5 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
         <Package className="h-8 w-8 text-primary/80" />
       </div>
@@ -290,7 +290,7 @@ export function ClientDashboardPage() {
 
     return (
       <motion.div
-        className="w-full min-w-0 space-y-5 overflow-hidden"
+        className="w-full min-w-0 space-y-4 overflow-x-hidden"
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -322,31 +322,32 @@ export function ClientDashboardPage() {
           </motion.div>
         )}
 
-        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-5">
+        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-4">
         {/* 1. Статус, срок, тариф, трафик, устройства — с иконками */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative overflow-hidden p-5">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-4">
           <div
-            className="pointer-events-none absolute -right-28 -top-32 h-64 w-64 rounded-full bg-gradient-to-bl from-primary/30 via-primary/10 to-transparent blur-3xl dark:from-primary/35"
+            className="cabinet-mini-glass__blob -right-16 -top-20 h-36 w-36 rounded-full bg-gradient-to-bl from-primary/28 via-primary/8 to-transparent blur-2xl dark:from-primary/32"
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-gradient-to-tr from-cyan-500/15 to-transparent blur-3xl dark:from-cyan-400/20"
+            className="cabinet-mini-glass__blob -bottom-8 -left-12 h-32 w-32 rounded-full bg-gradient-to-tr from-cyan-500/14 to-transparent blur-2xl dark:from-cyan-400/18"
             aria-hidden
           />
-          <h2 className="mb-5 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-primary/25">
+          <div className="cabinet-mini-glass__body">
+          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
               <Zap className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Статус Подписки
           </h2>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-6">
               <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
             </div>
           ) : subscriptionError || !hasActiveSubscription ? (
             <NoSubscriptionState />
           ) : (
-            <div className="min-w-0 space-y-4">
+            <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.14] px-3 py-1.5 text-xs font-semibold text-green-800 shadow-[0_0_28px_-12px_rgba(34,197,94,0.45)] backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
                   <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-pulse" />
@@ -364,7 +365,7 @@ export function ClientDashboardPage() {
                 )}
               </div>
 
-              <div className="mt-2 space-y-3 border-t border-white/15 pt-4 dark:border-white/[0.06]">
+              <div className="mt-1 space-y-2.5 border-t border-white/20 pt-3 dark:border-white/[0.08]">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
                   <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
@@ -420,16 +421,18 @@ export function ClientDashboardPage() {
               </div>
             </div>
           )}
+          </div>
         </motion.section>
 
         {/* 2. Как подключиться — ссылка и кнопка */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative overflow-hidden p-5">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-4">
           <div
-            className="pointer-events-none absolute -right-16 top-1/2 h-44 w-44 -translate-y-1/2 rounded-full bg-gradient-to-l from-violet-500/15 to-transparent blur-3xl dark:from-violet-400/20"
+            className="cabinet-mini-glass__blob right-0 top-1/2 h-36 w-36 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
             aria-hidden
           />
-          <h2 className="mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-primary/25">
+          <div className="cabinet-mini-glass__body">
+          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
               <Wifi className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Подключение
@@ -487,16 +490,18 @@ export function ClientDashboardPage() {
               </Button>
             </div>
           )}
+          </div>
         </motion.section>
 
         {/* 3. Баланс */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex flex-col gap-4 overflow-hidden p-5">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-3 self-start overflow-hidden p-4">
           <div
-            className="pointer-events-none absolute -left-24 top-0 h-52 w-52 rounded-full bg-gradient-to-br from-amber-400/12 to-transparent blur-3xl dark:from-amber-300/15"
+            className="cabinet-mini-glass__blob -left-16 -top-10 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/14 to-transparent blur-2xl dark:from-amber-300/18"
             aria-hidden
           />
+          <div className="cabinet-mini-glass__body flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 p-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] ring-1 ring-primary/25">
+            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
               <Wallet className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -526,6 +531,7 @@ export function ClientDashboardPage() {
               <span className="inline-flex items-center leading-none">Пополнить баланс</span>
             </Link>
           </Button>
+          </div>
         </motion.section>
         </motion.div>
       </motion.div>
