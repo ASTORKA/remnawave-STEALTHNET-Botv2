@@ -19,6 +19,12 @@ type ChatType = "ai" | "support";
 
 type TelegramWebAppBridge = { openLink?: (url: string) => void };
 
+/** Синхронно: в Mini App Telegram подставляет WebApp до первого кадра React. */
+function isCabinetTelegramMiniApp(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean((window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData);
+}
+
 /** Same URL as the bot Web App button with id `cabinet` (`bot/src/keyboard.ts`): `{publicAppUrl}/cabinet`. */
 function cabinetWebAppHref(publicAppUrl: string | null | undefined): string | null {
   const base = publicAppUrl?.replace(/\/$/, "").trim();
@@ -116,7 +122,17 @@ const ChatSwitcher = ({ activeChat, setActiveChat, aiUnread, supportUnread, isFl
   );
 };
 
-const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setIsOpen, aiUnread, supportUnread, showAiTab = true }: any) => (
+const ChatHeader = ({
+  activeChat,
+  setActiveChat,
+  isExpanded,
+  setIsExpanded,
+  setIsOpen,
+  aiUnread,
+  supportUnread,
+  showAiTab = true,
+  isMiniApp = false,
+}: any) => (
   <>
     <div className="px-4 py-3 sm:py-4 border-b border-white/5 bg-black/5 dark:bg-white/5 shrink-0 relative overflow-hidden pt-[max(env(safe-area-inset-top),16px)] sm:pt-4">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
@@ -129,13 +145,19 @@ const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setI
             <p className="truncate text-base font-bold text-foreground leading-tight">
               {activeChat === "ai" ? "AI Ассистент" : "Поддержка"}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1.5 min-w-0">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="truncate">{activeChat === "ai" ? "Бот онлайн" : "Операторы онлайн"}</span>
-            </p>
+            {activeChat === "support" && isMiniApp ? (
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium leading-snug">
+                Создавайте тикеты для связи с администрацией.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1.5 min-w-0">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="truncate">{activeChat === "ai" ? "Бот онлайн" : "Операторы онлайн"}</span>
+              </p>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -146,10 +168,17 @@ const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setI
             {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
           <button
+            type="button"
             onClick={() => setIsOpen(false)}
-            className="rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+            className={cn(
+              "rounded-full p-2 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground",
+              activeChat === "support" && isMiniApp && "flex items-center gap-1.5 pr-3 pl-2 rounded-full"
+            )}
           >
-            <X className="h-6 w-6 sm:h-5 sm:w-5" />
+            <X className="h-5 w-5 shrink-0" />
+            {activeChat === "support" && isMiniApp ? (
+              <span className="text-sm font-semibold">Закрыть</span>
+            ) : null}
           </button>
         </div>
       </div>
@@ -168,10 +197,12 @@ function SupportTab({
   headerProps,
   onRefreshUnread,
   publicAppUrl,
+  isMiniApp = false,
 }: {
   headerProps: any;
   onRefreshUnread?: () => void;
   publicAppUrl?: string | null;
+  isMiniApp?: boolean;
 }) {
   const { state } = useClientAuth();
   const token = state.token ?? null;
@@ -426,19 +457,32 @@ function SupportTab({
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full overflow-y-auto custom-scrollbar">
       <ChatHeader {...headerProps} />
-      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 shrink-0 border-b border-black/5 dark:border-white/5 bg-background/90 backdrop-blur-md">
-        <h3 className="text-sm font-bold text-foreground">Мои обращения</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-8 rounded-lg text-xs bg-background/50 border-white/10 dark:border-white/5"
-          onClick={() => setShowNewForm(true)}
-        >
-          <MessageSquarePlus className="h-3 w-3 mr-1.5" />
-          Создать
-        </Button>
-      </div>
-      
+      {isMiniApp ? (
+        <div className="shrink-0 px-4 pt-3 pb-2 border-b border-black/5 dark:border-white/5 bg-background/90 backdrop-blur-md">
+          <Button
+            type="button"
+            className="h-12 w-full rounded-xl bg-white text-neutral-900 font-bold uppercase tracking-wide text-sm shadow-sm hover:bg-white/95 dark:bg-white dark:text-neutral-900"
+            onClick={() => setShowNewForm(true)}
+          >
+            <MessageSquarePlus className="h-4 w-4 mr-2" />
+            Создать тикет
+          </Button>
+        </div>
+      ) : (
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 shrink-0 border-b border-black/5 dark:border-white/5 bg-background/90 backdrop-blur-md">
+          <h3 className="text-sm font-bold text-foreground">Мои обращения</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-lg text-xs bg-background/50 border-white/10 dark:border-white/5"
+            onClick={() => setShowNewForm(true)}
+          >
+            <MessageSquarePlus className="h-3 w-3 mr-1.5" />
+            Создать
+          </Button>
+        </div>
+      )}
+
       <div className="p-3 space-y-2.5 flex-1">
         {loading && list.length === 0 ? (
           <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary/50" /></div>
@@ -454,7 +498,10 @@ function SupportTab({
               <div
                 key={t.id}
                 onClick={() => setDetailId(t.id)}
-                className="group relative flex flex-col gap-1.5 p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-card/60 hover:bg-card/80 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                className={cn(
+                  "group relative flex flex-col gap-1.5 p-3.5 rounded-2xl border border-black/5 dark:border-white/10 bg-card/60 hover:bg-card/80 transition-all cursor-pointer shadow-sm hover:shadow-md",
+                  isMiniApp && isOpen && "border-l-4 border-l-emerald-500 pl-3"
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <h4 className="font-semibold text-[13px] text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">{t.subject}</h4>
@@ -469,7 +516,7 @@ function SupportTab({
                   )}
                 </div>
                 <span className="text-[10px] font-medium text-muted-foreground">
-                  {formatDate(t.updatedAt)}
+                  {isMiniApp ? <>Последнее сообщение: {formatDate(t.updatedAt)}</> : formatDate(t.updatedAt)}
                 </span>
               </div>
             );
@@ -487,9 +534,12 @@ export function FloatingChat() {
   const [searchParams, setSearchParams] = useSearchParams();
   const serviceName = config?.serviceName?.trim() || "Сервис";
   const aiChatEnabled = config?.aiChatEnabled !== false;
+  const miniApp = isCabinetTelegramMiniApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeChat, setActiveChat] = useState<ChatType>(() => (config?.aiChatEnabled !== false ? "ai" : "support"));
+  const [activeChat, setActiveChat] = useState<ChatType>(() =>
+    isCabinetTelegramMiniApp() ? "support" : config?.aiChatEnabled !== false ? "ai" : "support"
+  );
   const [hasOpenDialog, setHasOpenDialog] = useState(false);
   useEffect(() => {
     if (searchParams.get("support") !== "1" || !token) return;
@@ -502,6 +552,9 @@ export function FloatingChat() {
   useEffect(() => {
     if (!aiChatEnabled && activeChat === "ai") setActiveChat("support");
   }, [aiChatEnabled, activeChat]);
+  useEffect(() => {
+    if (miniApp && activeChat === "ai") setActiveChat("support");
+  }, [miniApp, activeChat]);
 
   const [aiChats, setAiChats] = useState<Message[]>(() => getInitialAiMessage("Сервис"));
   useEffect(() => {
@@ -631,7 +684,17 @@ export function FloatingChat() {
     }
   };
 
-  const headerProps = { activeChat, setActiveChat, isExpanded, setIsExpanded, setIsOpen, aiUnread, supportUnread, showAiTab: aiChatEnabled };
+  const headerProps = {
+    activeChat,
+    setActiveChat,
+    isExpanded,
+    setIsExpanded,
+    setIsOpen,
+    aiUnread,
+    supportUnread,
+    showAiTab: aiChatEnabled && !miniApp,
+    isMiniApp: miniApp,
+  };
 
   return (
     <>
@@ -773,7 +836,12 @@ export function FloatingChat() {
                   </div>
                 </div>
               ) : (
-                <SupportTab headerProps={headerProps} onRefreshUnread={refreshUnread} publicAppUrl={config?.publicAppUrl} />
+                <SupportTab
+                  headerProps={headerProps}
+                  onRefreshUnread={refreshUnread}
+                  publicAppUrl={config?.publicAppUrl}
+                  isMiniApp={miniApp}
+                />
               )}
             </motion.div>
           )}
@@ -784,7 +852,10 @@ export function FloatingChat() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setIsOpen((v) => !v)}
+            onClick={() => {
+              if (!isOpen && miniApp) setActiveChat("support");
+              setIsOpen((v) => !v);
+            }}
             className={cn(
               "relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full z-10",
               "bg-card/60 backdrop-blur-2xl border border-border/50 text-foreground transition-colors hover:bg-card/80",
