@@ -637,7 +637,7 @@ export function optionPaymentMethodButtons(
   const cardId = emojiIds?.card;
   const rows: InlineButton[][] = [];
   if (balance >= option.price) {
-    rows.push([btn(`💰 Оплатить балансом (${option.price} ₽)`, `pay_option_balance:${option.kind}:${option.id}`, undefined, cardId)]);
+    rows.push([btn(`Оплатить балансом (${option.price} ₽)`, `pay_option_balance:${option.kind}:${option.id}`, undefined, cardId)]);
   }
   if (yoomoneyEnabled) {
     rows.push([btn("💳 ЮMoney — карта", `pay_option_yoomoney:${option.kind}:${option.id}`, undefined, cardId)]);

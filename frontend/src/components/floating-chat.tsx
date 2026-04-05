@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, User, Sparkles, Headset, ArrowLeft, MessageSquarePlus, CircleDot, CircleCheck, Inbox, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { MessageCircle, X, Send, User, Sparkles, Headset, ArrowLeft, MessageSquarePlus, CircleDot, CircleCheck, Inbox, Loader2, Maximize2, Minimize2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useClientAuth } from "@/contexts/client-auth";
@@ -15,6 +15,19 @@ type Message = {
 };
 
 type ChatType = "ai" | "support";
+
+type TelegramWebAppBridge = { openTelegramLink?: (url: string) => void };
+
+/** Opens the bot Mini App via t.me link (same flow as BotFather Web App URL + optional startapp). */
+function openTelegramMiniApp(botUsername: string | null | undefined, startApp = "dashboard") {
+  const u = botUsername?.replace(/^@/, "").trim();
+  if (!u) return;
+  const sp = (startApp || "dashboard").trim();
+  const url = `https://t.me/${u}?startapp=${encodeURIComponent(sp)}`;
+  const tg = (window as Window & { Telegram?: { WebApp?: TelegramWebAppBridge } }).Telegram?.WebApp;
+  if (tg?.openTelegramLink) tg.openTelegramLink(url);
+  else window.open(url, "_blank", "noopener,noreferrer");
+}
 
 function getInitialAiMessage(serviceName: string): Message[] {
   const name = (serviceName || "Сервис").trim() || "Сервис";
@@ -146,7 +159,15 @@ const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setI
   </>
 );
 
-function SupportTab({ headerProps, onRefreshUnread }: { headerProps: any, onRefreshUnread?: () => void }) {
+function SupportTab({
+  headerProps,
+  onRefreshUnread,
+  telegramBotUsername,
+}: {
+  headerProps: any;
+  onRefreshUnread?: () => void;
+  telegramBotUsername?: string | null;
+}) {
   const { state } = useClientAuth();
   const token = state.token ?? null;
 
@@ -312,6 +333,19 @@ function SupportTab({ headerProps, onRefreshUnread }: { headerProps: any, onRefr
         {detail?.status === "open" && (
           <div className="p-3 sm:p-4 border-t border-black/5 dark:border-white/5 bg-background/80 sm:bg-background/50 backdrop-blur-xl shrink-0 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4">
             <div className="relative flex items-end gap-2 bg-black/5 dark:bg-black/20 p-1.5 rounded-2xl border border-black/5 dark:border-white/10 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+              {telegramBotUsername?.trim() ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:text-foreground mb-0.5 ml-0.5"
+                  title="Открыть мини-приложение"
+                  aria-label="Открыть мини-приложение"
+                  onClick={() => openTelegramMiniApp(telegramBotUsername)}
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              ) : null}
               <textarea
                 className="flex-1 max-h-32 min-h-[40px] w-full resize-none bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none custom-scrollbar"
                 placeholder="Сообщение..."
@@ -683,6 +717,19 @@ export function FloatingChat() {
                   {/* AI Input Area */}
                   <div className="p-3 sm:p-4 border-t border-black/5 dark:border-white/5 bg-background/80 sm:bg-background/50 backdrop-blur-xl shrink-0 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4">
                     <div className="relative flex items-end gap-2 bg-black/5 dark:bg-black/20 p-1.5 rounded-2xl border border-black/5 dark:border-white/10 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                      {config?.telegramBotUsername?.trim() ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:text-foreground mb-0.5 ml-0.5"
+                          title="Открыть мини-приложение"
+                          aria-label="Открыть мини-приложение"
+                          onClick={() => openTelegramMiniApp(config.telegramBotUsername)}
+                        >
+                          <Smartphone className="h-4 w-4" />
+                        </Button>
+                      ) : null}
                       <textarea
                         className={cn(
                           "flex-1 max-h-32 min-h-[40px] w-full resize-none bg-transparent px-3 py-2.5",
@@ -712,7 +759,7 @@ export function FloatingChat() {
                   </div>
                 </div>
               ) : (
-                <SupportTab headerProps={headerProps} onRefreshUnread={refreshUnread} />
+                <SupportTab headerProps={headerProps} onRefreshUnread={refreshUnread} telegramBotUsername={config?.telegramBotUsername} />
               )}
             </motion.div>
           )}

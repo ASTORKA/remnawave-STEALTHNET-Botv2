@@ -1878,7 +1878,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       const methods = config?.plategaMethods ?? [];
       const client = await api.getMe(token);
-      const balanceLabel = client && client.balance >= tariff.price ? `💰 Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
+      const balanceLabel = client && client.balance >= tariff.price ? `Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
       if (methodIdFromBtn != null && Number.isFinite(methodIdFromBtn)) {
         try {
           const payment = await api.createPlategaPayment(token, {
@@ -2023,7 +2023,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       const methods = config?.plategaMethods ?? [];
       const client = await api.getMe(token);
-      const balanceLabel = client && client.balance >= tariff.price ? `💰 Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
+      const balanceLabel = client && client.balance >= tariff.price ? `Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
       if (methodIdFromBtn != null && Number.isFinite(methodIdFromBtn)) {
         try {
           const payment = await api.createPlategaPayment(token, {
@@ -2406,7 +2406,7 @@ bot.on("callback_query:data", async (ctx) => {
       }
       const methods = config?.plategaMethods ?? [];
       const client = await api.getMe(token);
-      const balanceLabel = client && client.balance >= tariff.price ? `💰 Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
+      const balanceLabel = client && client.balance >= tariff.price ? `Оплатить балансом (${formatMoney(client.balance, client.preferredCurrency ?? "RUB")})` : null;
 
       if (methodIdFromBtn != null && Number.isFinite(methodIdFromBtn)) {
         const payment = await api.createPlategaPayment(token, {
