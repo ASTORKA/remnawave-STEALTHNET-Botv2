@@ -16,16 +16,20 @@ type Message = {
 
 type ChatType = "ai" | "support";
 
-type TelegramWebAppBridge = { openTelegramLink?: (url: string) => void };
+type TelegramWebAppBridge = { openLink?: (url: string) => void };
 
-/** Opens the bot Mini App via t.me link (same flow as BotFather Web App URL + optional startapp). */
-function openTelegramMiniApp(botUsername: string | null | undefined, startApp = "dashboard") {
-  const u = botUsername?.replace(/^@/, "").trim();
-  if (!u) return;
-  const sp = (startApp || "dashboard").trim();
-  const url = `https://t.me/${u}?startapp=${encodeURIComponent(sp)}`;
+/** Same URL as the bot Web App button with id `cabinet` (`bot/src/keyboard.ts`): `{publicAppUrl}/cabinet`. */
+function cabinetWebAppHref(publicAppUrl: string | null | undefined): string | null {
+  const base = publicAppUrl?.replace(/\/$/, "").trim();
+  if (!base) return null;
+  return `${base}/cabinet`;
+}
+
+function openCabinetWebApp(publicAppUrl: string | null | undefined) {
+  const url = cabinetWebAppHref(publicAppUrl);
+  if (!url) return;
   const tg = (window as Window & { Telegram?: { WebApp?: TelegramWebAppBridge } }).Telegram?.WebApp;
-  if (tg?.openTelegramLink) tg.openTelegramLink(url);
+  if (tg?.openLink) tg.openLink(url);
   else window.open(url, "_blank", "noopener,noreferrer");
 }
 
@@ -162,11 +166,11 @@ const ChatHeader = ({ activeChat, setActiveChat, isExpanded, setIsExpanded, setI
 function SupportTab({
   headerProps,
   onRefreshUnread,
-  telegramBotUsername,
+  publicAppUrl,
 }: {
   headerProps: any;
   onRefreshUnread?: () => void;
-  telegramBotUsername?: string | null;
+  publicAppUrl?: string | null;
 }) {
   const { state } = useClientAuth();
   const token = state.token ?? null;
@@ -333,15 +337,15 @@ function SupportTab({
         {detail?.status === "open" && (
           <div className="p-3 sm:p-4 border-t border-black/5 dark:border-white/5 bg-background/80 sm:bg-background/50 backdrop-blur-xl shrink-0 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4">
             <div className="relative flex items-end gap-2 bg-black/5 dark:bg-black/20 p-1.5 rounded-2xl border border-black/5 dark:border-white/10 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-              {telegramBotUsername?.trim() ? (
+              {cabinetWebAppHref(publicAppUrl) ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:text-foreground mb-0.5 ml-0.5"
-                  title="Открыть мини-приложение"
-                  aria-label="Открыть мини-приложение"
-                  onClick={() => openTelegramMiniApp(telegramBotUsername)}
+                  title="Приложение"
+                  aria-label="Приложение"
+                  onClick={() => openCabinetWebApp(publicAppUrl)}
                 >
                   <Smartphone className="h-4 w-4" />
                 </Button>
@@ -621,7 +625,7 @@ export function FloatingChat() {
 
   return (
     <>
-      <div className={cn("fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[100]", hasOpenDialog && !isOpen && "pointer-events-none opacity-0")}>
+      <div className={cn("fixed bottom-[7rem] right-4 sm:bottom-6 sm:right-6 z-[100]", hasOpenDialog && !isOpen && "pointer-events-none opacity-0")}>
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -717,15 +721,15 @@ export function FloatingChat() {
                   {/* AI Input Area */}
                   <div className="p-3 sm:p-4 border-t border-black/5 dark:border-white/5 bg-background/80 sm:bg-background/50 backdrop-blur-xl shrink-0 pb-[max(env(safe-area-inset-bottom),16px)] sm:pb-4">
                     <div className="relative flex items-end gap-2 bg-black/5 dark:bg-black/20 p-1.5 rounded-2xl border border-black/5 dark:border-white/10 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-                      {config?.telegramBotUsername?.trim() ? (
+                      {cabinetWebAppHref(config?.publicAppUrl) ? (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:text-foreground mb-0.5 ml-0.5"
-                          title="Открыть мини-приложение"
-                          aria-label="Открыть мини-приложение"
-                          onClick={() => openTelegramMiniApp(config.telegramBotUsername)}
+                          title="Приложение"
+                          aria-label="Приложение"
+                          onClick={() => openCabinetWebApp(config?.publicAppUrl)}
                         >
                           <Smartphone className="h-4 w-4" />
                         </Button>
@@ -759,7 +763,7 @@ export function FloatingChat() {
                   </div>
                 </div>
               ) : (
-                <SupportTab headerProps={headerProps} onRefreshUnread={refreshUnread} telegramBotUsername={config?.telegramBotUsername} />
+                <SupportTab headerProps={headerProps} onRefreshUnread={refreshUnread} publicAppUrl={config?.publicAppUrl} />
               )}
             </motion.div>
           )}

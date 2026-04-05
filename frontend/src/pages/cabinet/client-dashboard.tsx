@@ -248,17 +248,17 @@ export function ClientDashboardPage() {
 
   // Компонент-состояние отсутствия подписки
   const NoSubscriptionState = () => (
-    <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-      <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-        <Package className="h-8 w-8 text-primary/70" />
+    <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
+        <Package className="h-8 w-8 text-primary/80" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold text-foreground">Нет активной подписки</h3>
-        <p className="text-[14px] text-muted-foreground max-w-xs mt-2 mx-auto leading-relaxed">
+        <h3 className="text-lg font-semibold tracking-tight text-foreground">Нет активной подписки</h3>
+        <p className="mx-auto mt-2 max-w-xs text-[14px] leading-relaxed text-muted-foreground">
           У вас пока нет привязанной подписки. Перейдите во вкладку Тарифы, чтобы выбрать и оплатить доступ.
         </p>
       </div>
-      <Button className="mt-2 shadow-lg h-11 px-6 rounded-xl hover:scale-105 transition-transform duration-300 [&_svg]:self-center [&_span]:leading-none" asChild>
+      <Button className="mt-1 h-11 rounded-xl px-6 shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" asChild>
         <Link to="/cabinet/tariffs" className="inline-flex items-center justify-center gap-2">
           <span className="inline-flex items-center leading-none">Выбрать тариф</span>
         </Link>
@@ -268,9 +268,9 @@ export function ClientDashboardPage() {
 
   if (isMiniapp) {
     return (
-      <div className="w-full min-w-0 overflow-hidden space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full min-w-0 overflow-hidden space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {(paymentMessage === "success" || paymentMessage === "success_topup" || paymentMessage === "success_tariff") && (
-          <div className="rounded-xl bg-green-500/15 backdrop-blur-md border border-green-500/30 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400 shadow-sm">
+          <div className="rounded-2xl border border-green-500/25 bg-green-500/[0.08] px-4 py-3.5 text-sm font-medium text-green-800 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-sm dark:text-green-400 dark:border-green-500/20 dark:bg-green-500/10">
             {paymentMessage === "success_topup"
               ? "Оплата прошла успешно. Баланс пополнен."
               : paymentMessage === "success_tariff"
@@ -279,15 +279,15 @@ export function ClientDashboardPage() {
           </div>
         )}
         {paymentMessage === "failed" && (
-          <div className="rounded-xl bg-destructive/15 backdrop-blur-md border border-destructive/30 px-4 py-3 text-sm font-medium text-destructive shadow-sm">
+          <div className="rounded-2xl border border-destructive/25 bg-destructive/[0.07] px-4 py-3.5 text-sm font-medium text-destructive shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-sm dark:bg-destructive/10">
             Оплата не прошла. Попробуйте снова.
           </div>
         )}
 
         {/* 1. Статус, срок, тариф, трафик, устройства — с иконками */}
-        <section className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-5 shadow-sm overflow-hidden transition-all duration-300">
-          <h2 className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-5">
-            <div className="p-1.5 bg-primary/20 rounded-lg">
+        <section className="overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
+          <h2 className="mb-5 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">
+            <div className="rounded-xl bg-primary/12 p-2 ring-1 ring-primary/15">
               <Zap className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Статус Подписки
@@ -317,10 +317,10 @@ export function ClientDashboardPage() {
                 )}
               </div>
 
-              <div className="space-y-3 border-t border-border/50 pt-4 mt-2">
+              <div className="mt-2 space-y-3 border-t border-border/35 pt-4">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
-                  <div className="flex items-center gap-4 bg-background/40 p-3.5 rounded-2xl border border-border/50 transition-colors hover:bg-background/60 shadow-sm">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex items-center gap-4 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
                       <Package className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -332,8 +332,8 @@ export function ClientDashboardPage() {
                   </div>
                 )}
                 {subParsed.expireAt && (
-                  <div className="flex items-center gap-4 bg-background/40 p-3.5 rounded-2xl border border-border/50 transition-colors hover:bg-background/60 shadow-sm">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex items-center gap-4 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
                       <Calendar className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -344,9 +344,9 @@ export function ClientDashboardPage() {
                     </div>
                   </div>
                 )}
-                <div className="bg-background/40 p-3.5 rounded-2xl border border-border/50 space-y-3 transition-colors hover:bg-background/60 shadow-sm">
+                <div className="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-3.5 shadow-sm transition-colors hover:bg-background/65 dark:border-white/[0.05]">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/10">
                       <Wifi className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -362,8 +362,8 @@ export function ClientDashboardPage() {
                     </div>
                   </div>
                   {trafficPercent != null && (
-                    <div className="h-2 w-full rounded-full bg-muted/30 overflow-hidden">
-                      <div className="h-full rounded-full bg-primary transition-all duration-500 ease-in-out" style={{ width: `${trafficPercent}%` }} />
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-border/30 dark:bg-muted/25">
+                      <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 ease-in-out" style={{ width: `${trafficPercent}%` }} />
                     </div>
                   )}
                 </div>
@@ -373,9 +373,9 @@ export function ClientDashboardPage() {
         </section>
 
         {/* 2. Как подключиться — ссылка и кнопка */}
-        <section className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-5 shadow-sm overflow-hidden transition-all duration-300">
-          <h2 className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-4">
-             <div className="p-1.5 bg-primary/20 rounded-lg">
+        <section className="overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
+          <h2 className="mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">
+            <div className="rounded-xl bg-primary/12 p-2 ring-1 ring-primary/15">
               <Wifi className="h-4 w-4 shrink-0 text-primary" />
             </div>
             Подключение
@@ -384,13 +384,13 @@ export function ClientDashboardPage() {
             <div className="space-y-4">
               <p className="text-[14px] text-muted-foreground leading-relaxed">Нажмите кнопку ниже — откроется страница с приложениями и настройкой в 1 клик.</p>
               <div className="flex gap-2 min-w-0">
-                <code className="flex-1 min-w-0 truncate rounded-xl bg-background/50 border border-border/50 px-3 py-2.5 text-xs font-mono flex items-center text-foreground/80" title={vpnUrl}>
+                <code className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-border/40 bg-muted/30 px-3 py-2.5 font-mono text-xs text-foreground/85 ring-1 ring-black/[0.03] dark:bg-background/40 dark:ring-white/[0.04]" title={vpnUrl}>
                   {vpnUrl}
                 </code>
                 <Button
                   size="icon"
                   variant="outline"
-                  className="shrink-0 h-auto w-11 rounded-xl bg-background/50 hover:bg-background/80 transition-transform hover:scale-105"
+                  className="h-auto w-11 shrink-0 rounded-xl border-border/40 bg-background/60 transition-transform hover:scale-105 hover:bg-background/90"
                   onClick={() => {
                     navigator.clipboard.writeText(vpnUrl);
                     window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
@@ -399,7 +399,7 @@ export function ClientDashboardPage() {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <Button className="w-full gap-2 shadow-lg h-12 rounded-xl text-md hover:scale-[1.02] transition-transform duration-300 [&_svg]:self-center [&_span]:leading-none" asChild>
+              <Button className="h-12 w-full gap-2 rounded-xl text-base shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" asChild>
                 <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-2">
                   <Wifi className="h-5 w-5 shrink-0" />
                   <span className="inline-flex items-center leading-none">Подключиться к VPN</span>
@@ -422,11 +422,11 @@ export function ClientDashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 text-[14px] text-primary flex gap-3 items-start">
-                <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.07] p-4 text-[14px] text-primary ring-1 ring-primary/10 dark:bg-primary/10">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                 <p className="leading-relaxed">Ссылка появится после оплаты тарифа. Перейдите во вкладку «Тарифы» и оплатите.</p>
               </div>
-              <Button className="w-full shadow-md rounded-xl hover:scale-[1.02] transition-transform duration-300 h-12 [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
+              <Button className="h-12 w-full rounded-xl shadow-md transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
                 <Link to="/cabinet/tariffs" className="inline-flex w-full items-center justify-center gap-2">
                   <span className="inline-flex items-center leading-none">Выбрать тариф</span>
                 </Link>
@@ -436,17 +436,17 @@ export function ClientDashboardPage() {
         </section>
 
         {/* 3. Баланс */}
-        <section className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl p-5 shadow-sm overflow-hidden transition-all duration-300 flex flex-col gap-4">
+        <section className="flex flex-col gap-4 overflow-hidden rounded-[1.35rem] border border-border/40 bg-card/50 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_12px_40px_-24px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 dark:border-white/[0.06] dark:bg-card/35 dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_48px_-28px_rgba(0,0,0,0.45)]">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/20 rounded-xl">
+            <div className="rounded-xl bg-primary/12 p-2.5 ring-1 ring-primary/15">
               <Wallet className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground/80">Мой баланс</h2>
-              <p className="text-2xl font-bold tracking-tight text-foreground leading-none mt-1">{formatMoney(client.balance, client.preferredCurrency)}</p>
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/90">Мой баланс</h2>
+              <p className="mt-1 text-2xl font-bold leading-none tracking-tight text-foreground tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
             </div>
           </div>
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-background/40 border border-border/50">
+          <div className="flex items-center justify-between rounded-2xl border border-border/35 bg-background/45 p-3.5 dark:border-white/[0.05]">
             <div className="flex flex-col">
               <Label className="text-sm font-semibold">Автопродление</Label>
               <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
@@ -462,7 +462,7 @@ export function ClientDashboardPage() {
               onCheckedChange={toggleAutoRenew}
             />
           </div>
-          <Button className="w-full gap-2 shadow-md hover:scale-[1.02] transition-transform duration-300 rounded-xl h-12 [&_svg]:self-center [&_span]:leading-none" asChild>
+          <Button className="h-12 w-full gap-2 rounded-xl shadow-md transition-transform duration-300 hover:scale-[1.01] [&_svg]:self-center [&_span]:leading-none" asChild>
             <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-2">
               <PlusCircle className="h-5 w-5 shrink-0" />
               <span className="inline-flex items-center leading-none">Пополнить баланс</span>

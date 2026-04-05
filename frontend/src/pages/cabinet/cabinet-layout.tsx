@@ -408,28 +408,45 @@ function MobileCabinetShell() {
   const logo = config?.logo && !logoError ? config.logo : null;
 
   return (
-    <div className="min-h-svh flex flex-col bg-transparent min-w-0 overflow-x-hidden pb-36 relative">
+    <div
+      className={cn(
+        "min-h-svh flex flex-col min-w-0 overflow-x-hidden pb-[calc(5.25rem+env(safe-area-inset-bottom))] relative",
+        "bg-gradient-to-b from-background via-muted/25 to-muted/40 dark:from-background dark:via-background dark:to-muted/15",
+        isMiniapp && "selection:bg-primary/20"
+      )}
+    >
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 opacity-40 dark:opacity-25"
+        aria-hidden
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.12), transparent 55%), radial-gradient(ellipse 60% 40% at 100% 0%, hsl(var(--primary) / 0.06), transparent 45%)",
+        }}
+      />
       <FloatingChat />
-      <header className="sticky top-0 z-50 border-b border-border shrink-0 transition-all duration-300" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="absolute inset-0 bg-card/40 backdrop-blur-xl -z-10 pointer-events-none" />
-        <div className="relative flex h-14 items-center justify-between gap-3 px-4 min-w-0 w-full max-w-7xl mx-auto">
-          <Link to="/cabinet/dashboard" className="flex items-center gap-2.5 font-semibold text-base tracking-tight shrink-0 min-w-0">
+      <header
+        className="sticky top-0 z-50 shrink-0 transition-all duration-300"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="relative mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-3 px-4 min-w-0 sm:h-14">
+          <div className="absolute inset-x-0 bottom-0 top-0 -z-10 rounded-b-2xl border-b border-border/40 bg-background/75 shadow-sm backdrop-blur-2xl dark:border-white/[0.06] dark:bg-background/70" />
+          <Link to="/cabinet/dashboard" className="flex min-w-0 shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-foreground">
             {logo ? (
-              <span className="flex items-center justify-center h-8 px-1.5 rounded-lg dark:bg-transparent bg-zinc-900 shrink-0">
+              <span className="flex h-8 shrink-0 items-center justify-center rounded-xl bg-muted/50 px-1.5 dark:bg-white/5">
                 <img src={logo} alt="" className="h-6 max-w-[100px] object-contain" onError={() => setLogoError(true)} />
               </span>
             ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary shadow-sm">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20">
                 <Shield className="h-4 w-4" />
               </span>
             )}
             {serviceName ? <span className="truncate">{serviceName}</span> : null}
           </Link>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             <ThemePopover />
             <SettingsPopover />
             {!isMiniapp && (
-              <Button variant="ghost" size="icon" className="shrink-0 bg-background/20 hover:bg-background/40 text-muted-foreground hover:text-foreground" asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground" asChild>
                 <Link to="/cabinet/login" onClick={() => logout()} title="Выйти">
                   <LogOut className="h-5 w-5" />
                 </Link>
@@ -439,12 +456,17 @@ function MobileCabinetShell() {
         </div>
       </header>
 
-      <main className="flex-1 w-full min-w-0 px-4 py-6 max-w-7xl mx-auto transition-all duration-300">
+      <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 pb-2 pt-4 transition-all duration-300 sm:px-5 sm:pt-5">
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/60 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] transition-all duration-300">
-        <div className="flex items-center justify-around w-full h-[4.5rem] px-2 gap-0">
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+        <div
+          className={cn(
+            "pointer-events-auto mx-auto flex max-w-lg items-center justify-around gap-0.5 rounded-2xl border border-border/50 bg-background/90 px-1 py-1.5 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.03)_inset] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-background/80 dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)]",
+            "min-h-[3.75rem]"
+          )}
+        >
           {visibleItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
@@ -452,12 +474,17 @@ function MobileCabinetShell() {
                 key={to}
                 to={to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 py-1 px-1 h-14 flex-1 min-w-0 max-w-[5rem] rounded-xl transition-all duration-300",
-                  active ? "bg-primary/20 text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:scale-105"
+                  "relative flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 transition-all duration-200",
+                  active
+                    ? "text-primary"
+                    : "text-muted-foreground active:scale-[0.98] hover:text-foreground"
                 )}
               >
-                <Icon className={cn("h-5 w-5 shrink-0 transition-transform duration-300", active && "scale-110 drop-shadow-md")} />
-                <span className="text-[10px] font-medium leading-none tracking-tight truncate w-full text-center">{label}</span>
+                {active ? (
+                  <span className="absolute inset-x-1 top-1 bottom-1 -z-10 rounded-xl bg-primary/[0.12] dark:bg-primary/20" />
+                ) : null}
+                <Icon className={cn("h-[22px] w-[22px] shrink-0 transition-transform duration-200", active && "scale-105")} />
+                <span className="w-full truncate text-center text-[10px] font-semibold leading-tight tracking-tight">{label}</span>
               </Link>
             );
           })}
@@ -465,25 +492,25 @@ function MobileCabinetShell() {
             <button
               type="button"
               onClick={() => setMoreMenuOpen(true)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-1 px-1 h-14 flex-1 min-w-0 max-w-[5rem] rounded-xl transition-all duration-300",
-                "text-muted-foreground hover:bg-foreground/5 hover:text-foreground hover:scale-105"
-              )}
+              className="flex min-w-0 max-w-[5.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-muted-foreground transition-all duration-200 hover:text-foreground active:scale-[0.98]"
               aria-label="Ещё"
             >
-              <MoreHorizontal className="h-5 w-5 shrink-0" />
-              <span className="text-[10px] font-medium leading-none tracking-tight">Ещё</span>
+              <MoreHorizontal className="h-[22px] w-[22px] shrink-0" />
+              <span className="text-[10px] font-semibold leading-tight">Ещё</span>
             </button>
           )}
         </div>
       </nav>
 
       <Dialog open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl" showCloseButton={true}>
-          <DialogHeader>
-            <DialogTitle>Меню</DialogTitle>
+        <DialogContent
+          className="max-w-sm gap-0 rounded-[1.35rem] border-border/50 p-0 shadow-2xl sm:rounded-[1.35rem]"
+          showCloseButton={true}
+        >
+          <DialogHeader className="border-b border-border/40 px-5 py-4 text-left">
+            <DialogTitle className="text-lg font-semibold tracking-tight">Меню</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-1 py-2">
+          <div className="grid max-h-[min(70vh,28rem)] gap-0.5 overflow-y-auto p-2">
             {navItems.map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return (
@@ -492,12 +519,14 @@ function MobileCabinetShell() {
                   to={to}
                   onClick={() => setMoreMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors",
-                    active ? "bg-primary/20 text-primary" : "hover:bg-muted/60"
+                    "flex items-center gap-3 rounded-xl px-4 py-3.5 text-left text-[15px] transition-colors",
+                    active ? "bg-primary/12 font-semibold text-primary" : "hover:bg-muted/70"
                   )}
                 >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="font-medium">{label}</span>
+                  <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", active ? "bg-primary/15 text-primary" : "bg-muted/50 text-muted-foreground")}>
+                    <Icon className="h-5 w-5 shrink-0" />
+                  </span>
+                  <span>{label}</span>
                 </Link>
               );
             })}
