@@ -69,6 +69,32 @@
   }
 }
 
+/* Мобильный кабинет / Mini App — нативный UI-шрифт (ближе к Telegram / SF Pro) */
+.cabinet-native-font {
+  font-family:
+    system-ui,
+    -apple-system,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    sans-serif;
+  font-feature-settings: "kern" 1;
+  letter-spacing: -0.015em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.cabinet-native-font :where(code, kbd, samp, .font-mono) {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0;
+}
+
 /* ── Glassmorphism Overrides ── */
 @layer components {
 

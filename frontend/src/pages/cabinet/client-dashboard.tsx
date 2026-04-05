@@ -290,7 +290,7 @@ export function ClientDashboardPage() {
 
     return (
       <motion.div
-        className="w-full min-w-0 space-y-4 overflow-x-hidden"
+        className="w-full min-w-0 space-y-3 overflow-x-hidden"
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -301,7 +301,7 @@ export function ClientDashboardPage() {
             initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl border border-green-500/30 bg-green-500/[0.1] px-4 py-3.5 text-sm font-medium text-green-800 shadow-[0_0_40px_-16px_rgba(34,197,94,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset] backdrop-blur-md dark:text-green-300 dark:border-green-400/25 dark:bg-green-500/[0.12]"
+            className="rounded-xl border border-green-500/30 bg-green-500/[0.1] px-3 py-2.5 text-xs font-medium text-green-800 shadow-[0_0_40px_-16px_rgba(34,197,94,0.45),0_1px_0_0_rgba(255,255,255,0.08)_inset] backdrop-blur-md dark:text-green-300 dark:border-green-400/25 dark:bg-green-500/[0.12]"
           >
             {paymentMessage === "success_topup"
               ? "Оплата прошла успешно. Баланс пополнен."
@@ -316,69 +316,65 @@ export function ClientDashboardPage() {
             initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl border border-destructive/30 bg-destructive/[0.09] px-4 py-3.5 text-sm font-medium text-destructive shadow-[0_0_36px_-14px_hsl(var(--destructive)/0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-md dark:bg-destructive/12"
+            className="rounded-xl border border-destructive/30 bg-destructive/[0.09] px-3 py-2.5 text-xs font-medium text-destructive shadow-[0_0_36px_-14px_hsl(var(--destructive)/0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] backdrop-blur-md dark:bg-destructive/12"
           >
             Оплата не прошла. Попробуйте снова.
           </motion.div>
         )}
 
-        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-4">
-        {/* 1. Статус, срок, тариф, трафик, устройства — с иконками */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-4">
+        <motion.div variants={miniStagger} initial="hidden" animate="show" className="space-y-3">
+        {/* 1. Статус, подключение, тариф / дата / трафик — компактно */}
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3">
           <div
-            className="cabinet-mini-glass__blob -right-16 -top-20 h-36 w-36 rounded-full bg-gradient-to-bl from-primary/28 via-primary/8 to-transparent blur-2xl dark:from-primary/32"
+            className="cabinet-mini-glass__blob -right-12 -top-16 h-28 w-28 rounded-full bg-gradient-to-bl from-primary/28 via-primary/8 to-transparent blur-2xl dark:from-primary/32"
             aria-hidden
           />
           <div
-            className="cabinet-mini-glass__blob -bottom-8 -left-12 h-32 w-32 rounded-full bg-gradient-to-tr from-cyan-500/14 to-transparent blur-2xl dark:from-cyan-400/18"
+            className="cabinet-mini-glass__blob -bottom-6 -left-10 h-24 w-24 rounded-full bg-gradient-to-tr from-cyan-500/14 to-transparent blur-2xl dark:from-cyan-400/18"
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
-              <Zap className="h-4 w-4 shrink-0 text-primary" />
+          <h2 className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-1.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
+              <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
             </div>
-            Статус Подписки
+            Статус подписки
           </h2>
           {loading ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+            <div className="flex items-center justify-center py-5">
+              <Loader2 className="h-7 w-7 animate-spin text-primary/50" />
             </div>
           ) : subscriptionError || !hasActiveSubscription ? (
             <NoSubscriptionState />
           ) : (
-            <div className="min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/35 bg-green-500/[0.14] px-3 py-1.5 text-xs font-semibold text-green-800 shadow-[0_0_28px_-12px_rgba(34,197,94,0.45)] backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current motion-safe:animate-pulse" />
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full border border-green-500/35 bg-green-500/[0.12] px-2 py-0.5 text-[11px] font-semibold text-green-800 backdrop-blur-sm dark:border-green-400/30 dark:text-green-300 dark:bg-green-500/10">
+                  <span className="h-1 w-1 rounded-full bg-current motion-safe:animate-pulse" />
                   Активна
                 </span>
                 {daysLeft != null && (
-                  <span className="rounded-full border border-white/25 bg-background/60 px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-background/40">
-                    Осталось {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
+                  <span className="rounded-full border border-white/20 bg-background/50 px-2 py-0.5 text-[11px] font-semibold text-foreground backdrop-blur-sm dark:border-white/10">
+                    {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
                   </span>
                 )}
                 {subParsed.hwidDeviceLimit != null && subParsed.hwidDeviceLimit > 0 && deviceCount != null && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/15 px-3 py-1.5 text-sm font-semibold text-primary shadow-[0_0_24px_-10px_hsl(var(--primary)/0.4)] backdrop-blur-sm">
-                    📱 {deviceCount} / {subParsed.hwidDeviceLimit}
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/12 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    📱 {deviceCount}/{subParsed.hwidDeviceLimit}
                   </span>
                 )}
               </div>
 
               {vpnUrl ? (
-                <div className="mt-3 space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Wifi className="h-4 w-4 shrink-0" />
-                    </div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</p>
+                <div className="space-y-2 rounded-xl border border-white/15 bg-background/45 p-2.5 backdrop-blur-md dark:border-white/[0.07]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Подключение</span>
+                    <Wifi className="h-3.5 w-3.5 shrink-0 text-primary/80" />
                   </div>
-                  <p className="text-[13px] leading-relaxed text-muted-foreground">
-                    Страница с приложениями и настройкой в один клик — по кнопке ниже или по ссылке.
-                  </p>
-                  <div className="flex min-w-0 gap-2">
+                  <p className="text-[12px] leading-snug text-muted-foreground">Приложения и настройка — по кнопке или ссылке.</p>
+                  <div className="flex min-w-0 gap-1.5">
                     <code
-                      className="flex min-w-0 flex-1 items-center truncate rounded-xl border border-white/20 bg-background/55 px-3 py-2 font-mono text-[11px] text-foreground/90 shadow-inner backdrop-blur-sm ring-1 ring-primary/10 dark:border-white/[0.08] dark:bg-background/35"
+                      className="font-mono flex min-w-0 flex-1 items-center truncate rounded-lg border border-white/15 bg-background/50 px-2 py-1.5 text-[10px] text-foreground/90 dark:border-white/[0.06]"
                       title={vpnUrl}
                     >
                       {vpnUrl}
@@ -386,73 +382,71 @@ export function ClientDashboardPage() {
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-9 w-9 shrink-0 rounded-xl border-white/25 bg-background/70 hover:border-primary/30 hover:bg-background/90 dark:border-white/10"
+                      className="h-8 w-8 shrink-0 rounded-lg border-white/20 bg-background/60 p-0 dark:border-white/10"
                       onClick={() => {
                         navigator.clipboard.writeText(vpnUrl);
                         window.Telegram?.WebApp?.showPopup?.({ title: "Скопировано", message: "Ссылка в буфере обмена" });
                       }}
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                   <Button
-                    className="h-11 w-full gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/85 text-sm text-primary-foreground shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.55),0_0_0_1px_rgba(255,255,255,0.08)_inset] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none"
+                    className="h-9 w-full gap-1.5 rounded-lg bg-gradient-to-r from-primary to-primary/88 text-xs font-semibold text-primary-foreground shadow-md [&_svg]:self-center [&_span]:leading-none"
                     asChild
                   >
-                    <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-2">
-                      <Wifi className="h-5 w-5 shrink-0" />
-                      <span className="inline-flex items-center leading-none">Подключиться к VPN</span>
+                    <Link to="/cabinet/subscribe" className="inline-flex w-full items-center justify-center gap-1.5">
+                      <Wifi className="h-4 w-4 shrink-0" />
+                      <span>Подключиться к VPN</span>
                     </Link>
                   </Button>
                 </div>
               ) : null}
 
-              <div className="mt-1 space-y-2.5 border-t border-white/20 pt-3 dark:border-white/[0.08]">
+              <div className="overflow-hidden rounded-xl border border-white/12 bg-background/35 dark:border-white/[0.06]">
                 {((tariffDisplayName ?? subParsed.productName) || client?.trialUsed) && (
-                  <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Package className="h-5 w-5" />
+                  <div className="flex items-center gap-2.5 border-b border-white/10 px-2.5 py-2 dark:border-white/[0.06]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
+                      <Package className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Тариф</p>
-                      <p className="text-[14px] font-semibold truncate text-foreground" title={((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}>
+                    <div className="min-w-0 flex-1 leading-tight">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Тариф</p>
+                      <p className="truncate text-[13px] font-semibold text-foreground" title={((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}>
                         {((tariffDisplayName ?? subParsed.productName?.trim() ?? "").trim()) || "Триал"}
                       </p>
                     </div>
                   </div>
                 )}
                 {subParsed.expireAt && (
-                  <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Calendar className="h-5 w-5" />
+                  <div className="flex items-center gap-2.5 border-b border-white/10 px-2.5 py-2 dark:border-white/[0.06]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
+                      <Calendar className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Действует до</p>
-                      <p className="text-[14px] font-semibold text-foreground">
-                        {formatDate(subParsed.expireAt)}
-                      </p>
+                    <div className="min-w-0 flex-1 leading-tight">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Действует до</p>
+                      <p className="text-[13px] font-semibold text-foreground">{formatDate(subParsed.expireAt)}</p>
                     </div>
                   </div>
                 )}
-                <div className="space-y-3 rounded-2xl border border-white/20 bg-background/50 p-3.5 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-primary/25 hover:bg-background/65 dark:border-white/[0.08]">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
-                      <Wifi className="h-5 w-5" />
+                <div className="px-2.5 py-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/18 to-primary/5 text-primary ring-1 ring-primary/15">
+                      <Wifi className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Трафик</p>
+                    <div className="min-w-0 flex-1 leading-tight">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Трафик</p>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[14px] font-semibold text-foreground">
+                        <p className="text-[13px] font-semibold text-foreground">
                           {subParsed.trafficLimitBytes != null && subParsed.trafficLimitBytes > 0
                             ? `${formatBytes(subParsed.trafficUsed ?? 0)} / ${formatBytes(subParsed.trafficLimitBytes)}`
                             : "Безлимит"}
                         </p>
-                        {trafficPercent != null && <span className="text-[12px] font-bold text-muted-foreground">{trafficPercent}%</span>}
+                        {trafficPercent != null && <span className="text-[11px] font-semibold text-muted-foreground">{trafficPercent}%</span>}
                       </div>
                     </div>
                   </div>
                   {trafficPercent != null && (
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/50 ring-1 ring-white/20 dark:bg-muted/20 dark:ring-white/10">
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/40 ring-1 ring-white/10 dark:bg-muted/20">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary via-cyan-400/90 to-primary/90 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out"
                         style={{ width: `${trafficPercent}%` }}
@@ -468,41 +462,41 @@ export function ClientDashboardPage() {
 
         {/* 2. Триал / напоминание об оплате (если нет ссылки подключения в блоке статуса) */}
         {!(hasActiveSubscription && vpnUrl) && (
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-4">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3">
           <div
-            className="cabinet-mini-glass__blob right-0 top-1/2 h-36 w-36 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
+            className="cabinet-mini-glass__blob right-0 top-1/2 h-32 w-32 -translate-y-1/2 translate-x-1/4 rounded-full bg-gradient-to-l from-violet-500/16 to-transparent blur-2xl dark:from-violet-400/22"
             aria-hidden
           />
           <div className="cabinet-mini-glass__body">
-          <h2 className="mb-3 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
-              <Wifi className="h-4 w-4 shrink-0 text-primary" />
+          <h2 className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-1.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
+              <Wifi className="h-3.5 w-3.5 shrink-0 text-primary" />
             </div>
             Подключение
           </h2>
           {showTrial ? (
-            <div className="space-y-4 text-center">
-              <div className="mx-auto mb-2 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_40px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
-                <Gift className="h-7 w-7" />
+            <div className="space-y-3 text-center">
+              <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/25 to-green-600/10 text-green-600 shadow-[0_0_32px_-12px_rgba(34,197,94,0.45)] ring-1 ring-green-500/30 dark:text-green-400">
+                <Gift className="h-6 w-6" />
               </div>
-              <p className="text-[14px] text-muted-foreground">
+              <p className="text-[13px] leading-snug text-muted-foreground">
                 Получите бесплатный доступ на {formatRuDays(trialDays)}.
               </p>
-              <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] transition-transform duration-300 hover:scale-[1.02] hover:from-green-500 hover:to-emerald-500 [&_svg]:self-center [&_span]:leading-none" onClick={activateTrial} disabled={trialLoading}>
-                {trialLoading ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> : <Gift className="h-5 w-5 shrink-0" />}
-                <span className="inline-flex items-center leading-none font-medium text-base">Активировать триал</span>
+              <Button className="h-10 w-full gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-sm text-white shadow-[0_12px_36px_-10px_rgba(34,197,94,0.5)] transition-transform duration-300 hover:scale-[1.02] hover:from-green-500 hover:to-emerald-500 [&_svg]:self-center [&_span]:leading-none" onClick={activateTrial} disabled={trialLoading}>
+                {trialLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Gift className="h-4 w-4 shrink-0" />}
+                <span className="inline-flex items-center leading-none font-semibold">Активировать триал</span>
               </Button>
-              {trialError && <p className="text-sm text-destructive break-words text-center">{trialError}</p>}
+              {trialError && <p className="text-xs text-destructive break-words text-center">{trialError}</p>}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] to-transparent p-4 text-[14px] text-primary shadow-[0_0_36px_-14px_hsl(var(--primary)/0.35)] ring-1 ring-primary/15 backdrop-blur-sm dark:from-primary/15">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="leading-relaxed">Ссылка появится после оплаты тарифа. Перейдите во вкладку «Тарифы» и оплатите.</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] to-transparent p-3 text-[13px] leading-snug text-primary shadow-[0_0_36px_-14px_hsl(var(--primary)/0.35)] ring-1 ring-primary/15 backdrop-blur-sm dark:from-primary/15">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Ссылка появится после оплаты. Вкладка «Тарифы».</p>
               </div>
-              <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-primary to-primary/88 shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
+              <Button className="h-10 w-full rounded-lg bg-gradient-to-r from-primary to-primary/88 text-sm shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" variant="default" asChild>
                 <Link to="/cabinet/tariffs" className="inline-flex w-full items-center justify-center gap-2">
-                  <span className="inline-flex items-center leading-none">Выбрать тариф</span>
+                  <span className="inline-flex items-center leading-none font-semibold">Выбрать тариф</span>
                 </Link>
               </Button>
             </div>
@@ -512,25 +506,25 @@ export function ClientDashboardPage() {
         )}
 
         {/* 3. Баланс */}
-        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-3 self-start overflow-hidden p-4">
+        <motion.section variants={miniItem} className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-2 self-start overflow-hidden p-3">
           <div
-            className="cabinet-mini-glass__blob -left-16 -top-10 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/14 to-transparent blur-2xl dark:from-amber-300/18"
+            className="cabinet-mini-glass__blob -left-14 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/14 to-transparent blur-2xl dark:from-amber-300/18"
             aria-hidden
           />
-          <div className="cabinet-mini-glass__body flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-white/35 bg-gradient-to-br from-primary/20 to-primary/5 p-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)] ring-1 ring-primary/20 backdrop-blur-sm dark:border-white/10">
-              <Wallet className="h-5 w-5 text-primary" />
+          <div className="cabinet-mini-glass__body flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
+              <Wallet className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Мой баланс</h2>
-              <p className="mt-1 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-2xl font-bold leading-none tracking-tight text-transparent tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Мой баланс</h2>
+              <p className="mt-0.5 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-xl font-bold leading-none tracking-tight text-transparent tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-2xl border border-white/20 bg-background/55 p-3.5 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
-            <div className="flex flex-col">
-              <Label className="text-sm font-semibold">Автопродление</Label>
-              <span className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+          <div className="flex items-center justify-between rounded-xl border border-white/15 bg-background/50 p-2.5 shadow-sm backdrop-blur-md dark:border-white/[0.07]">
+            <div className="min-w-0 flex flex-col pr-2">
+              <Label className="text-xs font-semibold">Автопродление</Label>
+              <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
                 {config?.yookassaRecurringEnabled
                   ? <>Сначала с баланса{client.yookassaPaymentMethodTitle ? <>, затем с карты <span className="font-medium">{client.yookassaPaymentMethodTitle}</span></> : ", затем с карты (если ранее оплачивали через ЮKassa)"}</>
                   : <>Автоматическое списание<br/>при окончании подписки</>
@@ -543,10 +537,10 @@ export function ClientDashboardPage() {
               onCheckedChange={toggleAutoRenew}
             />
           </div>
-          <Button className="h-12 w-full gap-2 rounded-xl bg-gradient-to-r from-primary/95 to-primary/80 text-primary-foreground shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" asChild>
-            <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-2">
-              <PlusCircle className="h-5 w-5 shrink-0" />
-              <span className="inline-flex items-center leading-none">Пополнить баланс</span>
+          <Button className="h-10 w-full gap-1.5 rounded-lg bg-gradient-to-r from-primary/95 to-primary/80 text-sm text-primary-foreground shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" asChild>
+            <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-1.5">
+              <PlusCircle className="h-4 w-4 shrink-0" />
+              <span className="inline-flex items-center leading-none font-semibold">Пополнить баланс</span>
             </Link>
           </Button>
           </div>
