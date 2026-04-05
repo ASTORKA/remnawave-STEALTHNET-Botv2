@@ -446,7 +446,8 @@
   }
 
   .cabinet-vpn-pulse-ring,
-  .cabinet-vpn-pulse-btn {
+  .cabinet-vpn-pulse-btn,
+  .cabinet-vpn-tap-glow {
     animation: none !important;
   }
 }
@@ -519,6 +520,27 @@
 
 .cabinet-vpn-pulse-btn {
   animation: cabinet-vpn-pulse-btn 2.6s ease-in-out infinite;
+}
+
+/* Лёгкое «дыхание» круглой кнопки (тёмный диск + молния, как в референсе) */
+@keyframes cabinet-vpn-tap-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 14px 44px -14px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      0 18px 48px -12px hsl(var(--primary) / 0.35),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+  }
+}
+
+.cabinet-vpn-tap-glow {
+  animation: cabinet-vpn-tap-glow 2.8s ease-in-out infinite;
 }
 
 /* Liquid glass — карточки мини-кабинета (не трогаем position у декора: только слой контента) */
