@@ -443,7 +443,9 @@ function t(texts: Record<string, string> | null | undefined, key: string): strin
 
 type CustomEmojiEntity =
   | { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string }
-  | { type: "bold"; offset: number; length: number };
+  | { type: "bold"; offset: number; length: number }
+  | { type: "blockquote"; offset: number; length: number }
+  | { type: "url"; offset: number; length: number };
 
 /** Длина первого символа в UTF-16 (для entity) */
 function firstCharLengthUtf16(s: string): number {
@@ -711,10 +713,18 @@ function buildMainMenuText(opts: {
     }
     if (url) {
       if (shouldShow("linkLabel")) {
-        const { text: label, entities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
-        lines.push(label, url);
-        lineStartKeys.push("linkLabel", null);
-        lineEntitiesByIndex.push(entities, []);
+        const { text: label, entities: labelEntities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        const block = `${label}\n${url}`;
+        const urlOffset = label.length + 1;
+        /** Цитата Telegram (рамка слева): подпись + перенос + ссылка — одним блоком blockquote. */
+        const blockEntities: CustomEmojiEntity[] = [
+          { type: "blockquote", offset: 0, length: block.length },
+          ...labelEntities,
+          { type: "url", offset: urlOffset, length: url.length },
+        ];
+        lines.push(block);
+        lineStartKeys.push("linkLabel");
+        lineEntitiesByIndex.push(blockEntities);
       }
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
@@ -729,7 +739,7 @@ function buildMainMenuText(opts: {
       entities.push({ ...e, offset: e.offset + offset });
     }
     const key = lineStartKeys[i];
-    if (key && menuTextCustomEmojiIds?.[key] && !lineEntities.some((e) => e.offset === 0)) {
+    if (key && menuTextCustomEmojiIds?.[key] && !lineEntities.some((e) => e.type === "custom_emoji" && e.offset === 0)) {
       const line = lines[i]!;
       const firstLen = firstCharLengthUtf16(line);
       if (firstLen > 0) entities.push({ type: "custom_emoji", offset, length: firstLen, custom_emoji_id: menuTextCustomEmojiIds[key]! });
