@@ -582,44 +582,55 @@ export function ClientDashboardPage() {
           </div>
         </section>
 
-        {/* 2. Баланс */}
-        <section className="cabinet-mini-glass relative flex w-full max-w-full flex-col gap-2 self-start overflow-hidden p-3">
+        {/* 2. Баланс — тот же визуальный код, что и блок «Подключение» */}
+        <section className="cabinet-mini-glass relative w-full max-w-full self-start overflow-hidden p-3.5 sm:p-4">
           <div
             className="cabinet-mini-glass__blob -left-14 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/14 to-transparent blur-2xl dark:from-amber-300/18"
             aria-hidden
           />
-          <div className="cabinet-mini-glass__body flex flex-col gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="rounded-lg border border-white/30 bg-gradient-to-br from-primary/20 to-primary/5 p-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] ring-1 ring-primary/15 backdrop-blur-sm dark:border-white/10">
-              <Wallet className="h-4 w-4 text-primary" />
+          <div className="cabinet-mini-glass__body">
+            <div className="space-y-5 rounded-2xl border border-white/20 bg-background/50 p-4 shadow-sm backdrop-blur-md dark:border-white/[0.08]">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                  <Wallet className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Мой баланс</p>
+                  <p className="text-2xl font-bold leading-none tracking-tight text-foreground tabular-nums">
+                    {formatMoney(client.balance, client.preferredCurrency)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-white/20 bg-background/40 p-4 shadow-inner backdrop-blur-sm dark:border-white/[0.08]">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 space-y-1.5 pr-2">
+                    <Label className="text-sm font-semibold leading-none">Автопродление</Label>
+                    <span className="block text-xs leading-relaxed text-muted-foreground">
+                      {config?.yookassaRecurringEnabled
+                        ? <>Сначала с баланса{client.yookassaPaymentMethodTitle ? <>, затем с карты <span className="font-medium text-foreground/90">{client.yookassaPaymentMethodTitle}</span></> : ", затем с карты (если ранее оплачивали через ЮKassa)"}</>
+                        : "Автоматическое списание при окончании подписки"}
+                    </span>
+                  </div>
+                  <Switch
+                    className="shrink-0"
+                    checked={client.autoRenewEnabled ?? false}
+                    disabled={autoRenewLoading}
+                    onCheckedChange={toggleAutoRenew}
+                  />
+                </div>
+              </div>
+
+              <Button
+                className="h-12 w-full gap-2 rounded-full border border-black/10 bg-white text-base font-semibold text-zinc-900 shadow-md transition-colors hover:bg-zinc-50 dark:border-black/10 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-50 [&_svg]:self-center [&_span]:leading-none"
+                asChild
+              >
+                <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-2">
+                  <PlusCircle className="h-5 w-5 shrink-0 text-zinc-900" />
+                  <span className="inline-flex items-center leading-none font-semibold">Пополнить баланс</span>
+                </Link>
+              </Button>
             </div>
-            <div>
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Мой баланс</h2>
-              <p className="mt-0.5 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-xl font-bold leading-none tracking-tight text-transparent tabular-nums">{formatMoney(client.balance, client.preferredCurrency)}</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-white/15 bg-background/50 p-2.5 shadow-sm backdrop-blur-md dark:border-white/[0.07]">
-            <div className="min-w-0 flex flex-col pr-2">
-              <Label className="text-xs font-semibold">Автопродление</Label>
-              <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                {config?.yookassaRecurringEnabled
-                  ? <>Сначала с баланса{client.yookassaPaymentMethodTitle ? <>, затем с карты <span className="font-medium">{client.yookassaPaymentMethodTitle}</span></> : ", затем с карты (если ранее оплачивали через ЮKassa)"}</>
-                  : <>Автоматическое списание<br/>при окончании подписки</>
-                }
-              </span>
-            </div>
-            <Switch
-              checked={client.autoRenewEnabled ?? false}
-              disabled={autoRenewLoading}
-              onCheckedChange={toggleAutoRenew}
-            />
-          </div>
-          <Button className="h-10 w-full gap-1.5 rounded-lg bg-gradient-to-r from-primary/95 to-primary/80 text-sm text-primary-foreground shadow-[0_10px_32px_-10px_hsl(var(--primary)/0.45)] transition-transform duration-300 hover:scale-[1.02] [&_svg]:self-center [&_span]:leading-none" asChild>
-            <Link to="/cabinet/profile#topup" className="inline-flex w-full items-center justify-center gap-1.5">
-              <PlusCircle className="h-4 w-4 shrink-0" />
-              <span className="inline-flex items-center leading-none font-semibold">Пополнить баланс</span>
-            </Link>
-          </Button>
           </div>
         </section>
         </div>

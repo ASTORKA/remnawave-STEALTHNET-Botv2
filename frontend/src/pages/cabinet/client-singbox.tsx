@@ -308,17 +308,22 @@ export function ClientSingboxPage() {
                 size="lg"
                 onClick={() => payByBalance(payModal)}
                 disabled={payLoading || !hasBalance}
-                className={cn("w-full shadow-lg border-0 group relative overflow-hidden", isMobileOrMiniapp ? "justify-between px-6 h-16 rounded-2xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400" : "gap-2 h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300")}
+                className={cn(
+                  "w-full group relative overflow-hidden",
+                  isMobileOrMiniapp
+                    ? "justify-between border border-black/10 bg-white px-6 h-16 rounded-2xl text-zinc-900 shadow-md hover:bg-zinc-50 dark:border-black/10 dark:bg-white dark:hover:bg-zinc-50"
+                    : "gap-2 h-14 rounded-xl border-0 bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                )}
               >
                 {!isMobileOrMiniapp && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />}
                 
                 {isMobileOrMiniapp ? (
                   <>
                     <div className="flex items-center gap-3">
-                      {payLoading ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Wallet className="h-6 w-6 text-white" />}
-                      <span className="text-base font-bold text-white">Оплатить с баланса</span>
+                      {payLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-900" /> : <Wallet className="h-6 w-6 text-zinc-900" />}
+                      <span className="text-base font-bold text-zinc-900">Оплатить с баланса</span>
                     </div>
-                    <span className="text-white/80 font-mono font-medium bg-black/20 px-2 py-1 rounded-lg">
+                    <span className="rounded-lg bg-zinc-100 px-2 py-1 font-mono font-medium text-zinc-800 dark:bg-zinc-100">
                       {formatMoney(client.balance, payModal.currency)}
                     </span>
                   </>
