@@ -822,9 +822,10 @@ function parseStartPayload(payload: string): {
   utm_term?: string;
 } {
   const out: ReturnType<typeof parseStartPayload> = {};
+  const p = payload.trim();
 
-  if (payload.includes("__")) {
-    const segments = payload.split("__");
+  if (p.includes("__")) {
+    const segments = p.split("__");
     for (const seg of segments) {
       if (seg.startsWith("ref_")) out.refCode = seg.slice(4);
       else if (seg.startsWith("s_")) out.utm_source = seg.slice(2);
@@ -836,9 +837,16 @@ function parseStartPayload(payload: string): {
     return out;
   }
 
-  const cIdx = payload.indexOf("_c_");
-  const refPart = cIdx >= 0 ? payload.slice(0, cIdx) : payload;
-  const campaignPart = cIdx >= 0 ? payload.slice(cIdx + 3) : "";
+  // Короткий формат кампаний: /start c_test -> utm_source=test
+  if (/^c_/i.test(p)) {
+    const source = p.slice(2).trim();
+    if (source) out.utm_source = source;
+    return out;
+  }
+
+  const cIdx = p.indexOf("_c_");
+  const refPart = cIdx >= 0 ? p.slice(0, cIdx) : p;
+  const campaignPart = cIdx >= 0 ? p.slice(cIdx + 3) : "";
   if (refPart && /^ref_?/i.test(refPart)) {
     const code = refPart.replace(/^ref_?/i, "").trim();
     if (code) out.refCode = code;
@@ -849,6 +857,14 @@ function parseStartPayload(payload: string): {
       out.utm_source = parts[0];
       out.utm_campaign = parts.length === 2 ? parts[1] : parts[parts.length - 1];
       if (parts.length >= 3) out.utm_medium = parts.slice(1, -1).join("_");
+    }
+  }
+
+  // Простой payload без префиксов (/start test) считаем source=test.
+  if (!out.refCode && !out.utm_source && !out.utm_medium && !out.utm_campaign && !out.utm_content && !out.utm_term) {
+    const plain = p;
+    if (plain && !/^ref_?/i.test(plain) && !/^promo_/i.test(plain) && !/^auth_/i.test(plain)) {
+      out.utm_source = plain;
     }
   }
   return out;
@@ -890,7 +906,9 @@ bot.command("start", async (ctx) => {
   const isPromo = /^promo_/i.test(payload);
   const promoCode = isPromo ? payload.replace(/^promo_/i, "") : undefined;
   const parsed = parseStartPayload(payload);
-  const refCode = !isPromo ? (parsed.refCode ?? (payload.replace(/^ref_?/i, "").trim() || undefined)) : undefined;
+  const refCode = !isPromo
+    ? (parsed.refCode ?? (/^ref_?/i.test(payload) ? (payload.replace(/^ref_?/i, "").trim() || undefined) : undefined))
+    : undefined;
 
   try {
     const config = await api.getPublicConfig();
