@@ -1318,6 +1318,7 @@ export type AutoBroadcastTriggerType =
   | "inactivity"
   | "no_payment"
   | "trial_not_connected"
+  | "has_link_never_connected"
   | "trial_used_never_paid"
   | "no_traffic"
   | "subscription_expired"

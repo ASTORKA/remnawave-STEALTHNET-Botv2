@@ -44,6 +44,7 @@ const TRIGGER_LABELS: Record<AutoBroadcastTriggerType, string> = {
   inactivity: "Неактивность (нет оплат)",
   no_payment: "Ни разу не платил",
   trial_not_connected: "Не подключил триал",
+  has_link_never_connected: "Есть ссылка, но ни разу не подключался",
   trial_used_never_paid: "Пользовался триалом, но не оплатил",
   no_traffic: "Подключён к VPN (напоминание)",
   subscription_expired: "Подписка истекла",

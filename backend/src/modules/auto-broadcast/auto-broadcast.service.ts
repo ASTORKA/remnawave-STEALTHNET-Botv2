@@ -4,7 +4,7 @@
  *
  * Триггеры делятся на два типа:
  *  - ONE-TIME: отправляется клиенту один раз за всё время (after_registration, no_payment,
- *              trial_not_connected, trial_used_never_paid, no_traffic)
+ *              trial_not_connected, has_link_never_connected, trial_used_never_paid, no_traffic)
  *  - RECURRING: может отправляться повторно, если условие снова наступило — дедупликация
  *              за последние RECURRING_COOLDOWN_DAYS дней (inactivity, subscription_expired,
  *              subscription_ending_soon)
@@ -15,6 +15,7 @@ import { getSystemConfig } from "../client/client.service.js";
 import { sendEmail } from "../mail/mail.service.js";
 import { proxyFetch } from "../proxy-util/proxy-fetch.js";
 import { getProxyUrl } from "../proxy-util/get-proxy-url.js";
+import { isRemnaConfigured, remnaGetUserHwidDevices } from "../remna/remna.client.js";
 
 /** Задержка между Telegram-сообщениями (мс). Telegram rate limit ~30 msg/sec, берём с запасом. */
 const TELEGRAM_DELAY_MS = 50;
@@ -33,6 +34,7 @@ export type TriggerType =
   | "inactivity"
   | "no_payment"
   | "trial_not_connected"
+  | "has_link_never_connected"
   | "trial_used_never_paid"
   | "no_traffic"
   | "subscription_expired"
@@ -213,6 +215,37 @@ export async function getEligibleClientIds(ruleId: string): Promise<string[]> {
         },
         select: { id: true },
       });
+      break;
+    }
+
+    // ── has_link_never_connected ───────────────────────────────
+    // Есть ссылка/аккаунт в Remna (remnawaveUuid), но не было ни одного подключения (HWID-устройств 0). One-time.
+    case "has_link_never_connected": {
+      if (!isRemnaConfigured()) {
+        console.warn(`${LOG_PREFIX} Trigger "has_link_never_connected" skipped: Remna API is not configured`);
+        return [];
+      }
+      const registeredBefore = new Date(now.getTime() - rule.delayDays * dayMs);
+      const withLink = await prisma.client.findMany({
+        where: {
+          isBlocked: false,
+          createdAt: { lte: registeredBefore },
+          remnawaveUuid: { not: null },
+        },
+        select: { id: true, remnawaveUuid: true },
+      });
+      const result: { id: string }[] = [];
+      for (const c of withLink) {
+        if (!c.remnawaveUuid) continue;
+        const remna = await remnaGetUserHwidDevices(c.remnawaveUuid);
+        if (remna.error) continue;
+        const data = remna.data as { response?: { total?: number; devices?: Array<unknown> } } | undefined;
+        const resp = data?.response;
+        const devices = Array.isArray(resp?.devices) ? resp.devices : [];
+        const total = typeof resp?.total === "number" ? resp.total : devices.length;
+        if (total === 0) result.push({ id: c.id });
+      }
+      clients = result;
       break;
     }
 
