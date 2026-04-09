@@ -283,7 +283,7 @@ export function AutoBroadcastPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Авто-рассылка</h1>
           <p className="text-muted-foreground">
-            Настраиваемые правила: после регистрации, неактивность, без платежа — чтобы не терять клиентов
+            Настраиваемые правила
           </p>
         </div>
         <div className="flex items-center gap-2">
