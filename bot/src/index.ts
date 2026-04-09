@@ -933,8 +933,17 @@ bot.command("start", async (ctx) => {
     // Если это промо-ссылка — активируем промокод
     if (promoCode) {
       try {
-        const result = await api.activatePromo(auth.token, promoCode);
-        await ctx.reply(`✅ ${result.message}\n\nНажмите /start чтобы открыть меню.`);
+        await api.activatePromo(auth.token, promoCode);
+        await ctx.reply(
+          "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже",
+          {
+            reply_markup: {
+              keyboard: [[{ text: "/start" }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }
+        );
         return;
       } catch (promoErr: unknown) {
         const promoMsg = promoErr instanceof Error ? promoErr.message : "Ошибка активации промокода";
