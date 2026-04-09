@@ -51,6 +51,18 @@ const TRIGGER_LABELS: Record<AutoBroadcastTriggerType, string> = {
   subscription_ending_soon: "Подписка заканчивается скоро (за N дней)",
 };
 
+const TRIGGER_OPTIONS: AutoBroadcastTriggerType[] = [
+  "after_registration",
+  "has_link_never_connected",
+  "inactivity",
+  "no_payment",
+  "trial_not_connected",
+  "trial_used_never_paid",
+  "no_traffic",
+  "subscription_expired",
+  "subscription_ending_soon",
+];
+
 const CHANNEL_LABELS: Record<string, string> = {
   telegram: "Telegram",
   email: "Email",
@@ -143,7 +155,7 @@ export function AutoBroadcastPage() {
     setEditingId(null);
     setForm({
       name: "",
-      triggerType: "after_registration",
+      triggerType: "has_link_never_connected",
       delayDays: 1,
       channel: "telegram",
       subject: "",
@@ -420,7 +432,7 @@ export function AutoBroadcastPage() {
                     }));
                   }}
                   >
-                    {(Object.keys(TRIGGER_LABELS) as AutoBroadcastTriggerType[]).map((t) => (
+                    {TRIGGER_OPTIONS.map((t) => (
                       <option key={t} value={t}>
                         {TRIGGER_LABELS[t]}
                       </option>
