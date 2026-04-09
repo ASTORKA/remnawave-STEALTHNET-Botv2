@@ -938,9 +938,7 @@ bot.command("start", async (ctx) => {
           "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже",
           {
             reply_markup: {
-              keyboard: [[{ text: "/start" }]],
-              resize_keyboard: true,
-              one_time_keyboard: true,
+              inline_keyboard: [[{ text: "Главное меню", callback_data: "menu:main" }]],
             },
           }
         );
