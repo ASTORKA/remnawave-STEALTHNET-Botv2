@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY . .
+ENV DISABLE_PWA=1
 RUN npm run build
 
 # Финальный образ — просто dist для копирования через docker cp или volume
