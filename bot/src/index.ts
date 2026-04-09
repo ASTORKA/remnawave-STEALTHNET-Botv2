@@ -1645,7 +1645,20 @@ bot.on("callback_query:data", async (ctx) => {
       if (userId && config?.botAdminTelegramIds?.includes(String(userId))) {
         backMarkup.inline_keyboard.push([{ text: "⚙️ Панель админа", callback_data: "admin:menu" }]);
       }
-      await editMessageContent(ctx, text, backMarkup, entities);
+      const media = logoToMediaSource(config?.logoBot);
+      const msg = ctx.callbackQuery?.message;
+      const hasPhoto = msg && typeof msg === "object" && "photo" in msg && Array.isArray((msg as { photo: unknown[] }).photo) && (msg as { photo: unknown[] }).photo.length > 0;
+      const hasAnimation = msg && typeof msg === "object" && "animation" in msg && (msg as { animation: unknown }).animation != null;
+      const hasMediaWithCaption = hasPhoto || hasAnimation;
+      if (media && !hasMediaWithCaption) {
+        const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
+        const captionEntities = text.length > TELEGRAM_CAPTION_MAX && entities.length ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
+        const opts = { caption, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: backMarkup };
+        if (media.isGif) await ctx.replyWithAnimation(media.source, opts);
+        else await ctx.replyWithPhoto(media.source, opts);
+      } else {
+        await editMessageContent(ctx, text, backMarkup, entities);
+      }
       return;
     }
 
