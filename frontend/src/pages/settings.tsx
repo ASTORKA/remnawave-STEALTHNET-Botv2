@@ -74,6 +74,8 @@ const DEFAULT_BOT_TARIFFS_TEXT = "Тарифы\n\n{{CATEGORY}}\n{{TARIFFS}}\n\n�
 const DEFAULT_BOT_PAYMENT_TEXT = "Оплата: {{NAME}} — {{PRICE}}\n\n{{ACTION}}";
 const DEFAULT_BOT_EXTRA_OPTIONS_TEXT = "Доп. опции\n\nТрафик, устройства или серверы — докупка к подписке. Выберите опцию:";
 const DEFAULT_BOT_TARIFF_CATEGORIES_TEXT = "Тарифы\n\nВыберите категорию:";
+const DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE =
+  "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже";
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -233,6 +235,7 @@ export function SettingsPage() {
         botTariffsFields: { ...DEFAULT_BOT_TARIFF_FIELDS, ...((data as AdminSettings).botTariffsFields ?? {}) },
         botPaymentText: (data as AdminSettings).botPaymentText ?? DEFAULT_BOT_PAYMENT_TEXT,
         botTariffCategoriesText: (data as AdminSettings).botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT,
+        botPromoActivationMessage: (data as AdminSettings).botPromoActivationMessage ?? DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE,
         botExtraOptionsText: (data as AdminSettings).botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
@@ -563,6 +566,7 @@ export function SettingsPage() {
         botTariffsFields: settings.botTariffsFields != null ? JSON.stringify(settings.botTariffsFields) : undefined,
         botPaymentText: settings.botPaymentText ?? undefined,
         botTariffCategoriesText: settings.botTariffCategoriesText ?? undefined,
+        botPromoActivationMessage: settings.botPromoActivationMessage ?? undefined,
         botExtraOptionsText: settings.botExtraOptionsText ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
@@ -1387,6 +1391,22 @@ export function SettingsPage() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Сообщение после активации промокода (ссылка /start promo_…)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Показывается пользователю сразу после успешной активации промокода по deep link. Плейсхолдеры эмодзи — как в блоке выше:{" "}
+                    <code className="rounded bg-muted px-1">{"{{STAR}}"}</code>, <code className="rounded bg-muted px-1">{"{{ACTIVE_GREEN}}"}</code>,{" "}
+                    <code className="rounded bg-muted px-1">{"{{CUSTOM_1}}"}</code> и т.д. Поддерживается разметка <code className="rounded bg-muted px-1">&lt;b&gt;…&lt;/b&gt;</code> для жирного текста.
+                  </p>
+                  <Textarea
+                    className="min-h-[100px] font-mono text-sm"
+                    value={settings.botPromoActivationMessage ?? DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE}
+                    onChange={(e) =>
+                      setSettings((s) => (s ? { ...s, botPromoActivationMessage: e.target.value } : s))
+                    }
+                    placeholder={DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Кнопки главного меню</Label>

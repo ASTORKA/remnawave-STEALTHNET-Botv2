@@ -120,6 +120,8 @@ export async function getPublicConfig(): Promise<{
   botPaymentText?: string | null;
   botExtraOptionsText?: string | null;
   botTariffCategoriesText?: string | null;
+  /** Текст после активации промокода по ссылке /start promo_… ({{KEY}} из botEmojis) */
+  botPromoActivationMessage?: string | null;
   activeLanguages?: string[];
   activeCurrencies?: string[];
   defaultReferralPercent?: number;

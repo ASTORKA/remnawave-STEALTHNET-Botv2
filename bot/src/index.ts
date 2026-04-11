@@ -934,14 +934,16 @@ bot.command("start", async (ctx) => {
     if (promoCode) {
       try {
         await api.activatePromo(auth.token, promoCode);
-        await ctx.reply(
-          "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже",
-          {
-            reply_markup: {
-              inline_keyboard: [[{ text: "Главное меню", callback_data: "menu:main" }]],
-            },
-          }
-        );
+        const defaultPromoActivated =
+          "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже";
+        const promoTpl = (config?.botPromoActivationMessage ?? "").trim() || defaultPromoActivated;
+        const { text: promoText, entities: promoEntities } = applyCustomEmojiPlaceholders(promoTpl, config?.botEmojis);
+        await ctx.reply(promoText, {
+          entities: promoEntities.length ? promoEntities : undefined,
+          reply_markup: {
+            inline_keyboard: [[{ text: "Главное меню", callback_data: "menu:main" }]],
+          },
+        });
         return;
       } catch (promoErr: unknown) {
         const promoMsg = promoErr instanceof Error ? promoErr.message : "Ошибка активации промокода";

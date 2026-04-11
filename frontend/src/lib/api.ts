@@ -1421,6 +1421,7 @@ export type UpdateSettingsPayload = {
   botPaymentText?: string | null;
   botExtraOptionsText?: string | null;
   botTariffCategoriesText?: string | null;
+  botPromoActivationMessage?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;
@@ -1703,6 +1704,8 @@ export interface AdminSettings {
   botExtraOptionsText?: string | null;
   /** Текст экрана выбора категории тарифа в боте */
   botTariffCategoriesText?: string | null;
+  /** Сообщение после активации промокода по ссылке /start promo_… */
+  botPromoActivationMessage?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */

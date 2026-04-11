@@ -1083,6 +1083,7 @@ const updateSettingsSchema = z.object({
   botPaymentText: z.string().max(8000).nullable().optional(),
   botExtraOptionsText: z.string().max(8000).nullable().optional(),
   botTariffCategoriesText: z.string().max(8000).nullable().optional(),
+  botPromoActivationMessage: z.string().max(4000).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1617,6 +1618,14 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_tariff_categories_text" },
       create: { key: "bot_tariff_categories_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoActivationMessage !== undefined) {
+    const val = updates.botPromoActivationMessage ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_activation_message" },
+      create: { key: "bot_promo_activation_message", value: val },
       update: { value: val },
     });
   }
