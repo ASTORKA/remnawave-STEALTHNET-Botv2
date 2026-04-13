@@ -189,16 +189,13 @@ export function mainMenu(opts: {
   return { inline_keyboard: rows };
 }
 
-/** Одна кнопка покупки «промотарифа» на главном экране (новый клиент без ссылки подключения). */
+/** Одна кнопка покупки «промотарифа» на главном экране (новый клиент без ссылки подключения). Без цвета (style не задаётся). */
 export function promoWelcomeSingleTariffKeyboard(opts: {
   tariffId: string;
   buttonText: string;
   buttonIconCustomEmojiId?: string;
-  tariffPayStyle?: ButtonStyle;
 }): InlineMarkup {
-  const style = opts.tariffPayStyle ?? "success";
   const row: InlineButton = { text: opts.buttonText.slice(0, 64), callback_data: `pay_tariff:${opts.tariffId}` };
-  if (style) row.style = style;
   if (opts.buttonIconCustomEmojiId) row.icon_custom_emoji_id = opts.buttonIconCustomEmojiId;
   return { inline_keyboard: [[row]] };
 }

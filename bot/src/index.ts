@@ -809,17 +809,6 @@ async function composeMainMenuPresentation(
   config: NonNullable<Awaited<ReturnType<typeof api.getPublicConfig>>>,
   telegramUserId: number
 ): Promise<{ text: string; entities: CustomEmojiEntity[]; markup: InlineMarkup }> {
-  const rawStyles = config?.botInnerButtonStyles;
-  const innerStyles = {
-    tariffPay: rawStyles?.tariffPay !== undefined ? rawStyles.tariffPay : "success",
-    topup: rawStyles?.topup !== undefined ? rawStyles.topup : "primary",
-    extraOptionsItem: rawStyles?.extraOptionsItem !== undefined ? rawStyles.extraOptionsItem : "success",
-    back: rawStyles?.back !== undefined ? rawStyles.back : "danger",
-    profile: rawStyles?.profile !== undefined ? rawStyles.profile : "primary",
-    trialConfirm: rawStyles?.trialConfirm !== undefined ? rawStyles.trialConfirm : "success",
-    lang: rawStyles?.lang !== undefined ? rawStyles.lang : "primary",
-    currency: rawStyles?.currency !== undefined ? rawStyles.currency : "primary",
-  };
   const [client, subRes, tariffsRes, proxyRes, singboxRes] = await Promise.all([
     api.getMe(token),
     api.getSubscription(token).catch(() => ({ subscription: null })),
@@ -870,13 +859,10 @@ async function composeMainMenuPresentation(
   if (promoTariffId && !vpnUrl) {
     const labelTpl = (config?.botPromoTariffButtonLabel ?? "").trim() || "10 ₽ за 1 месяц";
     const btnParts = buildPromoTariffPurchaseButtonParts(labelTpl, config?.botPromoTariffButtonEmojiKey ?? null, config?.botEmojis ?? null);
-    const paySt = innerStyles.tariffPay;
-    const tariffPayStyle = paySt === "primary" || paySt === "success" || paySt === "danger" ? paySt : "success";
     markup = promoWelcomeSingleTariffKeyboard({
       tariffId: promoTariffId,
       buttonText: btnParts.text,
       buttonIconCustomEmojiId: btnParts.iconCustomEmojiId,
-      tariffPayStyle,
     });
   } else {
     markup = mainMenu({
