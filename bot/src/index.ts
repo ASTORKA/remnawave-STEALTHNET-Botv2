@@ -767,6 +767,13 @@ function mergeRichTextBlocks(
   return { text: a.text + gap + b.text, entities };
 }
 
+/** Плейсхолдеры приветствия промотарифа (не эмодзи-ключи): {{username}} — ник из Telegram (@…). Регистр в теге не важен. */
+function applyPromoWelcomePlaceholders(raw: string, telegramUsername?: string | null): string {
+  const u = (telegramUsername ?? "").trim();
+  const display = !u ? "" : u.startsWith("@") ? u : `@${u}`;
+  return raw.replace(/\{\{username\}\}/gi, display);
+}
+
 /** Жирный через **…** и плейсхолдеры {{KEY}} как в остальных текстах бота */
 function prepareWelcomeRichText(
   raw: string,
@@ -833,7 +840,8 @@ async function composeMainMenuPresentation(
   });
 
   const welcomeRaw = (config?.botPromoWelcomeText ?? "").trim() || DEFAULT_BOT_PROMO_WELCOME_FALLBACK;
-  const welcomeBlock = prepareWelcomeRichText(welcomeRaw, config?.botEmojis ?? null);
+  const welcomeWithUser = applyPromoWelcomePlaceholders(welcomeRaw, client?.telegramUsername);
+  const welcomeBlock = prepareWelcomeRichText(welcomeWithUser, config?.botEmojis ?? null);
 
   let text: string;
   let entities: CustomEmojiEntity[];

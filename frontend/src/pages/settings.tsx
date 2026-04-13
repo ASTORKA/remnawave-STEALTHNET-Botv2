@@ -1462,7 +1462,8 @@ export function SettingsPage() {
                   <div className="space-y-1">
                     <Label className="text-xs">Приветственный текст (без ссылки VPN)</Label>
                     <p className="text-xs text-muted-foreground">
-                      Жирный: <code className="rounded bg-muted px-1">**фрагмент**</code>. Эмодзи: <code className="rounded bg-muted px-1">{"{{PACKAGE}}"}</code> и другие ключи из таблицы «Эмодзи» выше.
+                      Ник: <code className="rounded bg-muted px-1">{"{{username}}"}</code> (подставится <code className="rounded bg-muted px-1">@username</code> из Telegram; если ника нет — пусто). Жирный:{" "}
+                      <code className="rounded bg-muted px-1">**фрагмент**</code>. Эмодзи: <code className="rounded bg-muted px-1">{"{{PACKAGE}}"}</code> и другие ключи из таблицы «Эмодзи» выше.
                     </p>
                     <Textarea
                       className="min-h-[120px] font-mono text-sm"
