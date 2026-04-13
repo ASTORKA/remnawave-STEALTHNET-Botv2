@@ -124,6 +124,8 @@ export async function getPublicConfig(): Promise<{
   botPromoActivationMessage?: string | null;
   /** Приветствие для «промотарифа»; **жирный**; {{KEY}} */
   botPromoWelcomeText?: string | null;
+  /** Доп. абзац после приветствия — только без промоссылки /start promo_… и пока промотариф доступен */
+  botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
   activeLanguages?: string[];
@@ -166,7 +168,18 @@ export async function registerByTelegram(body: {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
-}): Promise<{ token: string; client: { id: string; telegramUsername?: string | null; preferredCurrency: string; balance: number; trialUsed?: boolean; referralCode?: string | null } }> {
+}): Promise<{
+  token: string;
+  client: {
+    id: string;
+    telegramUsername?: string | null;
+    preferredCurrency: string;
+    balance: number;
+    trialUsed?: boolean;
+    referralCode?: string | null;
+    promoGroupDeepLinkUsed?: boolean;
+  };
+}> {
   return fetchJson("/api/client/auth/register", { method: "POST", body });
 }
 
@@ -192,6 +205,8 @@ export async function getMe(token: string): Promise<{
   referralPercent?: number | null;
   trialUsed?: boolean;
   autoRenewEnabled?: boolean;
+  /** Активировал промо-группу по /start promo_… — скрываем доп. абзац приветствия на главной */
+  promoGroupDeepLinkUsed?: boolean;
 }> {
   return fetchJson("/api/client/auth/me", { token });
 }

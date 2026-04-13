@@ -201,7 +201,7 @@ clientAuthRouter.post("/register", async (req, res) => {
   if (hasTelegram) {
     const existing = await prisma.client.findUnique({
       where: { telegramId: data.telegramId! },
-      select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, autoRenewEnabled: true, autoRenewTariffId: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true },
+      select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, autoRenewEnabled: true, autoRenewTariffId: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true, promoGroupDeepLinkUsed: true },
     });
     if (existing) {
       if (existing.isBlocked) return res.status(403).json({ message: "Account is blocked" });
@@ -485,7 +485,7 @@ clientAuthRouter.get("/me", requireClientAuth, async (req, res) => {
   const client = (req as unknown as { client: { id: string } }).client;
   const full = await prisma.client.findUnique({
     where: { id: client.id },
-    select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, autoRenewEnabled: true, autoRenewTariffId: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true, yookassaPaymentMethodTitle: true },
+    select: { id: true, email: true, telegramId: true, telegramUsername: true, preferredLang: true, preferredCurrency: true, balance: true, referralCode: true, referralPercent: true, remnawaveUuid: true, trialUsed: true, isBlocked: true, autoRenewEnabled: true, autoRenewTariffId: true, yoomoneyAccessToken: true, totpEnabled: true, createdAt: true, yookassaPaymentMethodTitle: true, promoGroupDeepLinkUsed: true },
   });
   if (!full) return res.status(401).json({ message: "Unauthorized" });
   return res.json(toClientShape(full));
@@ -510,6 +510,7 @@ function toClientShape(c: {
   autoRenewEnabled?: boolean;
   autoRenewTariffId?: string | null;
   yookassaPaymentMethodTitle?: string | null;
+  promoGroupDeepLinkUsed?: boolean;
 }) {
   return {
     id: c.id,
@@ -530,6 +531,7 @@ function toClientShape(c: {
     autoRenewEnabled: c.autoRenewEnabled ?? false,
     autoRenewTariffId: c.autoRenewTariffId ?? null,
     yookassaPaymentMethodTitle: c.yookassaPaymentMethodTitle ?? null,
+    promoGroupDeepLinkUsed: c.promoGroupDeepLinkUsed ?? false,
   };
 }
 
@@ -1420,6 +1422,11 @@ clientRouter.post("/promo/activate", async (req, res) => {
   // Записываем активацию
   await prisma.promoActivation.create({
     data: { promoGroupId: group.id, clientId: client.id },
+  });
+
+  await prisma.client.update({
+    where: { id: client.id },
+    data: { promoGroupDeepLinkUsed: true },
   });
 
   return res.json({ message: "Промокод активирован! Подписка подключена." });

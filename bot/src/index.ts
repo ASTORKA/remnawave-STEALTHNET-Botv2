@@ -843,16 +843,27 @@ async function composeMainMenuPresentation(
   const welcomeWithUser = applyPromoWelcomePlaceholders(welcomeRaw, client?.telegramUsername);
   const welcomeBlock = prepareWelcomeRichText(welcomeWithUser, config?.botEmojis ?? null);
 
+  const extraRaw = (config?.botPromoWelcomeExtraText ?? "").trim();
+  const showPromoWelcomeExtra =
+    Boolean(promoTariffId) && extraRaw.length > 0 && !client?.promoGroupDeepLinkUsed;
+
+  let welcomeMerged = welcomeBlock;
+  if (showPromoWelcomeExtra) {
+    const extraWithUser = applyPromoWelcomePlaceholders(extraRaw, client?.telegramUsername);
+    const extraBlock = prepareWelcomeRichText(extraWithUser, config?.botEmojis ?? null);
+    welcomeMerged = mergeRichTextBlocks(welcomeBlock, extraBlock, "\n\n");
+  }
+
   let text: string;
   let entities: CustomEmojiEntity[];
   if (!promoTariffId) {
     text = mainBlock.text;
     entities = mainBlock.entities;
   } else if (!vpnUrl) {
-    text = welcomeBlock.text;
-    entities = welcomeBlock.entities;
+    text = welcomeMerged.text;
+    entities = welcomeMerged.entities;
   } else {
-    const merged = mergeRichTextBlocks(welcomeBlock, mainBlock, "\n\n");
+    const merged = mergeRichTextBlocks(welcomeMerged, mainBlock, "\n\n");
     text = merged.text;
     entities = merged.entities;
   }

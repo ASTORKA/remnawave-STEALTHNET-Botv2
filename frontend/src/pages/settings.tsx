@@ -259,6 +259,7 @@ export function SettingsPage() {
         botPromoActivationMessage: (data as AdminSettings).botPromoActivationMessage ?? DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE,
         botPromoTariffId: (data as AdminSettings).botPromoTariffId ?? "",
         botPromoWelcomeText: (data as AdminSettings).botPromoWelcomeText ?? DEFAULT_BOT_PROMO_WELCOME_TEXT,
+        botPromoWelcomeExtraText: (data as AdminSettings).botPromoWelcomeExtraText ?? "",
         botPromoTariffButtonLabel: (data as AdminSettings).botPromoTariffButtonLabel ?? DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL,
         botPromoTariffButtonEmojiKey: (data as AdminSettings).botPromoTariffButtonEmojiKey ?? "",
         botExtraOptionsText: (data as AdminSettings).botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
@@ -594,6 +595,7 @@ export function SettingsPage() {
         botPromoActivationMessage: settings.botPromoActivationMessage ?? undefined,
         botPromoTariffId: settings.botPromoTariffId?.trim() ? settings.botPromoTariffId.trim() : null,
         botPromoWelcomeText: settings.botPromoWelcomeText ?? undefined,
+        botPromoWelcomeExtraText: settings.botPromoWelcomeExtraText ?? undefined,
         botPromoTariffButtonLabel: settings.botPromoTariffButtonLabel ?? undefined,
         botPromoTariffButtonEmojiKey: settings.botPromoTariffButtonEmojiKey?.trim() ? settings.botPromoTariffButtonEmojiKey.trim() : null,
         botExtraOptionsText: settings.botExtraOptionsText ?? undefined,
@@ -1440,7 +1442,7 @@ export function SettingsPage() {
                 <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
                   <Label className="text-base">«Промотариф» и приветствие новичка (главное меню бота)</Label>
                   <p className="text-xs text-muted-foreground">
-                    Промотариф — тариф из категории с лимитом <strong className="font-medium">1 покупка на клиента</strong>, пока клиент его ещё не купил. Если у него нет ссылки подключения VPN, вместо обычного меню показывается только приветственный текст и одна кнопка оплаты. Если ссылка уже есть (например, пришёл по промоссылке) — приветствие добавляется <strong className="font-medium">с двумя переводами строки</strong> перед обычным текстом меню, кнопки как обычно.
+                    Промотариф — тариф из категории с лимитом <strong className="font-medium">1 покупка на клиента</strong>, пока клиент его ещё не купил. Если у него нет ссылки подключения VPN, вместо обычного меню показывается только приветственный текст и одна кнопка оплаты. Если ссылка уже есть — приветствие добавляется <strong className="font-medium">с двумя переводами строки</strong> перед обычным текстом меню, кнопки как обычно. Дополнительный абзац (ниже) показывается только тем, кто <strong className="font-medium">не</strong> активировал промо по ссылке <code className="rounded bg-muted px-1">/start promo_…</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Какой тариф считать промотарифом</Label>
@@ -1472,6 +1474,21 @@ export function SettingsPage() {
                         setSettings((s) => (s ? { ...s, botPromoWelcomeText: e.target.value } : s))
                       }
                       placeholder={DEFAULT_BOT_PROMO_WELCOME_TEXT}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Дополнительный абзац после приветствия</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Только для пользователей без активации по <code className="rounded bg-muted px-1">/start promo_…</code>, пока промотариф ещё доступен. Пустое поле — не показывать. Те же плейсхолдеры, что у приветствия:{" "}
+                      <code className="rounded bg-muted px-1">{"{{username}}"}</code>, <code className="rounded bg-muted px-1">**жирный**</code>, <code className="rounded bg-muted px-1">{"{{PACKAGE}}"}</code>.
+                    </p>
+                    <Textarea
+                      className="min-h-[80px] font-mono text-sm"
+                      value={settings.botPromoWelcomeExtraText ?? ""}
+                      onChange={(e) =>
+                        setSettings((s) => (s ? { ...s, botPromoWelcomeExtraText: e.target.value } : s))
+                      }
+                      placeholder=""
                     />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">

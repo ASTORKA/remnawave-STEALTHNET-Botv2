@@ -1424,6 +1424,7 @@ export type UpdateSettingsPayload = {
   botPromoActivationMessage?: string | null;
   botPromoTariffId?: string | null;
   botPromoWelcomeText?: string | null;
+  botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
   subscriptionPageConfig?: string | null;
@@ -1714,6 +1715,8 @@ export interface AdminSettings {
   botPromoTariffId?: string | null;
   /** Приветствие на главном экране бота для новичка без ссылки VPN (при доступном промотарифе) */
   botPromoWelcomeText?: string | null;
+  /** Доп. абзац после приветствия — только у вошедших не по /start promo_… (пока промотариф доступен) */
+  botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */

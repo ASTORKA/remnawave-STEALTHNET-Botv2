@@ -79,6 +79,7 @@ const SYSTEM_CONFIG_KEYS = [
   "bot_promo_activation_message",
   "bot_promo_tariff_id",
   "bot_promo_welcome_text",
+  "bot_promo_welcome_extra_text",
   "bot_promo_tariff_button_label",
   "bot_promo_tariff_button_emoji_key",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
@@ -371,6 +372,11 @@ function parseBotPromoWelcomeText(raw: string | undefined): string {
   return raw;
 }
 
+/** Доп. абзац приветствия (только без промоссылки); пусто = не показывать */
+function parseBotPromoWelcomeExtraText(raw: string | undefined): string {
+  return (raw ?? "").trim();
+}
+
 function parseBotPromoTariffButtonLabel(raw: string | undefined): string {
   if (!raw || !raw.trim()) return DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL;
   return raw;
@@ -560,6 +566,7 @@ export async function getSystemConfig() {
     botPromoActivationMessage: parseBotPromoActivationMessage(map.bot_promo_activation_message),
     botPromoTariffId: parseBotPromoTariffId(map.bot_promo_tariff_id),
     botPromoWelcomeText: parseBotPromoWelcomeText(map.bot_promo_welcome_text),
+    botPromoWelcomeExtraText: parseBotPromoWelcomeExtraText(map.bot_promo_welcome_extra_text),
     botPromoTariffButtonLabel: parseBotPromoTariffButtonLabel(map.bot_promo_tariff_button_label),
     botPromoTariffButtonEmojiKey: parseBotPromoTariffButtonEmojiKey(map.bot_promo_tariff_button_emoji_key),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
@@ -976,6 +983,7 @@ export async function getPublicConfig() {
     botTariffCategoriesText: full.botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT,
     botPromoActivationMessage: full.botPromoActivationMessage ?? DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE,
     botPromoWelcomeText: full.botPromoWelcomeText ?? DEFAULT_BOT_PROMO_WELCOME_TEXT,
+    botPromoWelcomeExtraText: (full.botPromoWelcomeExtraText ?? "").trim() || null,
     botPromoTariffButtonLabel: full.botPromoTariffButtonLabel ?? DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL,
     botPromoTariffButtonEmojiKey: full.botPromoTariffButtonEmojiKey ?? null,
     categoryEmojis: full.categoryEmojis,

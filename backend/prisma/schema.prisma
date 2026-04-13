@@ -93,6 +93,8 @@ model Client {
   autoRenewNotifiedAt DateTime? @map("auto_renew_notified_at")
   yookassaPaymentMethodId    String?  @map("yookassa_payment_method_id")
   yookassaPaymentMethodTitle String?  @map("yookassa_payment_method_title")
+  /// Пользователь активировал промо по ссылке /start promo_… — доп. блок приветствия на главной не показываем
+  promoGroupDeepLinkUsed Boolean @default(false) @map("promo_group_deep_link_used")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

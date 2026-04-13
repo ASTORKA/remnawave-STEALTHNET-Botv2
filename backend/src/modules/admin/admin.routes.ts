@@ -1086,6 +1086,7 @@ const updateSettingsSchema = z.object({
   botPromoActivationMessage: z.string().max(4000).nullable().optional(),
   botPromoTariffId: z.string().max(64).nullable().optional(),
   botPromoWelcomeText: z.string().max(8000).nullable().optional(),
+  botPromoWelcomeExtraText: z.string().max(8000).nullable().optional(),
   botPromoTariffButtonLabel: z.string().max(200).nullable().optional(),
   botPromoTariffButtonEmojiKey: z.string().max(40).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
@@ -1646,6 +1647,14 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_promo_welcome_text" },
       create: { key: "bot_promo_welcome_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoWelcomeExtraText !== undefined) {
+    const val = updates.botPromoWelcomeExtraText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_welcome_extra_text" },
+      create: { key: "bot_promo_welcome_extra_text", value: val },
       update: { value: val },
     });
   }
