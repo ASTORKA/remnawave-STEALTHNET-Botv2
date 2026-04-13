@@ -122,6 +122,10 @@ export async function getPublicConfig(): Promise<{
   botTariffCategoriesText?: string | null;
   /** Текст после активации промокода по ссылке /start promo_… ({{KEY}} из botEmojis) */
   botPromoActivationMessage?: string | null;
+  /** Приветствие для «промотарифа»; **жирный**; {{KEY}} */
+  botPromoWelcomeText?: string | null;
+  botPromoTariffButtonLabel?: string | null;
+  botPromoTariffButtonEmojiKey?: string | null;
   activeLanguages?: string[];
   activeCurrencies?: string[];
   defaultReferralPercent?: number;
@@ -243,8 +247,11 @@ export async function getPublicTariffs(token?: string): Promise<{
     emojiKey: string | null;
     tgEmojiId?: string | null;
     emoji: string;
+    maxPurchasesPerClient?: number | null;
     tariffs: { id: string; name: string; description?: string | null; durationDays: number; trafficLimitBytes?: number | null; trafficResetMode?: string; deviceLimit?: number | null; price: number; currency: string }[];
   }[];
+  /** Текущий «промотариф» для клиента (лимит 1 покупка или явный id в настройках) */
+  promoTariffId?: string | null;
 }> {
   if (token) return fetchJson("/api/client/tariffs", { token });
   return fetchJson("/api/public/tariffs");

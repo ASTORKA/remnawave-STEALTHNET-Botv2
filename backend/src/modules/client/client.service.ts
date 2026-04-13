@@ -77,6 +77,10 @@ const SYSTEM_CONFIG_KEYS = [
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
   "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text", "bot_extra_options_text", "bot_tariff_categories_text",
   "bot_promo_activation_message",
+  "bot_promo_tariff_id",
+  "bot_promo_welcome_text",
+  "bot_promo_tariff_button_label",
+  "bot_promo_tariff_button_emoji_key",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -236,6 +240,11 @@ const DEFAULT_BOT_TARIFF_CATEGORIES_TEXT = "Тарифы\n\nВыберите к�
 const DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE =
   "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже";
 
+/** Приветствие для новых клиентов с доступным «промотарифом» (категория с лимитом 1 покупка), пока нет ссылки подключения */
+const DEFAULT_BOT_PROMO_WELCOME_TEXT =
+  "Добро пожаловать!\n\nОформите **стартовый тариф** по кнопке ниже — после оплаты вы получите доступ к VPN.";
+const DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL = "10 ₽ за 1 месяц";
+
 const DEFAULT_BOT_TARIFF_LINE_FIELDS: Required<BotTariffLineFields> = {
   name: true,
   durationDays: false,
@@ -350,6 +359,26 @@ function parseBotTariffCategoriesText(raw: string | undefined): string {
 function parseBotPromoActivationMessage(raw: string | undefined): string {
   if (!raw || !raw.trim()) return DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE;
   return raw;
+}
+
+function parseBotPromoTariffId(raw: string | undefined): string | null {
+  const s = (raw ?? "").trim();
+  return s || null;
+}
+
+function parseBotPromoWelcomeText(raw: string | undefined): string {
+  if (!raw || !raw.trim()) return DEFAULT_BOT_PROMO_WELCOME_TEXT;
+  return raw;
+}
+
+function parseBotPromoTariffButtonLabel(raw: string | undefined): string {
+  if (!raw || !raw.trim()) return DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL;
+  return raw;
+}
+
+function parseBotPromoTariffButtonEmojiKey(raw: string | undefined): string | null {
+  const s = (raw ?? "").trim();
+  return s || null;
 }
 
 function parseBotTariffLineFields(raw: string | undefined): Required<BotTariffLineFields> {
@@ -529,6 +558,10 @@ export async function getSystemConfig() {
     botExtraOptionsText: parseBotExtraOptionsText(map.bot_extra_options_text),
     botTariffCategoriesText: parseBotTariffCategoriesText(map.bot_tariff_categories_text),
     botPromoActivationMessage: parseBotPromoActivationMessage(map.bot_promo_activation_message),
+    botPromoTariffId: parseBotPromoTariffId(map.bot_promo_tariff_id),
+    botPromoWelcomeText: parseBotPromoWelcomeText(map.bot_promo_welcome_text),
+    botPromoTariffButtonLabel: parseBotPromoTariffButtonLabel(map.bot_promo_tariff_button_label),
+    botPromoTariffButtonEmojiKey: parseBotPromoTariffButtonEmojiKey(map.bot_promo_tariff_button_emoji_key),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
     defaultAutoRenewEnabled: map.default_auto_renew_enabled === "true" || map.default_auto_renew_enabled === "1",
@@ -942,6 +975,9 @@ export async function getPublicConfig() {
     botExtraOptionsText: full.botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
     botTariffCategoriesText: full.botTariffCategoriesText ?? DEFAULT_BOT_TARIFF_CATEGORIES_TEXT,
     botPromoActivationMessage: full.botPromoActivationMessage ?? DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE,
+    botPromoWelcomeText: full.botPromoWelcomeText ?? DEFAULT_BOT_PROMO_WELCOME_TEXT,
+    botPromoTariffButtonLabel: full.botPromoTariffButtonLabel ?? DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL,
+    botPromoTariffButtonEmojiKey: full.botPromoTariffButtonEmojiKey ?? null,
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,

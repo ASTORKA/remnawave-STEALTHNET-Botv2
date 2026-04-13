@@ -189,6 +189,20 @@ export function mainMenu(opts: {
   return { inline_keyboard: rows };
 }
 
+/** Одна кнопка покупки «промотарифа» на главном экране (новый клиент без ссылки подключения). */
+export function promoWelcomeSingleTariffKeyboard(opts: {
+  tariffId: string;
+  buttonText: string;
+  buttonIconCustomEmojiId?: string;
+  tariffPayStyle?: ButtonStyle;
+}): InlineMarkup {
+  const style = opts.tariffPayStyle ?? "success";
+  const row: InlineButton = { text: opts.buttonText.slice(0, 64), callback_data: `pay_tariff:${opts.tariffId}` };
+  if (style) row.style = style;
+  if (opts.buttonIconCustomEmojiId) row.icon_custom_emoji_id = opts.buttonIconCustomEmojiId;
+  return { inline_keyboard: [[row]] };
+}
+
 const DEFAULT_BACK_LABEL = "◀️ В меню";
 
 /** Меню «Поддержка»: 4 кнопки-ссылки (только с заданным URL) + «В меню». */
@@ -365,6 +379,8 @@ export function tariffPaymentMethodButtons(
   yookassaEnabled?: boolean,
   cryptopayEnabled?: boolean,
   tariffCurrency?: string,
+  /** Куда ведёт «Назад» с экрана оплаты: главное меню или список тарифов */
+  paymentMethodsBackData: string = "menu:tariffs",
 ): InlineMarkup {
   const back = (backLabel && backLabel.trim()) || DEFAULT_BACK_LABEL;
   const backSty = undefined;
@@ -388,7 +404,7 @@ export function tariffPaymentMethodButtons(
   for (const m of methods) {
     rows.push([btn(m.label, `pay_tariff:${tariffId}:${m.id}`, undefined, m.tgEmojiId ?? cardId)]);
   }
-  rows.push([btn(back, "menu:tariffs", backSty, emojiIds?.back)]);
+  rows.push([btn(back, paymentMethodsBackData, backSty, emojiIds?.back)]);
   return { inline_keyboard: rows };
 }
 

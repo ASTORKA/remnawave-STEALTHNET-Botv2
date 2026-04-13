@@ -1422,6 +1422,10 @@ export type UpdateSettingsPayload = {
   botExtraOptionsText?: string | null;
   botTariffCategoriesText?: string | null;
   botPromoActivationMessage?: string | null;
+  botPromoTariffId?: string | null;
+  botPromoWelcomeText?: string | null;
+  botPromoTariffButtonLabel?: string | null;
+  botPromoTariffButtonEmojiKey?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;
@@ -1706,6 +1710,12 @@ export interface AdminSettings {
   botTariffCategoriesText?: string | null;
   /** Сообщение после активации промокода по ссылке /start promo_… */
   botPromoActivationMessage?: string | null;
+  /** Явный id «промотарифа»; пусто = авто (первая категория с лимитом 1 покупка на клиента) */
+  botPromoTariffId?: string | null;
+  /** Приветствие на главном экране бота для новичка без ссылки VPN (при доступном промотарифе) */
+  botPromoWelcomeText?: string | null;
+  botPromoTariffButtonLabel?: string | null;
+  botPromoTariffButtonEmojiKey?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */

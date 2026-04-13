@@ -1084,6 +1084,10 @@ const updateSettingsSchema = z.object({
   botExtraOptionsText: z.string().max(8000).nullable().optional(),
   botTariffCategoriesText: z.string().max(8000).nullable().optional(),
   botPromoActivationMessage: z.string().max(4000).nullable().optional(),
+  botPromoTariffId: z.string().max(64).nullable().optional(),
+  botPromoWelcomeText: z.string().max(8000).nullable().optional(),
+  botPromoTariffButtonLabel: z.string().max(200).nullable().optional(),
+  botPromoTariffButtonEmojiKey: z.string().max(40).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1626,6 +1630,38 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_promo_activation_message" },
       create: { key: "bot_promo_activation_message", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoTariffId !== undefined) {
+    const val = (updates.botPromoTariffId ?? "").trim();
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_tariff_id" },
+      create: { key: "bot_promo_tariff_id", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoWelcomeText !== undefined) {
+    const val = updates.botPromoWelcomeText ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_welcome_text" },
+      create: { key: "bot_promo_welcome_text", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoTariffButtonLabel !== undefined) {
+    const val = updates.botPromoTariffButtonLabel ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_tariff_button_label" },
+      create: { key: "bot_promo_tariff_button_label", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoTariffButtonEmojiKey !== undefined) {
+    const val = (updates.botPromoTariffButtonEmojiKey ?? "").trim();
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_tariff_button_emoji_key" },
+      create: { key: "bot_promo_tariff_button_emoji_key", value: val },
       update: { value: val },
     });
   }

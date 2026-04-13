@@ -3707,6 +3707,21 @@ async function getTariffCategoriesForClient(clientId: string | null) {
     });
 }
 
+/** «Промотариф»: явный id из настроек или первый тариф из категории с maxPurchasesPerClient === 1, если клиент ещё может купить */
+async function resolvePromoTariffIdForClient(clientId: string | null): Promise<string | null> {
+  if (!clientId) return null;
+  const [config, items] = await Promise.all([getSystemConfig(), getTariffCategoriesForClient(clientId)]);
+  const explicit = (config.botPromoTariffId ?? "").trim();
+  if (explicit) {
+    const ok = items.some((c) => c.tariffs.some((t) => t.id === explicit));
+    return ok ? explicit : null;
+  }
+  for (const c of items) {
+    if (c.maxPurchasesPerClient === 1 && c.tariffs.length > 0) return c.tariffs[0]!.id;
+  }
+  return null;
+}
+
 publicConfigRouter.get("/tariffs", async (_req, res) => {
   try {
     let clientId: string | null = null;
@@ -3717,8 +3732,10 @@ publicConfigRouter.get("/tariffs", async (_req, res) => {
       if (payload?.clientId) clientId = payload.clientId;
     }
     const items = await getTariffCategoriesForClient(clientId);
+    const promoTariffId = await resolvePromoTariffIdForClient(clientId);
     return res.json({
       items,
+      promoTariffId,
     });
   } catch (e) {
     console.error("GET /public/tariffs error:", e);
@@ -3730,7 +3747,8 @@ clientRouter.get("/tariffs", async (req, res) => {
   try {
     const clientId = (req as unknown as { clientId: string }).clientId;
     const items = await getTariffCategoriesForClient(clientId);
-    return res.json({ items });
+    const promoTariffId = await resolvePromoTariffIdForClient(clientId);
+    return res.json({ items, promoTariffId });
   } catch (e) {
     console.error("GET /client/tariffs error:", e);
     return res.status(500).json({ message: "Ошибка загрузки тарифов" });

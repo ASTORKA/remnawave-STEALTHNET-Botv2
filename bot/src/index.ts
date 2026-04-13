@@ -11,6 +11,7 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 import * as api from "./api.js";
 import {
   mainMenu,
+  promoWelcomeSingleTariffKeyboard,
   backToMenu,
   supportSubMenu,
   topUpPresets,
@@ -753,6 +754,154 @@ function buildMainMenuText(opts: {
   return { text, entities };
 }
 
+function mergeRichTextBlocks(
+  a: { text: string; entities: CustomEmojiEntity[] },
+  b: { text: string; entities: CustomEmojiEntity[] },
+  gap: string
+): { text: string; entities: CustomEmojiEntity[] } {
+  const shift = a.text.length + gap.length;
+  const entities: CustomEmojiEntity[] = [
+    ...a.entities,
+    ...b.entities.map((e) => ({ ...e, offset: e.offset + shift })),
+  ];
+  return { text: a.text + gap + b.text, entities };
+}
+
+/** Жирный через **…** и плейсхолдеры {{KEY}} как в остальных текстах бота */
+function prepareWelcomeRichText(
+  raw: string,
+  botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
+): { text: string; entities: CustomEmojiEntity[] } {
+  const withBold = raw.replace(/\*\*([\s\S]*?)\*\*/g, (_m, inner: string) => {
+    const safe = String(inner).replace(/</g, "").replace(/>/g, "");
+    return `<b>${safe}</b>`;
+  });
+  return applyCustomEmojiPlaceholders(withBold, botEmojis);
+}
+
+function stripMarkdownStarsForButtonLabel(s: string): string {
+  return s.replace(/\*\*([\s\S]*?)\*\*/g, "$1");
+}
+
+function buildPromoTariffPurchaseButtonParts(
+  labelTemplate: string,
+  emojiKey: string | null | undefined,
+  botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
+): { text: string; iconCustomEmojiId?: string } {
+  const cleaned = stripMarkdownStarsForButtonLabel(labelTemplate);
+  const { text: withEmoji } = applyCustomEmojiPlaceholders(cleaned, botEmojis);
+  let text = withEmoji.trim();
+  const k = emojiKey?.trim();
+  if (k && botEmojis?.[k]?.tgEmojiId) {
+    const entry = botEmojis[k]!;
+    const u = entry.unicode?.trim();
+    if (u && text.startsWith(u)) text = text.slice(u.length).trim();
+    return { text: text.slice(0, 64), iconCustomEmojiId: entry.tgEmojiId };
+  }
+  return { text: text.slice(0, 64) };
+}
+
+const DEFAULT_BOT_PROMO_WELCOME_FALLBACK =
+  "Добро пожаловать!\n\nОформите **стартовый тариф** по кнопке ниже — после оплаты вы получите доступ к VPN.";
+
+async function composeMainMenuPresentation(
+  token: string,
+  config: NonNullable<Awaited<ReturnType<typeof api.getPublicConfig>>>,
+  telegramUserId: number
+): Promise<{ text: string; entities: CustomEmojiEntity[]; markup: InlineMarkup }> {
+  const rawStyles = config?.botInnerButtonStyles;
+  const innerStyles = {
+    tariffPay: rawStyles?.tariffPay !== undefined ? rawStyles.tariffPay : "success",
+    topup: rawStyles?.topup !== undefined ? rawStyles.topup : "primary",
+    extraOptionsItem: rawStyles?.extraOptionsItem !== undefined ? rawStyles.extraOptionsItem : "success",
+    back: rawStyles?.back !== undefined ? rawStyles.back : "danger",
+    profile: rawStyles?.profile !== undefined ? rawStyles.profile : "primary",
+    trialConfirm: rawStyles?.trialConfirm !== undefined ? rawStyles.trialConfirm : "success",
+    lang: rawStyles?.lang !== undefined ? rawStyles.lang : "primary",
+    currency: rawStyles?.currency !== undefined ? rawStyles.currency : "primary",
+  };
+  const [client, subRes, tariffsRes, proxyRes, singboxRes] = await Promise.all([
+    api.getMe(token),
+    api.getSubscription(token).catch(() => ({ subscription: null })),
+    api.getPublicTariffs(token),
+    api.getPublicProxyTariffs().catch(() => ({ items: [] })),
+    api.getPublicSingboxTariffs().catch(() => ({ items: [] })),
+  ]);
+
+  const promoTariffId = tariffsRes.promoTariffId ?? null;
+  const vpnUrl = getSubscriptionUrl(subRes.subscription);
+  const name = config?.serviceName?.trim() || "Кабинет";
+  const mainBlock = buildMainMenuText({
+    serviceName: name,
+    balance: client?.balance ?? 0,
+    currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
+    subscription: subRes.subscription,
+    tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
+    menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
+    menuLineVisibility: config?.botMenuLineVisibility ?? null,
+    menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
+    botEmojis: config?.botEmojis ?? null,
+  });
+
+  const welcomeRaw = (config?.botPromoWelcomeText ?? "").trim() || DEFAULT_BOT_PROMO_WELCOME_FALLBACK;
+  const welcomeBlock = prepareWelcomeRichText(welcomeRaw, config?.botEmojis ?? null);
+
+  let text: string;
+  let entities: CustomEmojiEntity[];
+  if (!promoTariffId) {
+    text = mainBlock.text;
+    entities = mainBlock.entities;
+  } else if (!vpnUrl) {
+    text = welcomeBlock.text;
+    entities = welcomeBlock.entities;
+  } else {
+    const merged = mergeRichTextBlocks(welcomeBlock, mainBlock, "\n\n");
+    text = merged.text;
+    entities = merged.entities;
+  }
+
+  const showTrial = Boolean(config?.trialEnabled && !client?.trialUsed);
+  const showProxy = proxyRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs.length > 0) ?? false;
+  const showSingbox = singboxRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs.length > 0) ?? false;
+  const appUrl = config?.publicAppUrl?.replace(/\/$/, "") ?? null;
+  const hasSupportLinks = !!(config?.supportLink || config?.agreementLink || config?.offerLink || config?.instructionsLink);
+
+  let markup: InlineMarkup;
+  if (promoTariffId && !vpnUrl) {
+    const labelTpl = (config?.botPromoTariffButtonLabel ?? "").trim() || "10 ₽ за 1 месяц";
+    const btnParts = buildPromoTariffPurchaseButtonParts(labelTpl, config?.botPromoTariffButtonEmojiKey ?? null, config?.botEmojis ?? null);
+    const paySt = innerStyles.tariffPay;
+    const tariffPayStyle = paySt === "primary" || paySt === "success" || paySt === "danger" ? paySt : "success";
+    markup = promoWelcomeSingleTariffKeyboard({
+      tariffId: promoTariffId,
+      buttonText: btnParts.text,
+      buttonIconCustomEmojiId: btnParts.iconCustomEmojiId,
+      tariffPayStyle,
+    });
+  } else {
+    markup = mainMenu({
+      showTrial,
+      showVpn: Boolean(vpnUrl),
+      showProxy,
+      showSingbox,
+      appUrl,
+      botButtons: config?.botButtons ?? null,
+      botBackLabel: config?.botBackLabel ?? null,
+      hasSupportLinks,
+      showTickets: config?.ticketsEnabled === true,
+      showExtraOptions: config?.sellOptionsEnabled === true && (config?.sellOptions?.length ?? 0) > 0,
+      buttonsPerRow: config?.botButtonsPerRow ?? 1,
+      remnaSubscriptionUrl: config?.useRemnaSubscriptionPage ? vpnUrl : null,
+    });
+  }
+
+  if (config?.botAdminTelegramIds?.includes(String(telegramUserId))) {
+    markup.inline_keyboard.push([{ text: "⚙️ Панель админа", callback_data: "admin:menu" }]);
+  }
+
+  return { text, entities, markup };
+}
+
 const TELEGRAM_CAPTION_MAX = 1024;
 
 /** Логотип из настроек: data URL или URL → источник для sendPhoto/sendAnimation и признак GIF */
@@ -912,7 +1061,11 @@ bot.command("start", async (ctx) => {
 
   try {
     const config = await api.getPublicConfig();
-    const name = config?.serviceName?.trim() || "Кабинет";
+    if (!config) {
+      await ctx.reply("Сервис временно недоступен. Попробуйте позже.");
+      return;
+    }
+    const name = config.serviceName?.trim() || "Кабинет";
 
     const auth = await api.registerByTelegram({
       telegramId,
@@ -955,49 +1108,10 @@ bot.command("start", async (ctx) => {
     // Проверка подписки на канал
     if (await enforceSubscription(ctx, config)) return;
 
-    const [subRes, proxyRes, singboxRes] = await Promise.all([
-      api.getSubscription(auth.token).catch(() => ({ subscription: null })),
-      api.getPublicProxyTariffs().catch(() => ({ items: [] })),
-      api.getPublicSingboxTariffs().catch(() => ({ items: [] })),
-    ]);
-    const vpnUrl = getSubscriptionUrl(subRes.subscription);
-    const showTrial = Boolean(config?.trialEnabled && !client?.trialUsed);
-    const showProxy = proxyRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs?.length > 0) ?? false;
-    const showSingbox = singboxRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs?.length > 0) ?? false;
-    const appUrl = config?.publicAppUrl?.replace(/\/$/, "") ?? null;
+    const { text, entities, markup } = await composeMainMenuPresentation(auth.token, config, from.id);
 
-    const { text, entities } = buildMainMenuText({
-      serviceName: name,
-      balance: client?.balance ?? 0,
-      currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
-      subscription: subRes.subscription,
-      tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-      menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
-      menuLineVisibility: config?.botMenuLineVisibility ?? null,
-      menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
-      botEmojis: config?.botEmojis ?? null,
-    });
     const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
     const captionEntities = text.length > TELEGRAM_CAPTION_MAX && entities.length ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
-    const hasSupportLinks = !!(config?.supportLink || config?.agreementLink || config?.offerLink || config?.instructionsLink);
-    const markup = mainMenu({
-      showTrial,
-      showVpn: Boolean(vpnUrl),
-      showProxy,
-      showSingbox,
-      appUrl,
-      botButtons: config?.botButtons ?? null,
-      botBackLabel: config?.botBackLabel ?? null,
-      hasSupportLinks,
-      showTickets: config?.ticketsEnabled === true,
-      showExtraOptions: config?.sellOptionsEnabled === true && (config?.sellOptions?.length ?? 0) > 0,
-      buttonsPerRow: config?.botButtonsPerRow ?? 1,
-      remnaSubscriptionUrl: config?.useRemnaSubscriptionPage ? vpnUrl : null,
-    });
-    const isBotAdmin = config?.botAdminTelegramIds?.includes(String(from.id)) ?? false;
-    if (isBotAdmin) {
-      markup.inline_keyboard.push([{ text: "⚙️ Панель админа", callback_data: "admin:menu" }]);
-    }
 
     const media = logoToMediaSource(config?.logoBot);
     if (media) {
@@ -1606,47 +1720,9 @@ bot.on("callback_query:data", async (ctx) => {
       : undefined;
 
     if (data === "menu:main") {
-      const [client, subRes, proxyRes, singboxRes] = await Promise.all([
-        api.getMe(token),
-        api.getSubscription(token).catch(() => ({ subscription: null })),
-        api.getPublicProxyTariffs().catch(() => ({ items: [] })),
-        api.getPublicSingboxTariffs().catch(() => ({ items: [] })),
-      ]);
-      const vpnUrl = getSubscriptionUrl(subRes.subscription);
-      const showTrial = Boolean(config?.trialEnabled && !client?.trialUsed);
-      const showProxy = proxyRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs?.length > 0) ?? false;
-      const showSingbox = singboxRes.items?.some((c: { tariffs: unknown[] }) => c.tariffs?.length > 0) ?? false;
-      const name = config?.serviceName?.trim() || "Кабинет";
-      const { text, entities } = buildMainMenuText({
-        serviceName: name,
-        balance: client?.balance ?? 0,
-        currency: client?.preferredCurrency ?? config?.defaultCurrency ?? "usd",
-        subscription: subRes.subscription,
-        tariffDisplayName: (subRes as { tariffDisplayName?: string | null }).tariffDisplayName ?? null,
-        menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
-        menuLineVisibility: config?.botMenuLineVisibility ?? null,
-        menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
-        botEmojis: config?.botEmojis ?? null,
-      });
-      const hasSupportLinks = !!(config?.supportLink || config?.agreementLink || config?.offerLink || config?.instructionsLink);
-      const backMarkup = mainMenu({
-        showTrial,
-        showVpn: Boolean(vpnUrl),
-        showProxy,
-        showSingbox,
-        appUrl,
-        botButtons: config?.botButtons ?? null,
-        botBackLabel: config?.botBackLabel ?? null,
-        hasSupportLinks,
-        showTickets: config?.ticketsEnabled === true,
-        showExtraOptions: config?.sellOptionsEnabled === true && (config?.sellOptions?.length ?? 0) > 0,
-        buttonsPerRow: config?.botButtonsPerRow ?? 1,
-        remnaSubscriptionUrl: config?.useRemnaSubscriptionPage ? vpnUrl : null,
-      });
-      const userId = ctx.from?.id;
-      if (userId && config?.botAdminTelegramIds?.includes(String(userId))) {
-        backMarkup.inline_keyboard.push([{ text: "⚙️ Панель админа", callback_data: "admin:menu" }]);
-      }
+      if (!config) return;
+      const uid = ctx.from?.id ?? 0;
+      const { text, entities, markup } = await composeMainMenuPresentation(token, config, uid);
       const media = logoToMediaSource(config?.logoBot);
       const msg = ctx.callbackQuery?.message;
       const hasPhoto = msg && typeof msg === "object" && "photo" in msg && Array.isArray((msg as { photo: unknown[] }).photo) && (msg as { photo: unknown[] }).photo.length > 0;
@@ -1655,11 +1731,11 @@ bot.on("callback_query:data", async (ctx) => {
       if (media && !hasMediaWithCaption) {
         const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
         const captionEntities = text.length > TELEGRAM_CAPTION_MAX && entities.length ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
-        const opts = { caption, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: backMarkup };
+        const opts = { caption, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: markup };
         if (media.isGif) await ctx.replyWithAnimation(media.source, opts);
         else await ctx.replyWithPhoto(media.source, opts);
       } else {
-        await editMessageContent(ctx, text, backMarkup, entities);
+        await editMessageContent(ctx, text, markup, entities);
       }
       return;
     }
@@ -2453,7 +2529,13 @@ bot.on("callback_query:data", async (ctx) => {
       const parts = rest.split(":");
       const tariffId = parts[0];
       const methodIdFromBtn = parts.length >= 2 ? Number(parts[1]) : null;
-      const { items } = await api.getPublicTariffs(token);
+      const [{ items, promoTariffId }, subResForPay] = await Promise.all([
+        api.getPublicTariffs(token),
+        api.getSubscription(token).catch(() => ({ subscription: null })),
+      ]);
+      const vpnUrlForPay = getSubscriptionUrl(subResForPay.subscription);
+      const paymentMethodsBack =
+        promoTariffId === tariffId && !vpnUrlForPay ? "menu:main" : "menu:tariffs";
       const tariff = items?.flatMap((c: TariffCategory) => c.tariffs).find((t: TariffItem) => t.id === tariffId);
       if (!tariff) {
         await editMessageContent(ctx, "Тариф не найден.", backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2489,7 +2571,24 @@ bot.on("callback_query:data", async (ctx) => {
         currency: tariff.currency,
         action: "Выберите способ оплаты:",
       });
-      await editMessageContent(ctx, pay2.text, tariffPaymentMethodButtons(tariffId, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, balanceLabel, !!config?.yoomoneyEnabled, !!config?.yookassaEnabled, !!config?.cryptopayEnabled, tariff.currency), pay2.entities);
+      await editMessageContent(
+        ctx,
+        pay2.text,
+        tariffPaymentMethodButtons(
+          tariffId,
+          methods,
+          config?.botBackLabel ?? null,
+          innerStyles?.back,
+          innerEmojiIds,
+          balanceLabel,
+          !!config?.yoomoneyEnabled,
+          !!config?.yookassaEnabled,
+          !!config?.cryptopayEnabled,
+          tariff.currency,
+          paymentMethodsBack
+        ),
+        pay2.entities
+      );
       return;
     }
 
