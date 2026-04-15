@@ -858,9 +858,13 @@ async function composeMainMenuPresentation(
   let text: string;
   let entities: CustomEmojiEntity[];
   const forceClassic = opts?.forceClassic === true;
-  if (!promoTariffId || forceClassic) {
+  if (!promoTariffId) {
     text = mainBlock.text;
     entities = mainBlock.entities;
+  } else if (forceClassic) {
+    const merged = mergeRichTextBlocks(welcomeMerged, mainBlock, "\n\n");
+    text = merged.text;
+    entities = merged.entities;
   } else if (!vpnUrl) {
     text = welcomeMerged.text;
     entities = welcomeMerged.entities;
@@ -877,7 +881,7 @@ async function composeMainMenuPresentation(
   const hasSupportLinks = !!(config?.supportLink || config?.agreementLink || config?.offerLink || config?.instructionsLink);
 
   let markup: InlineMarkup;
-  if (promoTariffId && !vpnUrl) {
+  if (promoTariffId && !vpnUrl && !forceClassic) {
     const labelTpl = (config?.botPromoTariffButtonLabel ?? "").trim() || "10 ₽ за 1 месяц";
     const btnParts = buildPromoTariffPurchaseButtonParts(
       labelTpl,
