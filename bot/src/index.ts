@@ -846,11 +846,12 @@ async function composeMainMenuPresentation(
 
   const extraRaw = (config?.botPromoWelcomeExtraText ?? "").trim();
   const showPromoWelcomeExtra = extraRaw.length > 0;
+  const extraBlock = showPromoWelcomeExtra
+    ? prepareWelcomeRichText(applyPromoWelcomePlaceholders(extraRaw, client?.telegramUsername), config?.botEmojis ?? null)
+    : null;
 
   let welcomeMerged = welcomeBlock;
-  if (showPromoWelcomeExtra) {
-    const extraWithUser = applyPromoWelcomePlaceholders(extraRaw, client?.telegramUsername);
-    const extraBlock = prepareWelcomeRichText(extraWithUser, config?.botEmojis ?? null);
+  if (extraBlock) {
     welcomeMerged = mergeRichTextBlocks(welcomeBlock, extraBlock, "\n\n");
   }
 
@@ -858,8 +859,14 @@ async function composeMainMenuPresentation(
   let entities: CustomEmojiEntity[];
   const forceClassic = opts?.forceClassic === true;
   if (!promoTariffId) {
-    text = mainBlock.text;
-    entities = mainBlock.entities;
+    if (extraBlock) {
+      const merged = mergeRichTextBlocks(extraBlock, mainBlock, "\n\n");
+      text = merged.text;
+      entities = merged.entities;
+    } else {
+      text = mainBlock.text;
+      entities = mainBlock.entities;
+    }
   } else if (forceClassic) {
     const merged = mergeRichTextBlocks(welcomeMerged, mainBlock, "\n\n");
     text = merged.text;
