@@ -112,6 +112,7 @@ export async function getPublicConfig(): Promise<{
   /** Эмодзи по ключам: unicode и tgEmojiId (премиум) — для кнопок и подстановки в текст */
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }>;
   botBackLabel?: string | null;
+  botBackEmojiKey?: string | null;
   botMenuTexts?: Record<string, string> | null;
   botMenuLineVisibility?: Record<string, boolean> | null;
   botInnerButtonStyles?: Record<string, string> | null;

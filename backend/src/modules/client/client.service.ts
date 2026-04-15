@@ -75,6 +75,7 @@ const SYSTEM_CONFIG_KEYS = [
   "heleket_merchant_id", "heleket_api_key",
   "groq_api_key", "groq_model", "groq_fallback_1", "groq_fallback_2", "groq_fallback_3", "ai_system_prompt",
   "bot_buttons", "bot_buttons_per_row", "bot_back_label", "bot_menu_texts", "bot_menu_line_visibility", "bot_inner_button_styles",
+  "bot_back_emoji_key",
   "bot_tariffs_text", "bot_tariffs_fields", "bot_payment_text", "bot_extra_options_text", "bot_tariff_categories_text",
   "bot_promo_activation_message",
   "bot_promo_tariff_id",
@@ -296,6 +297,11 @@ export type BotInnerButtonStyles = {
   lang?: string;
   currency?: string;
 };
+
+function parseBotBackEmojiKey(raw: string | undefined): string | null {
+  const s = (raw ?? "").trim();
+  return s || null;
+}
 
 const DEFAULT_BOT_INNER_BUTTON_STYLES: Required<BotInnerButtonStyles> = {
   tariffPay: "success",
@@ -568,6 +574,7 @@ export async function getSystemConfig() {
     botButtonsPerRow: map.bot_buttons_per_row === "2" ? 2 : 1,
     botEmojis: parseBotEmojis(map.bot_emojis),
     botBackLabel: (map.bot_back_label || "◀️ В меню").trim() || "◀️ В меню",
+    botBackEmojiKey: parseBotBackEmojiKey(map.bot_back_emoji_key),
     botMenuTexts: parseBotMenuTexts(map.bot_menu_texts),
     botMenuLineVisibility: parseBotMenuLineVisibility(map.bot_menu_line_visibility),
     botInnerButtonStyles: parseBotInnerButtonStyles(map.bot_inner_button_styles),
@@ -985,6 +992,7 @@ export async function getPublicConfig() {
     botButtons: resolvedButtons,
     botButtonsPerRow: full.botButtonsPerRow ?? 1,
     botBackLabel: full.botBackLabel,
+    botBackEmojiKey: full.botBackEmojiKey ?? null,
     botMenuTexts: menuTexts,
     botMenuLineVisibility: menuLineVisibility,
     resolvedBotMenuTexts,

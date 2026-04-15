@@ -1075,6 +1075,7 @@ const updateSettingsSchema = z.object({
   botButtonsPerRow: z.union([z.literal(1), z.literal(2), z.number().int().min(1).max(2)]).optional(),
   botEmojis: z.union([z.string().max(15000), z.record(z.object({ unicode: z.string().max(20).optional(), tgEmojiId: z.string().max(50).optional() }))]).nullable().optional(),
   botBackLabel: z.string().max(200).nullable().optional(),
+  botBackEmojiKey: z.string().max(40).nullable().optional(),
   botMenuTexts: z.string().max(8000).nullable().optional(),
   botMenuLineVisibility: z.union([z.string().max(5000), z.record(z.boolean())]).nullable().optional(),
   botInnerButtonStyles: z.union([z.string().max(2000), z.record(z.string())]).nullable().optional(),
@@ -1549,6 +1550,14 @@ adminRouter.patch("/settings", async (req, res) => {
   if (updates.botBackLabel !== undefined) {
     const val = updates.botBackLabel ?? "";
     await prisma.systemSetting.upsert({ where: { key: "bot_back_label" }, create: { key: "bot_back_label", value: val }, update: { value: val } });
+  }
+  if (updates.botBackEmojiKey !== undefined) {
+    const val = (updates.botBackEmojiKey ?? "").trim();
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_back_emoji_key" },
+      create: { key: "bot_back_emoji_key", value: val },
+      update: { value: val },
+    });
   }
   if (updates.botMenuTexts !== undefined) {
     const val = updates.botMenuTexts ?? "";

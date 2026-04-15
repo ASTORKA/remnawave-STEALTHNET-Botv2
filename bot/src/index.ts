@@ -1724,9 +1724,10 @@ bot.on("callback_query:data", async (ctx) => {
       currency: rawStyles?.currency !== undefined ? rawStyles.currency : "primary",
     };
     const botEmojis = config?.botEmojis;
+    const backEmojiKey = (config?.botBackEmojiKey ?? "").trim();
     const innerEmojiIds: InnerEmojiIds | undefined = botEmojis
       ? {
-          back: botEmojis.BACK?.tgEmojiId,
+          back: backEmojiKey ? botEmojis[backEmojiKey]?.tgEmojiId : undefined,
           card: botEmojis.CARD?.tgEmojiId,
           pay: botEmojis.PAY?.tgEmojiId,
           tariff: botEmojis.PACKAGE?.tgEmojiId || botEmojis.TARIFFS?.tgEmojiId,

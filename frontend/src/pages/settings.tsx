@@ -251,6 +251,7 @@ export function SettingsPage() {
         botButtonsPerRow: (data as AdminSettings).botButtonsPerRow ?? 1,
         botEmojis: (data as AdminSettings).botEmojis ?? {},
         botBackLabel: (data as AdminSettings).botBackLabel ?? "◀️ В меню",
+        botBackEmojiKey: (data as AdminSettings).botBackEmojiKey ?? "",
         botMenuTexts: { ...DEFAULT_BOT_MENU_TEXTS, ...((data as AdminSettings).botMenuTexts ?? {}) },
         botMenuLineVisibility: { ...DEFAULT_BOT_MENU_LINE_VISIBILITY, ...((data as AdminSettings).botMenuLineVisibility ?? {}) },
         botTariffsText: (data as AdminSettings).botTariffsText ?? DEFAULT_BOT_TARIFFS_TEXT,
@@ -589,6 +590,7 @@ export function SettingsPage() {
         botButtonsPerRow: settings.botButtonsPerRow ?? 1,
         botEmojis: settings.botEmojis != null ? settings.botEmojis : undefined,
         botBackLabel: settings.botBackLabel ?? null,
+        botBackEmojiKey: settings.botBackEmojiKey?.trim() ? settings.botBackEmojiKey.trim() : null,
         botMenuTexts: settings.botMenuTexts != null ? JSON.stringify(settings.botMenuTexts) : undefined,
         botMenuLineVisibility: settings.botMenuLineVisibility != null ? JSON.stringify(settings.botMenuLineVisibility) : undefined,
         botTariffsText: settings.botTariffsText ?? undefined,
@@ -1270,6 +1272,23 @@ export function SettingsPage() {
                     placeholder="◀️ В меню"
                   />
                   <p className="text-xs text-muted-foreground">Текст кнопки возврата в главное меню</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Премиум-иконка кнопки «В меню» (ключ из «Эмодзи»)</Label>
+                  <select
+                    className="flex h-10 w-full max-w-md rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    value={settings.botBackEmojiKey ?? ""}
+                    onChange={(e) =>
+                      setSettings((s) => (s ? { ...s, botBackEmojiKey: e.target.value || "" } : s))
+                    }
+                  >
+                    <option value="">Не задавать</option>
+                    {BOT_EMOJI_KEYS.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-3 rounded-lg border p-4 bg-muted/20">
                   <div className="flex items-center gap-2">

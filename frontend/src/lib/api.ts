@@ -1413,6 +1413,7 @@ export type UpdateSettingsPayload = {
   botButtonsPerRow?: 1 | 2;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | string | null;
   botBackLabel?: string | null;
+  botBackEmojiKey?: string | null;
   botMenuTexts?: string | null;
   botMenuLineVisibility?: string | null;
   botInnerButtonStyles?: string | null;
@@ -1695,6 +1696,8 @@ export interface AdminSettings {
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }>;
   /** Текст кнопки «В меню» */
   botBackLabel?: string | null;
+  /** Ключ эмодзи для кнопки «В меню» (берется из botEmojis) */
+  botBackEmojiKey?: string | null;
   /** Тексты главного меню бота (приветствие, подписи) */
   botMenuTexts?: Record<string, string> | null;
   /** Видимость строк приветственного текста и главного меню */
