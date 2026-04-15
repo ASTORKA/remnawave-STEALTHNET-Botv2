@@ -203,7 +203,8 @@ export function promoWelcomeSingleTariffKeyboard(opts: {
   const mainMenuText = (opts.mainMenuButtonText ?? "").trim();
   const keyboard: InlineMarkup["inline_keyboard"] = [[payRow]];
   if (mainMenuText) {
-    const menuRow: InlineButton = { text: mainMenuText.slice(0, 64), callback_data: "menu:main" };
+    // Для промо-экрана новичка ведём в классическое меню, а не в этот же экран.
+    const menuRow: InlineButton = { text: mainMenuText.slice(0, 64), callback_data: "menu:main_classic" };
     if (opts.mainMenuButtonIconCustomEmojiId) menuRow.icon_custom_emoji_id = opts.mainMenuButtonIconCustomEmojiId;
     keyboard.push([menuRow]);
   }

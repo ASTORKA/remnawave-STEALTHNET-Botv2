@@ -814,7 +814,8 @@ const DEFAULT_BOT_PROMO_WELCOME_FALLBACK =
 async function composeMainMenuPresentation(
   token: string,
   config: NonNullable<Awaited<ReturnType<typeof api.getPublicConfig>>>,
-  telegramUserId: number
+  telegramUserId: number,
+  opts?: { forceClassic?: boolean }
 ): Promise<{ text: string; entities: CustomEmojiEntity[]; markup: InlineMarkup }> {
   const [client, subRes, tariffsRes, proxyRes, singboxRes] = await Promise.all([
     api.getMe(token),
@@ -856,7 +857,8 @@ async function composeMainMenuPresentation(
 
   let text: string;
   let entities: CustomEmojiEntity[];
-  if (!promoTariffId) {
+  const forceClassic = opts?.forceClassic === true;
+  if (!promoTariffId || forceClassic) {
     text = mainBlock.text;
     entities = mainBlock.entities;
   } else if (!vpnUrl) {
@@ -964,8 +966,24 @@ async function editMessageContent(ctx: {
   const hasMediaWithCaption = hasPhoto || hasAnimation;
   const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
   const truncatedEntities = text.length > TELEGRAM_CAPTION_MAX && entities ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
-  if (hasMediaWithCaption) return ctx.editMessageCaption({ caption, caption_entities: truncatedEntities?.length ? truncatedEntities : undefined, reply_markup });
-  return ctx.editMessageText(text, { entities: entities?.length ? entities : undefined, reply_markup });
+  try {
+    if (hasMediaWithCaption) {
+      return await ctx.editMessageCaption({
+        caption,
+        caption_entities: truncatedEntities?.length ? truncatedEntities : undefined,
+        reply_markup,
+      });
+    }
+    return await ctx.editMessageText(text, {
+      entities: entities?.length ? entities : undefined,
+      reply_markup,
+    });
+  } catch (err) {
+    const msgText = err instanceof Error ? err.message : String(err);
+    // Нормальная ситуация в Telegram: повторный клик по той же кнопке.
+    if (/message is not modified/i.test(msgText)) return undefined;
+    throw err;
+  }
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -1737,10 +1755,15 @@ bot.on("callback_query:data", async (ctx) => {
         }
       : undefined;
 
-    if (data === "menu:main") {
+    if (data === "menu:main" || data === "menu:main_classic") {
       if (!config) return;
       const uid = ctx.from?.id ?? 0;
-      const { text, entities, markup } = await composeMainMenuPresentation(token, config, uid);
+      const { text, entities, markup } = await composeMainMenuPresentation(
+        token,
+        config,
+        uid,
+        { forceClassic: data === "menu:main_classic" }
+      );
       const media = logoToMediaSource(config?.logoBot);
       const msg = ctx.callbackQuery?.message;
       const hasPhoto = msg && typeof msg === "object" && "photo" in msg && Array.isArray((msg as { photo: unknown[] }).photo) && (msg as { photo: unknown[] }).photo.length > 0;
