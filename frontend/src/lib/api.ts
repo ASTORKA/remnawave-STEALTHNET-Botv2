@@ -1427,6 +1427,8 @@ export type UpdateSettingsPayload = {
   botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
+  botPromoMainMenuButtonLabel?: string | null;
+  botPromoMainMenuButtonEmojiKey?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
   agreementLink?: string | null;
@@ -1719,6 +1721,8 @@ export interface AdminSettings {
   botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
+  botPromoMainMenuButtonLabel?: string | null;
+  botPromoMainMenuButtonEmojiKey?: string | null;
   /** JSON конфиг страницы подписки (приложения, тексты) */
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */

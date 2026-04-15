@@ -84,6 +84,7 @@ const DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE =
 const DEFAULT_BOT_PROMO_WELCOME_TEXT =
   "Добро пожаловать!\n\nОформите **стартовый тариф** по кнопке ниже — после оплаты вы получите доступ к VPN.";
 const DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL = "10 ₽ за 1 месяц";
+const DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL = "Главное меню";
 
 const DEFAULT_BOT_TARIFF_FIELDS: Record<string, boolean> = {
   name: true,
@@ -262,6 +263,8 @@ export function SettingsPage() {
         botPromoWelcomeExtraText: (data as AdminSettings).botPromoWelcomeExtraText ?? "",
         botPromoTariffButtonLabel: (data as AdminSettings).botPromoTariffButtonLabel ?? DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL,
         botPromoTariffButtonEmojiKey: (data as AdminSettings).botPromoTariffButtonEmojiKey ?? "",
+        botPromoMainMenuButtonLabel: (data as AdminSettings).botPromoMainMenuButtonLabel ?? DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL,
+        botPromoMainMenuButtonEmojiKey: (data as AdminSettings).botPromoMainMenuButtonEmojiKey ?? "",
         botExtraOptionsText: (data as AdminSettings).botExtraOptionsText ?? DEFAULT_BOT_EXTRA_OPTIONS_TEXT,
         botInnerButtonStyles: (() => {
           const raw = (data as AdminSettings).botInnerButtonStyles;
@@ -598,6 +601,8 @@ export function SettingsPage() {
         botPromoWelcomeExtraText: settings.botPromoWelcomeExtraText ?? undefined,
         botPromoTariffButtonLabel: settings.botPromoTariffButtonLabel ?? undefined,
         botPromoTariffButtonEmojiKey: settings.botPromoTariffButtonEmojiKey?.trim() ? settings.botPromoTariffButtonEmojiKey.trim() : null,
+        botPromoMainMenuButtonLabel: settings.botPromoMainMenuButtonLabel ?? undefined,
+        botPromoMainMenuButtonEmojiKey: settings.botPromoMainMenuButtonEmojiKey?.trim() ? settings.botPromoMainMenuButtonEmojiKey.trim() : null,
         botExtraOptionsText: settings.botExtraOptionsText ?? undefined,
         botInnerButtonStyles: JSON.stringify({
           ...DEFAULT_BOT_INNER_STYLES,
@@ -1442,7 +1447,7 @@ export function SettingsPage() {
                 <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
                   <Label className="text-base">«Промотариф» и приветствие новичка (главное меню бота)</Label>
                   <p className="text-xs text-muted-foreground">
-                    Промотариф — тариф из категории с лимитом <strong className="font-medium">1 покупка на клиента</strong>, пока клиент его ещё не купил. Если у него нет ссылки подключения VPN, вместо обычного меню показывается только приветственный текст и одна кнопка оплаты. Если ссылка уже есть — приветствие добавляется <strong className="font-medium">с двумя переводами строки</strong> перед обычным текстом меню, кнопки как обычно. Дополнительный абзац (ниже) показывается только тем, кто <strong className="font-medium">не</strong> активировал промо по ссылке <code className="rounded bg-muted px-1">/start promo_…</code>.
+                    Промотариф — тариф из категории с лимитом <strong className="font-medium">1 покупка на клиента</strong>, пока клиент его ещё не купил. Если у него нет ссылки подключения VPN, вместо обычного меню показывается приветственный текст и две кнопки: оплата промотарифа и переход в главное меню. Если ссылка уже есть — приветствие добавляется <strong className="font-medium">с двумя переводами строки</strong> перед обычным текстом меню, кнопки как обычно. Дополнительный абзац (ниже) показывается только тем, кто <strong className="font-medium">не</strong> активировал промо по ссылке <code className="rounded bg-muted px-1">/start promo_…</code>.
                   </p>
                   <div className="space-y-1">
                     <Label className="text-xs">Какой тариф считать промотарифом</Label>
@@ -1509,6 +1514,33 @@ export function SettingsPage() {
                         value={settings.botPromoTariffButtonEmojiKey ?? ""}
                         onChange={(e) =>
                           setSettings((s) => (s ? { ...s, botPromoTariffButtonEmojiKey: e.target.value || "" } : s))
+                        }
+                      >
+                        <option value="">Не задавать (только Unicode / {"{{KEY}}"} в тексте)</option>
+                        {BOT_EMOJI_KEYS.map((k) => (
+                          <option key={k} value={k}>
+                            {k}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Текст кнопки «Главное меню»</Label>
+                      <Input
+                        value={settings.botPromoMainMenuButtonLabel ?? DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL}
+                        onChange={(e) =>
+                          setSettings((s) => (s ? { ...s, botPromoMainMenuButtonLabel: e.target.value } : s))
+                        }
+                        placeholder={DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Премиум-иконка кнопки «Главное меню» (ключ из «Эмодзи»)</Label>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        value={settings.botPromoMainMenuButtonEmojiKey ?? ""}
+                        onChange={(e) =>
+                          setSettings((s) => (s ? { ...s, botPromoMainMenuButtonEmojiKey: e.target.value || "" } : s))
                         }
                       >
                         <option value="">Не задавать (только Unicode / {"{{KEY}}"} в тексте)</option>

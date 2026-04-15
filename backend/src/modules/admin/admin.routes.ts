@@ -1089,6 +1089,8 @@ const updateSettingsSchema = z.object({
   botPromoWelcomeExtraText: z.string().max(8000).nullable().optional(),
   botPromoTariffButtonLabel: z.string().max(200).nullable().optional(),
   botPromoTariffButtonEmojiKey: z.string().max(40).nullable().optional(),
+  botPromoMainMenuButtonLabel: z.string().max(200).nullable().optional(),
+  botPromoMainMenuButtonEmojiKey: z.string().max(40).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
@@ -1671,6 +1673,22 @@ adminRouter.patch("/settings", async (req, res) => {
     await prisma.systemSetting.upsert({
       where: { key: "bot_promo_tariff_button_emoji_key" },
       create: { key: "bot_promo_tariff_button_emoji_key", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoMainMenuButtonLabel !== undefined) {
+    const val = updates.botPromoMainMenuButtonLabel ?? "";
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_main_menu_button_label" },
+      create: { key: "bot_promo_main_menu_button_label", value: val },
+      update: { value: val },
+    });
+  }
+  if (updates.botPromoMainMenuButtonEmojiKey !== undefined) {
+    const val = (updates.botPromoMainMenuButtonEmojiKey ?? "").trim();
+    await prisma.systemSetting.upsert({
+      where: { key: "bot_promo_main_menu_button_emoji_key" },
+      create: { key: "bot_promo_main_menu_button_emoji_key", value: val },
       update: { value: val },
     });
   }

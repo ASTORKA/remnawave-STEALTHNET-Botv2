@@ -194,10 +194,20 @@ export function promoWelcomeSingleTariffKeyboard(opts: {
   tariffId: string;
   buttonText: string;
   buttonIconCustomEmojiId?: string;
+  mainMenuButtonText?: string;
+  mainMenuButtonIconCustomEmojiId?: string;
 }): InlineMarkup {
-  const row: InlineButton = { text: opts.buttonText.slice(0, 64), callback_data: `pay_tariff:${opts.tariffId}` };
-  if (opts.buttonIconCustomEmojiId) row.icon_custom_emoji_id = opts.buttonIconCustomEmojiId;
-  return { inline_keyboard: [[row]] };
+  const payRow: InlineButton = { text: opts.buttonText.slice(0, 64), callback_data: `pay_tariff:${opts.tariffId}` };
+  if (opts.buttonIconCustomEmojiId) payRow.icon_custom_emoji_id = opts.buttonIconCustomEmojiId;
+
+  const mainMenuText = (opts.mainMenuButtonText ?? "").trim();
+  const keyboard: InlineMarkup["inline_keyboard"] = [[payRow]];
+  if (mainMenuText) {
+    const menuRow: InlineButton = { text: mainMenuText.slice(0, 64), callback_data: "menu:main" };
+    if (opts.mainMenuButtonIconCustomEmojiId) menuRow.icon_custom_emoji_id = opts.mainMenuButtonIconCustomEmojiId;
+    keyboard.push([menuRow]);
+  }
+  return { inline_keyboard: keyboard };
 }
 
 const DEFAULT_BACK_LABEL = "◀️ В меню";

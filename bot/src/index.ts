@@ -877,11 +877,23 @@ async function composeMainMenuPresentation(
   let markup: InlineMarkup;
   if (promoTariffId && !vpnUrl) {
     const labelTpl = (config?.botPromoTariffButtonLabel ?? "").trim() || "10 ₽ за 1 месяц";
-    const btnParts = buildPromoTariffPurchaseButtonParts(labelTpl, config?.botPromoTariffButtonEmojiKey ?? null, config?.botEmojis ?? null);
+    const btnParts = buildPromoTariffPurchaseButtonParts(
+      labelTpl,
+      config?.botPromoTariffButtonEmojiKey ?? null,
+      config?.botEmojis ?? null
+    );
+    const mainMenuLabelTpl = (config?.botPromoMainMenuButtonLabel ?? "").trim() || "Главное меню";
+    const mainMenuBtnParts = buildPromoTariffPurchaseButtonParts(
+      mainMenuLabelTpl,
+      config?.botPromoMainMenuButtonEmojiKey ?? null,
+      config?.botEmojis ?? null
+    );
     markup = promoWelcomeSingleTariffKeyboard({
       tariffId: promoTariffId,
       buttonText: btnParts.text,
       buttonIconCustomEmojiId: btnParts.iconCustomEmojiId,
+      mainMenuButtonText: mainMenuBtnParts.text,
+      mainMenuButtonIconCustomEmojiId: mainMenuBtnParts.iconCustomEmojiId,
     });
   } else {
     markup = mainMenu({

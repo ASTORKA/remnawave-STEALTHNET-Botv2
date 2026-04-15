@@ -82,6 +82,8 @@ const SYSTEM_CONFIG_KEYS = [
   "bot_promo_welcome_extra_text",
   "bot_promo_tariff_button_label",
   "bot_promo_tariff_button_emoji_key",
+  "bot_promo_main_menu_button_label",
+  "bot_promo_main_menu_button_emoji_key",
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
@@ -245,6 +247,7 @@ const DEFAULT_BOT_PROMO_ACTIVATION_MESSAGE =
 const DEFAULT_BOT_PROMO_WELCOME_TEXT =
   "Добро пожаловать!\n\nОформите **стартовый тариф** по кнопке ниже — после оплаты вы получите доступ к VPN.";
 const DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL = "10 ₽ за 1 месяц";
+const DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL = "Главное меню";
 
 const DEFAULT_BOT_TARIFF_LINE_FIELDS: Required<BotTariffLineFields> = {
   name: true,
@@ -383,6 +386,16 @@ function parseBotPromoTariffButtonLabel(raw: string | undefined): string {
 }
 
 function parseBotPromoTariffButtonEmojiKey(raw: string | undefined): string | null {
+  const s = (raw ?? "").trim();
+  return s || null;
+}
+
+function parseBotPromoMainMenuButtonLabel(raw: string | undefined): string {
+  if (!raw || !raw.trim()) return DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL;
+  return raw;
+}
+
+function parseBotPromoMainMenuButtonEmojiKey(raw: string | undefined): string | null {
   const s = (raw ?? "").trim();
   return s || null;
 }
@@ -569,6 +582,8 @@ export async function getSystemConfig() {
     botPromoWelcomeExtraText: parseBotPromoWelcomeExtraText(map.bot_promo_welcome_extra_text),
     botPromoTariffButtonLabel: parseBotPromoTariffButtonLabel(map.bot_promo_tariff_button_label),
     botPromoTariffButtonEmojiKey: parseBotPromoTariffButtonEmojiKey(map.bot_promo_tariff_button_emoji_key),
+    botPromoMainMenuButtonLabel: parseBotPromoMainMenuButtonLabel(map.bot_promo_main_menu_button_label),
+    botPromoMainMenuButtonEmojiKey: parseBotPromoMainMenuButtonEmojiKey(map.bot_promo_main_menu_button_emoji_key),
     categoryEmojis: parseCategoryEmojis(map.category_emojis),
     subscriptionPageConfig: map.subscription_page_config ?? null,
     defaultAutoRenewEnabled: map.default_auto_renew_enabled === "true" || map.default_auto_renew_enabled === "1",
@@ -986,6 +1001,8 @@ export async function getPublicConfig() {
     botPromoWelcomeExtraText: (full.botPromoWelcomeExtraText ?? "").trim() || null,
     botPromoTariffButtonLabel: full.botPromoTariffButtonLabel ?? DEFAULT_BOT_PROMO_TARIFF_BUTTON_LABEL,
     botPromoTariffButtonEmojiKey: full.botPromoTariffButtonEmojiKey ?? null,
+    botPromoMainMenuButtonLabel: full.botPromoMainMenuButtonLabel ?? DEFAULT_BOT_PROMO_MAIN_MENU_BUTTON_LABEL,
+    botPromoMainMenuButtonEmojiKey: full.botPromoMainMenuButtonEmojiKey ?? null,
     categoryEmojis: full.categoryEmojis,
     defaultReferralPercent: full.defaultReferralPercent ?? 0,
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,

@@ -128,6 +128,8 @@ export async function getPublicConfig(): Promise<{
   botPromoWelcomeExtraText?: string | null;
   botPromoTariffButtonLabel?: string | null;
   botPromoTariffButtonEmojiKey?: string | null;
+  botPromoMainMenuButtonLabel?: string | null;
+  botPromoMainMenuButtonEmojiKey?: string | null;
   activeLanguages?: string[];
   activeCurrencies?: string[];
   defaultReferralPercent?: number;
