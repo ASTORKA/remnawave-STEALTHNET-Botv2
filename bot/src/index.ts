@@ -632,8 +632,9 @@ function buildMainMenuText(opts: {
   menuLineVisibility?: Record<string, boolean> | null;
   menuTextCustomEmojiIds?: Record<string, string> | null;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
+  extraParagraph?: string | null;
 }): { text: string; entities: CustomEmojiEntity[] } {
-  const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis } = opts;
+  const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis, extraParagraph } = opts;
   const name = serviceName.trim() || "Кабинет";
   const balanceStr = formatMoney(balance, currency);
   const lines: string[] = [];
@@ -660,6 +661,15 @@ function buildMainMenuText(opts: {
   if (!user && !url) {
     pushLine("subscriptionPrefix", t(menuTexts, "subscriptionPrefix") + t(menuTexts, "statusInactive"));
     pushLine("trafficPrefix", t(menuTexts, "trafficPrefix") + " 0.00 GB");
+    if (extraParagraph?.trim()) {
+      lines.push("");
+      lineStartKeys.push(null);
+      lineEntitiesByIndex.push([]);
+      const { text: extraText, entities: extraEntities } = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
+      lines.push(extraText);
+      lineStartKeys.push(null);
+      lineEntitiesByIndex.push(extraEntities);
+    }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
   } else {
     const expireAt = user?.expireAt ?? user?.expirationDate ?? user?.expire_at;
@@ -713,6 +723,15 @@ function buildMainMenuText(opts: {
     } else {
       pushLine("trafficPrefix", t(menuTexts, "trafficPrefix") + " 0.00 GB");
     }
+    if (extraParagraph?.trim()) {
+      lines.push("");
+      lineStartKeys.push(null);
+      lineEntitiesByIndex.push([]);
+      const { text: extraText, entities: extraEntities } = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
+      lines.push(extraText);
+      lineStartKeys.push(null);
+      lineEntitiesByIndex.push(extraEntities);
+    }
     if (url) {
       if (shouldShow("linkLabel")) {
         lines.push("");
@@ -731,6 +750,11 @@ function buildMainMenuText(opts: {
         lineStartKeys.push("linkLabel");
         lineEntitiesByIndex.push(blockEntities);
       }
+    }
+    if (url && shouldShow("chooseAction")) {
+      lines.push("");
+      lineStartKeys.push(null);
+      lineEntitiesByIndex.push([]);
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
   }
@@ -828,6 +852,8 @@ async function composeMainMenuPresentation(
   const promoTariffId = tariffsRes.promoTariffId ?? null;
   const vpnUrl = getSubscriptionUrl(subRes.subscription);
   const name = config?.serviceName?.trim() || "Кабинет";
+  const extraRaw = applyPromoWelcomePlaceholders((config?.botPromoWelcomeExtraText ?? "").trim(), client?.telegramUsername);
+  const showPromoWelcomeExtra = extraRaw.length > 0;
   const mainBlock = buildMainMenuText({
     serviceName: name,
     balance: client?.balance ?? 0,
@@ -838,39 +864,24 @@ async function composeMainMenuPresentation(
     menuLineVisibility: config?.botMenuLineVisibility ?? null,
     menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
     botEmojis: config?.botEmojis ?? null,
+    extraParagraph: showPromoWelcomeExtra ? extraRaw : null,
   });
 
   const welcomeRaw = (config?.botPromoWelcomeText ?? "").trim() || DEFAULT_BOT_PROMO_WELCOME_FALLBACK;
   const welcomeWithUser = applyPromoWelcomePlaceholders(welcomeRaw, client?.telegramUsername);
   const welcomeBlock = prepareWelcomeRichText(welcomeWithUser, config?.botEmojis ?? null);
 
-  const extraRaw = (config?.botPromoWelcomeExtraText ?? "").trim();
-  const showPromoWelcomeExtra = extraRaw.length > 0;
-  const extraBlock = showPromoWelcomeExtra
-    ? prepareWelcomeRichText(applyPromoWelcomePlaceholders(extraRaw, client?.telegramUsername), config?.botEmojis ?? null)
-    : null;
-
   let welcomeMerged = welcomeBlock;
-  if (extraBlock) {
-    welcomeMerged = mergeRichTextBlocks(welcomeBlock, extraBlock, "\n\n");
-  }
 
   let text: string;
   let entities: CustomEmojiEntity[];
   const forceClassic = opts?.forceClassic === true;
   if (!promoTariffId) {
-    if (extraBlock) {
-      const merged = mergeRichTextBlocks(extraBlock, mainBlock, "\n\n");
-      text = merged.text;
-      entities = merged.entities;
-    } else {
-      text = mainBlock.text;
-      entities = mainBlock.entities;
-    }
+    text = mainBlock.text;
+    entities = mainBlock.entities;
   } else if (forceClassic) {
-    const merged = mergeRichTextBlocks(welcomeMerged, mainBlock, "\n\n");
-    text = merged.text;
-    entities = merged.entities;
+    text = mainBlock.text;
+    entities = mainBlock.entities;
   } else if (!vpnUrl) {
     text = welcomeMerged.text;
     entities = welcomeMerged.entities;
