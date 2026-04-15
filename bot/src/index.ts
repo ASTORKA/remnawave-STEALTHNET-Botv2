@@ -791,6 +791,47 @@ function mergeRichTextBlocks(
   return { text: a.text + gap + b.text, entities };
 }
 
+/**
+ * Текст для новичка с промотарифом и без ссылки VPN: промо-приветствие → доп. абзац → призыв к действию (как в главном меню).
+ * Совпадает с ожидаемой структурой и для первого экрана с кнопками, и для «Главное меню» (classic).
+ */
+function buildPromoNewbieNoVpnMenuText(opts: {
+  welcomeBlock: { text: string; entities: CustomEmojiEntity[] };
+  extraRaw: string;
+  menuTexts?: Record<string, string> | null;
+  menuLineVisibility?: Record<string, boolean> | null;
+  menuTextCustomEmojiIds?: Record<string, string> | null;
+  botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
+}): { text: string; entities: CustomEmojiEntity[] } {
+  const { welcomeBlock, extraRaw, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis } = opts;
+  const showChoose = menuLineVisibility?.chooseAction !== false;
+  const extraTrim = extraRaw.trim();
+  let acc = welcomeBlock;
+  if (extraTrim) {
+    acc = mergeRichTextBlocks(acc, prepareWelcomeRichText(extraTrim, botEmojis), "\n\n");
+  }
+  if (showChoose) {
+    const chooseLocal = applyCustomEmojiPlaceholders(t(menuTexts, "chooseAction"), botEmojis);
+    const chooseStart = acc.text.length + "\n\n".length;
+    acc = mergeRichTextBlocks(acc, chooseLocal, "\n\n");
+    if (
+      menuTextCustomEmojiIds?.chooseAction &&
+      !chooseLocal.entities.some((e) => e.type === "custom_emoji" && e.offset === 0)
+    ) {
+      const firstLen = firstCharLengthUtf16(chooseLocal.text);
+      if (firstLen > 0) {
+        acc.entities.push({
+          type: "custom_emoji",
+          offset: chooseStart,
+          length: firstLen,
+          custom_emoji_id: menuTextCustomEmojiIds.chooseAction,
+        });
+      }
+    }
+  }
+  return acc;
+}
+
 /** Плейсхолдеры приветствия промотарифа (не эмодзи-ключи): {{username}} — ник из Telegram (@…). Регистр в теге не важен. */
 function applyPromoWelcomePlaceholders(raw: string, telegramUsername?: string | null): string {
   const u = (telegramUsername ?? "").trim();
@@ -871,22 +912,25 @@ async function composeMainMenuPresentation(
   const welcomeWithUser = applyPromoWelcomePlaceholders(welcomeRaw, client?.telegramUsername);
   const welcomeBlock = prepareWelcomeRichText(welcomeWithUser, config?.botEmojis ?? null);
 
-  let welcomeMerged = welcomeBlock;
-
   let text: string;
   let entities: CustomEmojiEntity[];
   const forceClassic = opts?.forceClassic === true;
   if (!promoTariffId) {
     text = mainBlock.text;
     entities = mainBlock.entities;
-  } else if (forceClassic) {
-    text = mainBlock.text;
-    entities = mainBlock.entities;
   } else if (!vpnUrl) {
-    text = welcomeMerged.text;
-    entities = welcomeMerged.entities;
+    const newbie = buildPromoNewbieNoVpnMenuText({
+      welcomeBlock,
+      extraRaw: showPromoWelcomeExtra ? extraRaw : "",
+      menuTexts: config?.botMenuTexts ?? config?.resolvedBotMenuTexts ?? null,
+      menuLineVisibility: config?.botMenuLineVisibility ?? null,
+      menuTextCustomEmojiIds: config?.menuTextCustomEmojiIds ?? null,
+      botEmojis: config?.botEmojis ?? null,
+    });
+    text = newbie.text;
+    entities = newbie.entities;
   } else {
-    const merged = mergeRichTextBlocks(welcomeMerged, mainBlock, "\n\n");
+    const merged = mergeRichTextBlocks(welcomeBlock, mainBlock, "\n\n");
     text = merged.text;
     entities = merged.entities;
   }
