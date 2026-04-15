@@ -15,7 +15,7 @@ import { getSystemConfig } from "../client/client.service.js";
 import { sendEmail } from "../mail/mail.service.js";
 import { proxyFetch } from "../proxy-util/proxy-fetch.js";
 import { getProxyUrl } from "../proxy-util/get-proxy-url.js";
-import { isRemnaConfigured, remnaGetUserHwidDevices } from "../remna/remna.client.js";
+import { isRemnaConfigured, remnaGetUser, remnaGetUserHwidDevices } from "../remna/remna.client.js";
 
 /** Задержка между Telegram-сообщениями (мс). Telegram rate limit ~30 msg/sec, берём с запасом. */
 const TELEGRAM_DELAY_MS = 50;
@@ -53,6 +53,70 @@ function isRecurring(trigger: string): boolean {
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function parseRemnaExpireAt(data: unknown): Date | null {
+  if (!data || typeof data !== "object") return null;
+  const o = data as Record<string, unknown>;
+  const resp = (o.response ?? o.data ?? o) as Record<string, unknown>;
+  const raw = resp?.expireAt;
+  if (typeof raw !== "string") return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Строит карту clientId -> expireAt:
+ * 1) приоритетно из Remna (фактический срок подписки),
+ * 2) фолбэк из последнего PAID-платежа + durationDays (legacy).
+ */
+async function getClientExpireMap(clientIds: string[]): Promise<Map<string, Date>> {
+  const result = new Map<string, Date>();
+  if (clientIds.length === 0) return result;
+
+  const uniqueClientIds = Array.from(new Set(clientIds));
+  const clients = await prisma.client.findMany({
+    where: { id: { in: uniqueClientIds } },
+    select: { id: true, remnawaveUuid: true },
+  });
+
+  // 1) Приоритетно пытаемся взять фактический expireAt из Remna
+  if (isRemnaConfigured()) {
+    const remnaClients = clients.filter((c) => Boolean(c.remnawaveUuid));
+    const batchSize = 10;
+    for (let i = 0; i < remnaClients.length; i += batchSize) {
+      const batch = remnaClients.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (c) => {
+        if (!c.remnawaveUuid) return;
+        const remna = await remnaGetUser(c.remnawaveUuid);
+        if (remna.error) return;
+        const expireAt = parseRemnaExpireAt(remna.data);
+        if (expireAt) result.set(c.id, expireAt);
+      }));
+    }
+  }
+
+  // 2) Фолбэк: только для клиентов, которых не удалось прочитать из Remna
+  const missingIds = uniqueClientIds.filter((id) => !result.has(id));
+  if (missingIds.length > 0) {
+    const paidWithTariff = await prisma.payment.findMany({
+      where: {
+        clientId: { in: missingIds },
+        status: "PAID",
+        tariffId: { not: null },
+        paidAt: { not: null },
+      },
+      select: { clientId: true, paidAt: true, tariff: { select: { durationDays: true } } },
+      orderBy: { paidAt: "desc" },
+    });
+    for (const p of paidWithTariff) {
+      if (p.clientId && p.paidAt && p.tariff?.durationDays != null && !result.has(p.clientId)) {
+        result.set(p.clientId, new Date(p.paidAt.getTime() + p.tariff.durationDays * 24 * 60 * 60 * 1000));
+      }
+    }
+  }
+
+  return result;
 }
 
 // ─── Telegram send ────────────────────────────────────────────────
@@ -283,19 +347,11 @@ export async function getEligibleClientIds(ruleId: string): Promise<string[]> {
     // ── subscription_expired ────────────────────────────────────
     // Подписка истекла (N дней назад или ранее). Recurring.
     case "subscription_expired": {
-      const paidWithTariff = await prisma.payment.findMany({
-        where: { status: "PAID", tariffId: { not: null }, paidAt: { not: null } },
-        select: { clientId: true, paidAt: true, tariff: { select: { durationDays: true } } },
-        orderBy: { paidAt: "desc" },
+      const activeClients = await prisma.client.findMany({
+        where: { isBlocked: false },
+        select: { id: true },
       });
-      // Для каждого клиента берём последний платёж → считаем expiry
-      const clientLastExpire = new Map<string, Date>();
-      for (const p of paidWithTariff) {
-        if (p.clientId && p.paidAt && p.tariff?.durationDays != null && !clientLastExpire.has(p.clientId)) {
-          const expireAt = new Date(p.paidAt.getTime() + p.tariff.durationDays * dayMs);
-          clientLastExpire.set(p.clientId, expireAt);
-        }
-      }
+      const clientLastExpire = await getClientExpireMap(activeClients.map((c) => c.id));
       const expiredIds: string[] = [];
       const expiredSince = rule.delayDays > 0
         ? new Date(now.getTime() - rule.delayDays * dayMs)
@@ -320,18 +376,11 @@ export async function getEligibleClientIds(ruleId: string): Promise<string[]> {
       const daysLeft = Math.max(1, rule.delayDays);
       const windowStart = new Date(now.getTime() + (daysLeft - 1) * dayMs);
       const windowEnd = new Date(now.getTime() + daysLeft * dayMs);
-      const paidWithTariff = await prisma.payment.findMany({
-        where: { status: "PAID", tariffId: { not: null }, paidAt: { not: null } },
-        select: { clientId: true, paidAt: true, tariff: { select: { durationDays: true } } },
-        orderBy: { paidAt: "desc" },
+      const activeClients = await prisma.client.findMany({
+        where: { isBlocked: false },
+        select: { id: true },
       });
-      const clientLastExpire = new Map<string, Date>();
-      for (const p of paidWithTariff) {
-        if (p.clientId && p.paidAt && p.tariff?.durationDays != null && !clientLastExpire.has(p.clientId)) {
-          const expireAt = new Date(p.paidAt.getTime() + p.tariff.durationDays * dayMs);
-          clientLastExpire.set(p.clientId, expireAt);
-        }
-      }
+      const clientLastExpire = await getClientExpireMap(activeClients.map((c) => c.id));
       const endingSoonIds: string[] = [];
       for (const [clientId, expireAt] of clientLastExpire) {
         if (expireAt >= windowStart && expireAt < windowEnd) {
