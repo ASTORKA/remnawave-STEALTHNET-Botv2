@@ -846,7 +846,7 @@ async function composeMainMenuPresentation(
 
   const extraRaw = (config?.botPromoWelcomeExtraText ?? "").trim();
   const showPromoWelcomeExtra =
-    Boolean(promoTariffId) && extraRaw.length > 0 && !client?.promoGroupDeepLinkUsed;
+    extraRaw.length > 0 && !client?.promoGroupDeepLinkUsed;
 
   let welcomeMerged = welcomeBlock;
   if (showPromoWelcomeExtra) {
