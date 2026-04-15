@@ -83,6 +83,7 @@ export function AutoBroadcastPage() {
     name: "",
     triggerType: "after_registration",
     delayDays: 1,
+    instantOnExpire: false,
     channel: "telegram",
     subject: "",
     message: "",
@@ -157,6 +158,7 @@ export function AutoBroadcastPage() {
       name: "",
       triggerType: "has_link_never_connected",
       delayDays: 1,
+      instantOnExpire: false,
       channel: "telegram",
       subject: "",
       message: "",
@@ -177,6 +179,7 @@ export function AutoBroadcastPage() {
       name: rule.name,
       triggerType: rule.triggerType,
       delayDays: rule.delayDays,
+      instantOnExpire: rule.instantOnExpire ?? false,
       channel: rule.channel,
       subject: rule.subject ?? "",
       message: rule.message,
@@ -367,6 +370,11 @@ export function AutoBroadcastPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Отправлено: {rule.sentCount ?? 0} · Сейчас подходят: {eligibleCounts[rule.id] ?? "—"}
                     </p>
+                    {rule.triggerType === "subscription_expired" && rule.instantOnExpire && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Мгновенная отправка: включена (проверка каждую минуту)
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -429,6 +437,7 @@ export function AutoBroadcastPage() {
                         t === "subscription_ending_soon"
                           ? Math.max(1, Math.min(30, f.delayDays))
                           : f.delayDays,
+                      instantOnExpire: t === "subscription_expired" ? (f.instantOnExpire ?? false) : false,
                     }));
                   }}
                   >
@@ -478,6 +487,23 @@ export function AutoBroadcastPage() {
                   </select>
                 </div>
               </div>
+              {form.triggerType === "subscription_expired" && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.instantOnExpire === true}
+                      onChange={(e) => setForm((f) => ({ ...f, instantOnExpire: e.target.checked }))}
+                      className="rounded border-input"
+                    />
+                    Отправлять сразу при истечении подписки
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Если включено, правило дополнительно запускается каждую минуту и отправляет сообщение сразу
+                    после истечения подписки пользователя.
+                  </p>
+                </div>
+              )}
               {(form.channel === "email" || form.channel === "both") && (
                 <div className="space-y-2">
                   <Label>Тема письма (для email)</Label>

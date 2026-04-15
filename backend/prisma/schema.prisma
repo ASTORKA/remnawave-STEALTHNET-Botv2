@@ -370,6 +370,7 @@ model AutoBroadcastRule {
   name        String   @map("name") // Название правила для админки
   triggerType String   @map("trigger_type") // after_registration | inactivity | no_payment | trial_not_connected | has_link_never_connected | trial_used_never_paid | no_traffic | subscription_expired
   delayDays   Int      @map("delay_days") // Дней после триггера (для after_registration / no_payment) или без платежа (inactivity)
+  instantOnExpire Boolean @default(false) @map("instant_on_expire") // Для subscription_expired: отправлять сразу после истечения
   channel     String   @map("channel") // telegram | email | both
   subject     String?  @map("subject") // Тема письма (для email)
   message     String   @db.Text // Текст (до 4096)

@@ -1329,6 +1329,7 @@ export interface AutoBroadcastRule {
   name: string;
   triggerType: AutoBroadcastTriggerType;
   delayDays: number;
+  instantOnExpire?: boolean;
   channel: "telegram" | "email" | "both";
   subject: string | null;
   message: string;
@@ -1342,6 +1343,7 @@ export interface AutoBroadcastRulePayload {
   name: string;
   triggerType: AutoBroadcastTriggerType;
   delayDays: number;
+  instantOnExpire?: boolean;
   channel: "telegram" | "email" | "both";
   subject?: string | null;
   message: string;

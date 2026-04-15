@@ -582,3 +582,34 @@ export async function runAllRules(): Promise<RunRuleResult[]> {
 
   return results;
 }
+
+/**
+ * Запустить только правила "subscription_expired" в режиме instantOnExpire.
+ * Используется отдельным частым воркером (например, раз в минуту), чтобы не ждать суточный cron.
+ */
+export async function runInstantExpiredRules(): Promise<RunRuleResult[]> {
+  const rules = await prisma.autoBroadcastRule.findMany({
+    where: { enabled: true, triggerType: "subscription_expired", instantOnExpire: true } as Record<string, unknown>,
+    select: { id: true, name: true },
+  });
+
+  if (rules.length === 0) return [];
+
+  const results: RunRuleResult[] = [];
+  for (const r of rules) {
+    try {
+      const res = await runRule(r.id);
+      results.push(res);
+    } catch (err) {
+      console.error(`${LOG_PREFIX} Instant rule "${r.name}" (${r.id}) crashed:`, err);
+      results.push({
+        ruleId: r.id,
+        ruleName: r.name,
+        sent: 0,
+        skipped: 0,
+        errors: [err instanceof Error ? err.message : String(err)],
+      });
+    }
+  }
+  return results;
+}

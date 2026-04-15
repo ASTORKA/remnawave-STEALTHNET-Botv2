@@ -6,12 +6,13 @@
 
 import cron, { type ScheduledTask } from "node-cron";
 import { getSystemConfig } from "../client/client.service.js";
-import { runAllRules } from "./auto-broadcast.service.js";
+import { runAllRules, runInstantExpiredRules } from "./auto-broadcast.service.js";
 import { env } from "../../config/env.js";
 
 const DEFAULT_CRON = "0 9 * * *"; // 9:00 каждый день (minute hour day month weekday)
 
 let currentTask: ScheduledTask | null = null;
+let instantExpireTask: ScheduledTask | null = null;
 
 function startWithExpression(cronExpression: string): ScheduledTask | null {
   const expr = cronExpression.trim();
@@ -60,6 +61,19 @@ export async function startAutoBroadcastScheduler(cronExpression?: string): Prom
     expr = config.autoBroadcastCron ?? env.AUTO_BROADCAST_CRON ?? DEFAULT_CRON;
   }
   currentTask = startWithExpression(expr);
+  // Отдельный частый воркер для правил "subscription_expired" с instantOnExpire=true
+  instantExpireTask = cron.schedule("*/1 * * * *", async () => {
+    try {
+      const results = await runInstantExpiredRules();
+      if (results.length === 0) return;
+      const total = results.reduce((s, r) => s + r.sent, 0);
+      const totalErrors = results.reduce((s, r) => s + r.errors.length, 0);
+      console.log(`[auto-broadcast] Instant-expire run: ${results.length} rule(s), ${total} sent, ${totalErrors} error(s)`);
+    } catch (e) {
+      console.error("[auto-broadcast] Instant-expire run failed:", e);
+    }
+  });
+  console.log("[auto-broadcast] Instant-expire worker started: every minute");
   return currentTask;
 }
 
@@ -69,6 +83,10 @@ export async function restartAutoBroadcastScheduler(): Promise<void> {
     currentTask.stop();
     currentTask = null;
   }
+  if (instantExpireTask) {
+    instantExpireTask.stop();
+    instantExpireTask = null;
+  }
   await startAutoBroadcastScheduler();
 }
 
@@ -77,5 +95,9 @@ export function stopAutoBroadcastScheduler(): void {
   if (currentTask) {
     currentTask.stop();
     currentTask = null;
+  }
+  if (instantExpireTask) {
+    instantExpireTask.stop();
+    instantExpireTask = null;
   }
 }
