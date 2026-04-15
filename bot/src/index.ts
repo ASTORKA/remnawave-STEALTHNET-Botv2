@@ -845,8 +845,7 @@ async function composeMainMenuPresentation(
   const welcomeBlock = prepareWelcomeRichText(welcomeWithUser, config?.botEmojis ?? null);
 
   const extraRaw = (config?.botPromoWelcomeExtraText ?? "").trim();
-  const showPromoWelcomeExtra =
-    extraRaw.length > 0 && !client?.promoGroupDeepLinkUsed;
+  const showPromoWelcomeExtra = extraRaw.length > 0;
 
   let welcomeMerged = welcomeBlock;
   if (showPromoWelcomeExtra) {
