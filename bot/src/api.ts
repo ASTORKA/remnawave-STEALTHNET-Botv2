@@ -743,3 +743,25 @@ export async function reportBotTelegramApiEntityError(payload: {
     /* ignore */
   }
 }
+
+/** Уведомление: в исходящем сообщении использована заглушка 🙂 для премиум-эмодзи; пользователю сообщение уже уходит. */
+export async function reportBotPremiumEmojiPlaceholder(payload: {
+  context: string;
+  chatId?: number;
+  userId?: number;
+}): Promise<void> {
+  const botToken = process.env.BOT_TOKEN || "";
+  if (!API_URL || !botToken) return;
+  try {
+    await fetch(`${API_URL}/api/public/bot-report-premium-emoji-placeholder`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Token": botToken,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    /* ignore */
+  }
+}

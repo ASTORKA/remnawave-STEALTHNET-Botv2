@@ -474,10 +474,24 @@ function renderPaymentText(
     .split("{{ACTION}}").join(vars.action);
 }
 
+type CustomEmojiEntity =
+  | { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string }
+  | { type: "bold"; offset: number; length: number }
+  | { type: "blockquote"; offset: number; length: number }
+  | { type: "url"; offset: number; length: number }
+  | { type: "text_link"; offset: number; length: number; url: string };
+
+/** Текст + entities; usedPremiumEmojiPlaceholder — в текст подставлен 🙂 как заглушка под custom_emoji (есть tgEmojiId, нет unicode). */
+type RichCaption = {
+  text: string;
+  entities: CustomEmojiEntity[];
+  usedPremiumEmojiPlaceholder: boolean;
+};
+
 function buildPaymentMessage(
   config: Awaited<ReturnType<typeof api.getPublicConfig>> | null | undefined,
   vars: { name: string; price: string; amount: string; currency: string; action: string }
-): { text: string; entities: CustomEmojiEntity[] } {
+): RichCaption {
   const template = (config?.botPaymentText ?? "").trim() || DEFAULT_PAYMENT_TEXT;
   const base = renderPaymentText(template, vars);
   return applyCustomEmojiPlaceholders(base, config?.botEmojis);
@@ -486,13 +500,6 @@ function buildPaymentMessage(
 function t(texts: Record<string, string> | null | undefined, key: string): string {
   return (texts?.[key] ?? DEFAULT_MENU_TEXTS[key]) || "";
 }
-
-type CustomEmojiEntity =
-  | { type: "custom_emoji"; offset: number; length: number; custom_emoji_id: string }
-  | { type: "bold"; offset: number; length: number }
-  | { type: "blockquote"; offset: number; length: number }
-  | { type: "url"; offset: number; length: number }
-  | { type: "text_link"; offset: number; length: number; url: string };
 
 /** Длина первого символа в UTF-16 (для entity) */
 function firstCharLengthUtf16(s: string): number {
@@ -543,7 +550,7 @@ function titleWithEmoji(
   emojiKey: string,
   rest: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
-): { text: string; entities: CustomEmojiEntity[] } {
+): RichCaption {
   const entry = botEmojis?.[emojiKey];
   const unicode = entry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[emojiKey] || "•";
   const space = rest.startsWith("\n") ? "" : " ";
@@ -553,15 +560,16 @@ function titleWithEmoji(
     const len = firstCharLengthUtf16(unicode);
     if (len > 0) entities.push({ type: "custom_emoji", offset: 0, length: len, custom_emoji_id: entry.tgEmojiId });
   }
-  return { text, entities };
+  return { text, entities, usedPremiumEmojiPlaceholder: false };
 }
 
 function applyCustomEmojiPlaceholders(
   text: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
-): { text: string; entities: CustomEmojiEntity[] } {
-  if (!text) return { text, entities: [] };
+): RichCaption {
+  if (!text) return { text, entities: [], usedPremiumEmojiPlaceholder: false };
   const entities: CustomEmojiEntity[] = [];
+  let usedPremiumEmojiPlaceholder = false;
   const re = /\{\{([A-Z0-9_]+)\}\}/g;
   let out = "";
   let lastIdx = 0;
@@ -571,7 +579,9 @@ function applyCustomEmojiPlaceholders(
     out += text.slice(lastIdx, match.index);
     const entry = botEmojis?.[key];
     const fallbackUnicode = DEFAULT_EMOJI_UNICODE[key];
+    const hadUnicode = Boolean(entry?.unicode?.trim());
     const unicode = entry?.unicode?.trim() || (entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || fallbackUnicode || "";
+    if (entry?.tgEmojiId && !hadUnicode && unicode === DEFAULT_CUSTOM_EMOJI_CHAR) usedPremiumEmojiPlaceholder = true;
     if (unicode) {
       const offset = out.length;
       out += unicode;
@@ -584,11 +594,15 @@ function applyCustomEmojiPlaceholders(
     lastIdx = match.index + match[0].length;
   }
   out += text.slice(lastIdx);
-  return stripBoldTags(out, entities);
+  return stripBoldTags(out, entities, usedPremiumEmojiPlaceholder);
 }
 
-function stripBoldTags(text: string, baseEntities: CustomEmojiEntity[] = []): { text: string; entities: CustomEmojiEntity[] } {
-  if (!text.includes("<b>") && !text.includes("</b>")) return { text, entities: baseEntities };
+function stripBoldTags(
+  text: string,
+  baseEntities: CustomEmojiEntity[] = [],
+  usedPremiumEmojiPlaceholder = false
+): RichCaption {
+  if (!text.includes("<b>") && !text.includes("</b>")) return { text, entities: baseEntities, usedPremiumEmojiPlaceholder };
 
   const offsetMap: number[] = new Array(text.length + 1);
   const out: string[] = [];
@@ -632,19 +646,19 @@ function stripBoldTags(text: string, baseEntities: CustomEmojiEntity[] = []): { 
   for (const b of boldEntities) {
     if (b.length > 0) remapped.push(b);
   }
-  return { text: nextText, entities: remapped };
+  return { text: nextText, entities: remapped, usedPremiumEmojiPlaceholder };
 }
 
 function titleWithEmojiAndCustomEmojis(
   emojiKey: string,
   rest: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
-): { text: string; entities: CustomEmojiEntity[] } {
+): RichCaption {
   const entry = botEmojis?.[emojiKey];
   const unicode = entry?.unicode?.trim() || DEFAULT_EMOJI_UNICODE[emojiKey] || "•";
   const space = rest.startsWith("\n") ? "" : " ";
   const leading = unicode + space;
-  const { text: restText, entities: restEntities } = applyCustomEmojiPlaceholders(rest, botEmojis);
+  const { text: restText, entities: restEntities, usedPremiumEmojiPlaceholder: restPh } = applyCustomEmojiPlaceholders(rest, botEmojis);
   const entities: CustomEmojiEntity[] = [];
   if (entry?.tgEmojiId) {
     const len = firstCharLengthUtf16(unicode);
@@ -653,14 +667,14 @@ function titleWithEmojiAndCustomEmojis(
   for (const e of restEntities) {
     entities.push({ ...e, offset: e.offset + leading.length });
   }
-  return { text: leading + restText, entities };
+  return { text: leading + restText, entities, usedPremiumEmojiPlaceholder: restPh };
 }
 
 function titleWithOptionalEmoji(
   emojiKey: string | null | undefined,
   rest: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
-): { text: string; entities: CustomEmojiEntity[] } {
+): RichCaption {
   if (!emojiKey) return applyCustomEmojiPlaceholders(rest, botEmojis);
   return titleWithEmojiAndCustomEmojis(emojiKey, rest, botEmojis);
 }
@@ -678,17 +692,19 @@ function buildMainMenuText(opts: {
   menuTextCustomEmojiIds?: Record<string, string> | null;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
   extraParagraph?: string | null;
-}): { text: string; entities: CustomEmojiEntity[] } {
+}): RichCaption {
   const { serviceName, balance, currency, subscription, tariffDisplayName, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis, extraParagraph } = opts;
   const name = serviceName.trim() || "Кабинет";
   const balanceStr = formatMoney(balance, currency);
   const lines: string[] = [];
   const lineStartKeys: (string | null)[] = [];
   const lineEntitiesByIndex: CustomEmojiEntity[][] = [];
+  let usedPremiumEmojiPlaceholder = false;
   const shouldShow = (key: string) => menuLineVisibility?.[key] !== false;
   const pushLine = (key: string, text: string) => {
     if (!shouldShow(key)) return;
-    const { text: processed, entities } = applyCustomEmojiPlaceholders(text, botEmojis);
+    const { text: processed, entities, usedPremiumEmojiPlaceholder: ph } = applyCustomEmojiPlaceholders(text, botEmojis);
+    if (ph) usedPremiumEmojiPlaceholder = true;
     lines.push(processed);
     lineStartKeys.push(key);
     lineEntitiesByIndex.push(entities);
@@ -710,10 +726,11 @@ function buildMainMenuText(opts: {
       lines.push("");
       lineStartKeys.push(null);
       lineEntitiesByIndex.push([]);
-      const { text: extraText, entities: extraEntities } = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
-      lines.push(extraText);
+      const extraPh = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
+      if (extraPh.usedPremiumEmojiPlaceholder) usedPremiumEmojiPlaceholder = true;
+      lines.push(extraPh.text);
       lineStartKeys.push(null);
-      lineEntitiesByIndex.push(extraEntities);
+      lineEntitiesByIndex.push(extraPh.entities);
     }
     pushLine("chooseAction", t(menuTexts, "chooseAction"));
   } else {
@@ -772,17 +789,21 @@ function buildMainMenuText(opts: {
       lines.push("");
       lineStartKeys.push(null);
       lineEntitiesByIndex.push([]);
-      const { text: extraText, entities: extraEntities } = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
-      lines.push(extraText);
+      const extraPh2 = applyCustomEmojiPlaceholders(extraParagraph.trim(), botEmojis);
+      if (extraPh2.usedPremiumEmojiPlaceholder) usedPremiumEmojiPlaceholder = true;
+      lines.push(extraPh2.text);
       lineStartKeys.push(null);
-      lineEntitiesByIndex.push(extraEntities);
+      lineEntitiesByIndex.push(extraPh2.entities);
     }
     if (url) {
       if (shouldShow("linkLabel")) {
         lines.push("");
         lineStartKeys.push(null);
         lineEntitiesByIndex.push([]);
-        const { text: label, entities: labelEntities } = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        const labelPh = applyCustomEmojiPlaceholders(t(menuTexts, "linkLabel"), botEmojis);
+        if (labelPh.usedPremiumEmojiPlaceholder) usedPremiumEmojiPlaceholder = true;
+        const label = labelPh.text;
+        const labelEntities = labelPh.entities;
         const block = `${label}\n${url}`;
         const urlOffset = label.length + 1;
         /** Цитата Telegram (рамка слева): подпись + перенос + ссылка — одним блоком blockquote. */
@@ -820,20 +841,20 @@ function buildMainMenuText(opts: {
     }
     offset += lines[i]!.length + 1;
   }
-  return { text, entities };
+  return { text, entities, usedPremiumEmojiPlaceholder };
 }
 
-function mergeRichTextBlocks(
-  a: { text: string; entities: CustomEmojiEntity[] },
-  b: { text: string; entities: CustomEmojiEntity[] },
-  gap: string
-): { text: string; entities: CustomEmojiEntity[] } {
+function mergeRichTextBlocks(a: RichCaption, b: RichCaption, gap: string): RichCaption {
   const shift = a.text.length + gap.length;
   const entities: CustomEmojiEntity[] = [
     ...a.entities,
     ...b.entities.map((e) => ({ ...e, offset: e.offset + shift })),
   ];
-  return { text: a.text + gap + b.text, entities };
+  return {
+    text: a.text + gap + b.text,
+    entities,
+    usedPremiumEmojiPlaceholder: Boolean(a.usedPremiumEmojiPlaceholder || b.usedPremiumEmojiPlaceholder),
+  };
 }
 
 /**
@@ -841,13 +862,13 @@ function mergeRichTextBlocks(
  * Совпадает с ожидаемой структурой и для первого экрана с кнопками, и для «Главное меню» (classic).
  */
 function buildPromoNewbieNoVpnMenuText(opts: {
-  welcomeBlock: { text: string; entities: CustomEmojiEntity[] };
+  welcomeBlock: RichCaption;
   extraRaw: string;
   menuTexts?: Record<string, string> | null;
   menuLineVisibility?: Record<string, boolean> | null;
   menuTextCustomEmojiIds?: Record<string, string> | null;
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null;
-}): { text: string; entities: CustomEmojiEntity[] } {
+}): RichCaption {
   const { welcomeBlock, extraRaw, menuTexts, menuLineVisibility, menuTextCustomEmojiIds, botEmojis } = opts;
   const showChoose = menuLineVisibility?.chooseAction !== false;
   const extraTrim = extraRaw.trim();
@@ -888,7 +909,7 @@ function applyPromoWelcomePlaceholders(raw: string, telegramUsername?: string | 
 function prepareWelcomeRichText(
   raw: string,
   botEmojis?: Record<string, { unicode?: string; tgEmojiId?: string }> | null
-): { text: string; entities: CustomEmojiEntity[] } {
+): RichCaption {
   const withBold = raw.replace(/\*\*([\s\S]*?)\*\*/g, (_m, inner: string) => {
     const safe = String(inner).replace(/</g, "").replace(/>/g, "");
     return `<b>${safe}</b>`;
@@ -926,7 +947,7 @@ async function composeMainMenuPresentation(
   config: NonNullable<Awaited<ReturnType<typeof api.getPublicConfig>>>,
   telegramUserId: number,
   opts?: { forceClassic?: boolean }
-): Promise<{ text: string; entities: CustomEmojiEntity[]; markup: InlineMarkup }> {
+): Promise<{ text: string; entities: CustomEmojiEntity[]; markup: InlineMarkup; usedPremiumEmojiPlaceholder: boolean }> {
   const [client, subRes, tariffsRes, proxyRes, singboxRes] = await Promise.all([
     api.getMe(token),
     api.getSubscription(token).catch(() => ({ subscription: null })),
@@ -959,10 +980,12 @@ async function composeMainMenuPresentation(
 
   let text: string;
   let entities: CustomEmojiEntity[];
+  let usedPremiumEmojiPlaceholder = false;
   const forceClassic = opts?.forceClassic === true;
   if (!promoTariffId) {
     text = mainBlock.text;
     entities = mainBlock.entities;
+    usedPremiumEmojiPlaceholder = mainBlock.usedPremiumEmojiPlaceholder;
   } else if (!vpnUrl) {
     const newbie = buildPromoNewbieNoVpnMenuText({
       welcomeBlock,
@@ -974,10 +997,12 @@ async function composeMainMenuPresentation(
     });
     text = newbie.text;
     entities = newbie.entities;
+    usedPremiumEmojiPlaceholder = newbie.usedPremiumEmojiPlaceholder;
   } else {
     const merged = mergeRichTextBlocks(welcomeBlock, mainBlock, "\n\n");
     text = merged.text;
     entities = merged.entities;
+    usedPremiumEmojiPlaceholder = merged.usedPremiumEmojiPlaceholder;
   }
 
   const showTrial = Boolean(config?.trialEnabled && !client?.trialUsed);
@@ -1028,10 +1053,32 @@ async function composeMainMenuPresentation(
     markup.inline_keyboard.push([{ text: "⚙️ Панель админа", callback_data: "admin:menu" }]);
   }
 
-  return { text, entities, markup };
+  return { text, entities, markup, usedPremiumEmojiPlaceholder };
 }
 
 const TELEGRAM_CAPTION_MAX = 1024;
+
+let lastPremiumPlaceholderNotifyAt = 0;
+const PREMIUM_PLACEHOLDER_NOTIFY_COOLDOWN_MS = 90_000;
+
+/** После успешной отправки пользователю — уведомление в группу (топик «Ошибки»), не чаще раз в 90 с. */
+async function notifyPremiumEmojiPlaceholderIfNeeded(
+  ctx: { chat?: { id?: number }; from?: { id?: number } },
+  used: boolean | undefined,
+  context: string
+): Promise<void> {
+  if (!used) return;
+  const now = Date.now();
+  if (now - lastPremiumPlaceholderNotifyAt < PREMIUM_PLACEHOLDER_NOTIFY_COOLDOWN_MS) return;
+  lastPremiumPlaceholderNotifyAt = now;
+  const chatId = ctx.chat?.id;
+  const userId = ctx.from?.id;
+  void api.reportBotPremiumEmojiPlaceholder({
+    context: context.slice(0, 300),
+    chatId: typeof chatId === "number" ? chatId : undefined,
+    userId: typeof userId === "number" ? userId : undefined,
+  });
+}
 
 /** Логотип из настроек: data URL или URL → источник для sendPhoto/sendAnimation и признак GIF */
 function logoToMediaSource(logo: string | null | undefined): { source: InputFile | string; isGif: boolean } | null {
@@ -1065,11 +1112,19 @@ function logoToMediaSource(logo: string | null | undefined): { source: InputFile
 }
 
 /** Редактировать сообщение: текст и клавиатура (если с фото/анимацией — caption, иначе text) */
-async function editMessageContent(ctx: {
-  editMessageCaption: (opts: { caption: string; caption_entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
-  editMessageText: (text: string, opts?: { entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
-  callbackQuery?: { message?: { photo?: unknown[]; animation?: unknown } };
-}, text: string, reply_markup: InlineMarkup, entities?: CustomEmojiEntity[]): Promise<unknown> {
+async function editMessageContent(
+  ctx: {
+    editMessageCaption: (opts: { caption: string; caption_entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+    editMessageText: (text: string, opts?: { entities?: CustomEmojiEntity[]; reply_markup?: InlineMarkup }) => Promise<unknown>;
+    callbackQuery?: { message?: { photo?: unknown[]; animation?: unknown } };
+    chat?: { id?: number };
+    from?: { id?: number };
+  },
+  text: string,
+  reply_markup: InlineMarkup,
+  entities?: CustomEmojiEntity[],
+  monitor?: { usedPremiumEmojiPlaceholder?: boolean; context?: string }
+): Promise<unknown> {
   const msg = ctx.callbackQuery?.message;
   const hasPhoto = msg && typeof msg === "object" && "photo" in msg && Array.isArray((msg as { photo: unknown[] }).photo) && (msg as { photo: unknown[] }).photo.length > 0;
   const hasAnimation = msg && typeof msg === "object" && "animation" in msg && (msg as { animation: unknown }).animation != null;
@@ -1077,17 +1132,21 @@ async function editMessageContent(ctx: {
   const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
   const truncatedEntities = text.length > TELEGRAM_CAPTION_MAX && entities ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
   try {
+    let out: unknown;
     if (hasMediaWithCaption) {
-      return await ctx.editMessageCaption({
+      out = await ctx.editMessageCaption({
         caption,
         caption_entities: truncatedEntities?.length ? truncatedEntities : undefined,
         reply_markup,
       });
+    } else {
+      out = await ctx.editMessageText(text, {
+        entities: entities?.length ? entities : undefined,
+        reply_markup,
+      });
     }
-    return await ctx.editMessageText(text, {
-      entities: entities?.length ? entities : undefined,
-      reply_markup,
-    });
+    await notifyPremiumEmojiPlaceholderIfNeeded(ctx, monitor?.usedPremiumEmojiPlaceholder, monitor?.context ?? "callback_edit");
+    return out;
   } catch (err) {
     const msgText = err instanceof Error ? err.message : String(err);
     // Нормальная ситуация в Telegram: повторный клик по той же кнопке.
@@ -1235,13 +1294,17 @@ bot.command("start", async (ctx) => {
         const defaultPromoActivated =
           "✅ Промокод активирован, подписка подключена!\nДля подключения к VPN перейдите в главное меню по кнопке ниже";
         const promoTpl = (config?.botPromoActivationMessage ?? "").trim() || defaultPromoActivated;
-        const { text: promoText, entities: promoEntities } = applyCustomEmojiPlaceholders(promoTpl, config?.botEmojis);
+        const { text: promoText, entities: promoEntities, usedPremiumEmojiPlaceholder: promoPh } = applyCustomEmojiPlaceholders(
+          promoTpl,
+          config?.botEmojis
+        );
         await ctx.reply(promoText, {
           entities: promoEntities.length ? promoEntities : undefined,
           reply_markup: {
             inline_keyboard: [[{ text: "Главное меню", callback_data: "menu:main" }]],
           },
         });
+        await notifyPremiumEmojiPlaceholderIfNeeded(ctx, promoPh, "promo_activate");
         return;
       } catch (promoErr: unknown) {
         const promoMsg = promoErr instanceof Error ? promoErr.message : "Ошибка активации промокода";
@@ -1253,7 +1316,7 @@ bot.command("start", async (ctx) => {
     // Проверка подписки на канал
     if (await enforceSubscription(ctx, config)) return;
 
-    const { text, entities, markup } = await composeMainMenuPresentation(auth.token, config, from.id);
+    const { text, entities, markup, usedPremiumEmojiPlaceholder } = await composeMainMenuPresentation(auth.token, config, from.id);
 
     const caption = text.length > TELEGRAM_CAPTION_MAX ? text.slice(0, TELEGRAM_CAPTION_MAX - 3) + "..." : text;
     const captionEntities = text.length > TELEGRAM_CAPTION_MAX && entities.length ? entities.filter((e) => e.offset + e.length <= TELEGRAM_CAPTION_MAX - 3) : entities;
@@ -1266,8 +1329,10 @@ bot.command("start", async (ctx) => {
       } else {
         await ctx.replyWithPhoto(media.source, opts);
       }
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, usedPremiumEmojiPlaceholder, "start_caption");
     } else {
       await ctx.reply(text, { entities: entities.length ? entities : undefined, reply_markup: markup });
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, usedPremiumEmojiPlaceholder, "start");
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Ошибка входа";
@@ -1868,7 +1933,7 @@ bot.on("callback_query:data", async (ctx) => {
     if (data === "menu:main" || data === "menu:main_classic") {
       if (!config) return;
       const uid = ctx.from?.id ?? 0;
-      const { text, entities, markup } = await composeMainMenuPresentation(
+      const { text, entities, markup, usedPremiumEmojiPlaceholder } = await composeMainMenuPresentation(
         token,
         config,
         uid,
@@ -1885,8 +1950,12 @@ bot.on("callback_query:data", async (ctx) => {
         const opts = { caption, caption_entities: captionEntities.length ? captionEntities : undefined, reply_markup: markup };
         if (media.isGif) await ctx.replyWithAnimation(media.source, opts);
         else await ctx.replyWithPhoto(media.source, opts);
+        await notifyPremiumEmojiPlaceholderIfNeeded(ctx, usedPremiumEmojiPlaceholder, "menu:main_new_media");
       } else {
-        await editMessageContent(ctx, text, markup, entities);
+        await editMessageContent(ctx, text, markup, entities, {
+          usedPremiumEmojiPlaceholder,
+          context: "menu:main",
+        });
       }
       return;
     }
@@ -1928,8 +1997,11 @@ bot.on("callback_query:data", async (ctx) => {
       const tariffsEmojiIds = innerEmojiIds;
       if (items.length > 1) {
         const categoryText = (config?.botTariffCategoriesText ?? "").trim() || DEFAULT_TARIFF_CATEGORIES_TEXT;
-        const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, categoryText, config?.botEmojis);
-        await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+        const { text, entities, usedPremiumEmojiPlaceholder: tPh } = titleWithOptionalEmoji(tariffsEmojiKey, categoryText, config?.botEmojis);
+        await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities, {
+          usedPremiumEmojiPlaceholder: tPh,
+          context: "menu:tariffs_categories",
+        });
         return;
       }
       const cat = items[0]!;
@@ -1939,8 +2011,11 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = cat.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      const { text, entities, usedPremiumEmojiPlaceholder: tPh2 } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
+      await editMessageContent(ctx, text, tariffPayButtons(items, config?.botBackLabel ?? null, innerStyles, tariffsEmojiIds, tariffsEmojiUnicode), entities, {
+        usedPremiumEmojiPlaceholder: tPh2,
+        context: "menu:tariffs",
+      });
       return;
     }
 
@@ -1962,8 +2037,11 @@ bot.on("callback_query:data", async (ctx) => {
       const template = (config?.botTariffsText ?? "").trim() || DEFAULT_TARIFFS_TEXT;
       const tariffLines = category.tariffs.map((t: TariffItem) => formatTariffLine(t, tariffFields)).join("\n");
       const body = renderTariffsText(template, head, tariffLines);
-      const { text, entities } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
-      await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode), entities);
+      const { text, entities, usedPremiumEmojiPlaceholder: tPh3 } = titleWithOptionalEmoji(tariffsEmojiKey, body, config?.botEmojis);
+      await editMessageContent(ctx, text, tariffsOfCategoryButtons(category, config?.botBackLabel ?? null, innerStyles, "menu:tariffs", tariffsEmojiIds, tariffsEmojiUnicode), entities, {
+        usedPremiumEmojiPlaceholder: tPh3,
+        context: "cat_tariffs",
+      });
       return;
     }
 
@@ -2091,7 +2169,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите для оплаты через ЮMoney:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2120,7 +2198,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите для оплаты через ЮKassa:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2139,7 +2217,7 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, proxyTariffId });
         const msg = buildPaymentMessage(config, { name: tariff.name, price: formatMoney(tariff.price, tariff.currency), amount: String(tariff.price), currency: tariff.currency, action: "Нажмите для оплаты через Crypto Bot:" });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2177,7 +2255,7 @@ bot.on("callback_query:data", async (ctx) => {
             currency: tariff.currency,
             action: "Нажмите для оплаты:",
           });
-          await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+          await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2203,7 +2281,10 @@ bot.on("callback_query:data", async (ctx) => {
         currency: tariff.currency,
         action: "Выберите способ оплаты:",
       });
-      await editMessageContent(ctx, msg.text, markup, msg.entities);
+      await editMessageContent(ctx, msg.text, markup, msg.entities, {
+        usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder,
+        context: "payment_method_choice",
+      });
       return;
     }
 
@@ -2236,7 +2317,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите для оплаты через ЮMoney:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2265,7 +2346,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите для оплаты через ЮKassa:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2284,7 +2365,7 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, singboxTariffId });
         const msg = buildPaymentMessage(config, { name: tariff.name, price: formatMoney(tariff.price, tariff.currency), amount: String(tariff.price), currency: tariff.currency, action: "Нажмите для оплаты через Crypto Bot:" });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2322,7 +2403,7 @@ bot.on("callback_query:data", async (ctx) => {
             currency: tariff.currency,
             action: "Нажмите для оплаты:",
           });
-          await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+          await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2348,7 +2429,10 @@ bot.on("callback_query:data", async (ctx) => {
         currency: tariff.currency,
         action: "Выберите способ оплаты:",
       });
-      await editMessageContent(ctx, msg.text, markup, msg.entities);
+      await editMessageContent(ctx, msg.text, markup, msg.entities, {
+        usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder,
+        context: "payment_method_choice",
+      });
       return;
     }
 
@@ -2390,7 +2474,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите кнопку ниже для оплаты через ЮMoney:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2426,7 +2510,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите кнопку ниже для оплаты через ЮKassa:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2447,7 +2531,7 @@ bot.on("callback_query:data", async (ctx) => {
         const payment = await api.createCryptopayPayment(token, { amount: tariff.price, currency: tariff.currency, tariffId: tariff.id, promoCode });
         if (promoCode) activeDiscountCode.delete(userId);
         const msg = buildPaymentMessage(config, { name: tariff.name, price: formatMoney(tariff.price, tariff.currency), amount: String(tariff.price), currency: tariff.currency, action: "Нажмите кнопку ниже для оплаты через Crypto Bot:" });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2514,7 +2598,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: option.currency,
           action: "Нажмите кнопку ниже для оплаты через ЮKassa:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         const isAuthError = /401|unauthorized|истек|авториз|токен/i.test(msg);
@@ -2547,7 +2631,7 @@ bot.on("callback_query:data", async (ctx) => {
         const payment = await api.createCryptopayPayment(token, { extraOption: { kind: option.kind, productId: option.id } });
         const optName = option.name || (option.kind === "traffic" ? `+${option.trafficGb} ГБ` : option.kind === "devices" ? `+${option.deviceCount} устр.` : "Сервер");
         const msg = buildPaymentMessage(config, { name: optName, price: formatMoney(option.price, option.currency), amount: String(option.price), currency: option.currency, action: "Нажмите кнопку ниже для оплаты через Crypto Bot:" });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         const isAuthError = /401|unauthorized|истек|авториз|токен/i.test(msg);
@@ -2590,7 +2674,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: option.currency,
           action: "Нажмите кнопку ниже для оплаты через ЮMoney:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2629,7 +2713,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: option.currency,
           action: "Нажмите кнопку ниже для оплаты:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2671,7 +2755,10 @@ bot.on("callback_query:data", async (ctx) => {
         !!config?.yookassaEnabled,
         !!config?.cryptopayEnabled
       );
-      await editMessageContent(ctx, choiceText.text, markup, choiceText.entities);
+      await editMessageContent(ctx, choiceText.text, markup, choiceText.entities, {
+        usedPremiumEmojiPlaceholder: choiceText.usedPremiumEmojiPlaceholder,
+        context: "extra_option_payment_methods",
+      });
       return;
     }
 
@@ -2711,7 +2798,7 @@ bot.on("callback_query:data", async (ctx) => {
           currency: tariff.currency,
           action: "Нажмите кнопку ниже для оплаты:",
         });
-        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities);
+        await editMessageContent(ctx, msg.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), msg.entities, { usedPremiumEmojiPlaceholder: msg.usedPremiumEmojiPlaceholder, context: "payment" });
         return;
       }
       // Показываем способы оплаты (всегда, чтобы была кнопка баланса)
@@ -2738,7 +2825,8 @@ bot.on("callback_query:data", async (ctx) => {
           tariff.currency,
           paymentMethodsBack
         ),
-        pay2.entities
+        pay2.entities,
+        { usedPremiumEmojiPlaceholder: pay2.usedPremiumEmojiPlaceholder, context: "tariff_payment_methods" }
       );
       return;
     }
@@ -2747,12 +2835,15 @@ bot.on("callback_query:data", async (ctx) => {
       const client = await api.getMe(token);
       const langs = config?.activeLanguages?.length ? config.activeLanguages : ["ru", "en"];
       const currencies = config?.activeCurrencies?.length ? config.activeCurrencies : ["usd", "rub"];
-      const { text, entities } = titleWithEmoji(
+      const { text, entities, usedPremiumEmojiPlaceholder: profPh } = titleWithEmoji(
         "PROFILE",
         `Профиль\n\nБаланс: ${formatMoney(client?.balance ?? 0, client?.preferredCurrency ?? "usd")}\nЯзык: ${client?.preferredLang ?? "ru"}\nВалюта: ${client?.preferredCurrency ?? "usd"}\nАвтопродление с баланса: ${client?.autoRenewEnabled ? "Включено ✅" : "Отключено ❌"}\n\nИзменить:`,
         config?.botEmojis
       );
-      await editMessageContent(ctx, text, profileButtons(config?.botBackLabel ?? null, innerStyles, innerEmojiIds, client?.autoRenewEnabled), entities);
+      await editMessageContent(ctx, text, profileButtons(config?.botBackLabel ?? null, innerStyles, innerEmojiIds, client?.autoRenewEnabled), entities, {
+        usedPremiumEmojiPlaceholder: profPh,
+        context: "menu:profile",
+      });
       return;
     }
 
@@ -2858,12 +2949,15 @@ bot.on("callback_query:data", async (ctx) => {
         await api.toggleAutoRenew(token, enabled);
         // Refresh the profile page
         const client = await api.getMe(token);
-        const { text, entities } = titleWithEmoji(
+        const { text, entities, usedPremiumEmojiPlaceholder: profPh2 } = titleWithEmoji(
           "PROFILE",
           `Профиль\n\nБаланс: ${formatMoney(client?.balance ?? 0, client?.preferredCurrency ?? "usd")}\nЯзык: ${client?.preferredLang ?? "ru"}\nВалюта: ${client?.preferredCurrency ?? "usd"}\nАвтопродление с баланса: ${client?.autoRenewEnabled ? "Включено ✅" : "Отключено ❌"}\n\nИзменить:`,
           config?.botEmojis
         );
-        await editMessageContent(ctx, text, profileButtons(config?.botBackLabel ?? null, innerStyles, innerEmojiIds, client?.autoRenewEnabled), entities);
+        await editMessageContent(ctx, text, profileButtons(config?.botBackLabel ?? null, innerStyles, innerEmojiIds, client?.autoRenewEnabled), entities, {
+          usedPremiumEmojiPlaceholder: profPh2,
+          context: "profile:autorenew",
+        });
       } catch (err: any) {
         await ctx.answerCallbackQuery({ text: err.message || "Ошибка", show_alert: true });
       }
@@ -2880,7 +2974,10 @@ bot.on("callback_query:data", async (ctx) => {
         return;
       }
       const topupTitle = titleWithEmoji("CARD", "Пополнить баланс\n\nВыберите сумму или введите свою (числом):", config?.botEmojis);
-      await editMessageContent(ctx, topupTitle.text, topUpPresets(client.preferredCurrency, config?.botBackLabel ?? null, innerStyles, innerEmojiIds), topupTitle.entities);
+      await editMessageContent(ctx, topupTitle.text, topUpPresets(client.preferredCurrency, config?.botBackLabel ?? null, innerStyles, innerEmojiIds), topupTitle.entities, {
+        usedPremiumEmojiPlaceholder: topupTitle.usedPremiumEmojiPlaceholder,
+        context: "menu:topup",
+      });
       return;
     }
 
@@ -2898,7 +2995,10 @@ bot.on("callback_query:data", async (ctx) => {
           paymentType: "AC",
         });
         const yooTopup = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency)}\n\nНажмите кнопку ниже для оплаты через ЮMoney:`, config?.botEmojis);
-        await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities);
+        await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities, {
+          usedPremiumEmojiPlaceholder: yooTopup.usedPremiumEmojiPlaceholder,
+          context: "topup_yoomoney",
+        });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2917,7 +3017,10 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const payment = await api.createYookassaPayment(token, { amount, currency: "RUB" });
         const yooTopup = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, "RUB")}\n\nНажмите кнопку ниже для оплаты через ЮKassa:`, config?.botEmojis);
-        await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities);
+        await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities, {
+          usedPremiumEmojiPlaceholder: yooTopup.usedPremiumEmojiPlaceholder,
+          context: "topup_yookassa",
+        });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2936,7 +3039,10 @@ bot.on("callback_query:data", async (ctx) => {
       try {
         const payment = await api.createCryptopayPayment(token, { amount, currency: client.preferredCurrency ?? "RUB" });
         const cpTopup = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency ?? "RUB")}\n\nНажмите кнопку ниже для оплаты через Crypto Bot:`, config?.botEmojis);
-        await editMessageContent(ctx, cpTopup.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), cpTopup.entities);
+        await editMessageContent(ctx, cpTopup.text, payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), cpTopup.entities, {
+          usedPremiumEmojiPlaceholder: cpTopup.usedPremiumEmojiPlaceholder,
+          context: "topup_cryptopay",
+        });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка создания платежа Crypto Bot";
         await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2964,7 +3070,10 @@ bot.on("callback_query:data", async (ctx) => {
           description: "Пополнение баланса",
         });
         const topupPay1 = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency)}\n\nНажмите кнопку ниже для оплаты:`, config?.botEmojis);
-        await editMessageContent(ctx, topupPay1.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), topupPay1.entities);
+        await editMessageContent(ctx, topupPay1.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), topupPay1.entities, {
+          usedPremiumEmojiPlaceholder: topupPay1.usedPremiumEmojiPlaceholder,
+          context: "topup_platega",
+        });
         return;
       }
       const yooEnabled = !!config?.yoomoneyEnabled;
@@ -2972,7 +3081,10 @@ bot.on("callback_query:data", async (ctx) => {
       const cryptopayEnabled = !!config?.cryptopayEnabled;
       if (methods.length > 1 || (methods.length >= 1 && (yooEnabled || yookassaEnabled || cryptopayEnabled)) || (methods.length === 0 && ((yooEnabled && yookassaEnabled) || (yooEnabled && cryptopayEnabled) || (yookassaEnabled && cryptopayEnabled)))) {
         const topupPay2 = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency)}\n\nВыберите способ оплаты:`, config?.botEmojis);
-        await editMessageContent(ctx, topupPay2.text, topupPaymentMethodButtons(amountStr, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, yooEnabled, yookassaEnabled, cryptopayEnabled), topupPay2.entities);
+        await editMessageContent(ctx, topupPay2.text, topupPaymentMethodButtons(amountStr, methods, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, yooEnabled, yookassaEnabled, cryptopayEnabled), topupPay2.entities, {
+          usedPremiumEmojiPlaceholder: topupPay2.usedPremiumEmojiPlaceholder,
+          context: "topup_methods",
+        });
         return;
       }
       // Если ЮMoney единственный способ (нет platega, нет ЮKassa) — сразу создаём платёж ЮMoney
@@ -2980,7 +3092,10 @@ bot.on("callback_query:data", async (ctx) => {
         try {
           const payment = await api.createYoomoneyPayment(token, { amount, paymentType: "AC" });
           const yooTopup = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency)}\n\nНажмите кнопку ниже для оплаты через ЮMoney:`, config?.botEmojis);
-          await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities);
+          await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities, {
+            usedPremiumEmojiPlaceholder: yooTopup.usedPremiumEmojiPlaceholder,
+            context: "topup_yoomoney_only",
+          });
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮMoney";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -2992,7 +3107,10 @@ bot.on("callback_query:data", async (ctx) => {
         try {
           const payment = await api.createYookassaPayment(token, { amount, currency: "RUB" });
           const yooTopup = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, "RUB")}\n\nНажмите кнопку ниже для оплаты через ЮKassa:`, config?.botEmojis);
-          await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities);
+          await editMessageContent(ctx, yooTopup.text, payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), yooTopup.entities, {
+            usedPremiumEmojiPlaceholder: yooTopup.usedPremiumEmojiPlaceholder,
+            context: "topup_yookassa_only",
+          });
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : "Ошибка создания платежа ЮKassa";
           await editMessageContent(ctx, `❌ ${msg}`, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds));
@@ -3007,7 +3125,10 @@ bot.on("callback_query:data", async (ctx) => {
         description: "Пополнение баланса",
       });
       const topupPay3 = titleWithEmoji("CARD", `Пополнение на ${formatMoney(amount, client.preferredCurrency)}\n\nНажмите кнопку ниже для оплаты:`, config?.botEmojis);
-      await editMessageContent(ctx, topupPay3.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), topupPay3.entities);
+      await editMessageContent(ctx, topupPay3.text, payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), topupPay3.entities, {
+        usedPremiumEmojiPlaceholder: topupPay3.usedPremiumEmojiPlaceholder,
+        context: "topup_platega_default",
+      });
       return;
     }
 
@@ -3031,8 +3152,11 @@ bot.on("callback_query:data", async (ctx) => {
       rest += "\n\nВаши ссылки:";
       if (linkSite) rest += "\n\nСайт:\n" + linkSite;
       rest += "\n\nБот:\n" + linkBot;
-      const { text: refText, entities: refEntities } = titleWithEmoji("LINK", rest, config?.botEmojis);
-      await editMessageContent(ctx, refText, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), refEntities);
+      const { text: refText, entities: refEntities, usedPremiumEmojiPlaceholder: refPh } = titleWithEmoji("LINK", rest, config?.botEmojis);
+      await editMessageContent(ctx, refText, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), refEntities, {
+        usedPremiumEmojiPlaceholder: refPh,
+        context: "menu:referral",
+      });
       return;
     }
 
@@ -3050,7 +3174,10 @@ bot.on("callback_query:data", async (ctx) => {
       const days = config?.trialDays ?? 0;
       const daysText = days > 0 ? formatRuDays(days) + " триала." : "Триал без оплаты.";
       const trialTitle = titleWithEmoji("TRIAL", `Попробовать бесплатно\n\n${daysText}\n\nАктивировать?`, config?.botEmojis);
-      await editMessageContent(ctx, trialTitle.text, trialConfirmButton(innerStyles, innerEmojiIds), trialTitle.entities);
+      await editMessageContent(ctx, trialTitle.text, trialConfirmButton(innerStyles, innerEmojiIds), trialTitle.entities, {
+        usedPremiumEmojiPlaceholder: trialTitle.usedPremiumEmojiPlaceholder,
+        context: "menu:trial",
+      });
       return;
     }
 
@@ -3071,13 +3198,22 @@ bot.on("callback_query:data", async (ctx) => {
       const useRemna = config?.useRemnaSubscriptionPage === true;
       if (useRemna) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница подключения.", config?.botEmojis);
-        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl ?? "", config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, vpnUrl), vpnTitle.entities);
+        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl ?? "", config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds, vpnUrl), vpnTitle.entities, {
+          usedPremiumEmojiPlaceholder: vpnTitle.usedPremiumEmojiPlaceholder,
+          context: "menu:vpn_remna",
+        });
       } else if (appUrl) {
         const vpnTitle = titleWithEmoji("SERVERS", "Подключиться к VPN\n\nНажмите кнопку ниже — откроется страница с приложениями и кнопкой «Добавить подписку» (как в кабинете).", config?.botEmojis);
-        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle.entities);
+        await editMessageContent(ctx, vpnTitle.text, openSubscribePageMarkup(appUrl, config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle.entities, {
+          usedPremiumEmojiPlaceholder: vpnTitle.usedPremiumEmojiPlaceholder,
+          context: "menu:vpn_app",
+        });
       } else {
         const vpnTitle2 = titleWithEmoji("SERVERS", `Подключиться к VPN\n\nОткройте ссылку в приложении VPN:\n${vpnUrl}`, config?.botEmojis);
-        await editMessageContent(ctx, vpnTitle2.text, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle2.entities);
+        await editMessageContent(ctx, vpnTitle2.text, backToMenu(config?.botBackLabel ?? null, innerStyles?.back, innerEmojiIds), vpnTitle2.entities, {
+          usedPremiumEmojiPlaceholder: vpnTitle2.usedPremiumEmojiPlaceholder,
+          context: "menu:vpn_url",
+        });
       }
       return;
     }
@@ -3292,6 +3428,7 @@ bot.on("message:text", async (ctx) => {
         entities: topupMsg1.entities.length ? topupMsg1.entities : undefined,
         reply_markup: topupPaymentMethodButtons(String(num), methods, config?.botBackLabel ?? null, backStyle, msgEmojiIds, yooEnabled, yookassaEnabledMsg, cryptopayEnabledMsg),
       });
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, topupMsg1.usedPremiumEmojiPlaceholder, "text_topup_methods");
       return;
     }
     // Если только ЮMoney (нет platega, нет ЮKassa) — сразу создаём
@@ -3302,6 +3439,7 @@ bot.on("message:text", async (ctx) => {
         entities: topupMsgYoo.entities.length ? topupMsgYoo.entities : undefined,
         reply_markup: payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, backStyle, msgEmojiIds),
       });
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, topupMsgYoo.usedPremiumEmojiPlaceholder, "text_topup_yoomoney");
       return;
     }
     // Если только ЮKassa
@@ -3312,6 +3450,7 @@ bot.on("message:text", async (ctx) => {
         entities: topupMsgYoo.entities.length ? topupMsgYoo.entities : undefined,
         reply_markup: payUrlMarkup(payment.confirmationUrl, config?.botBackLabel ?? null, backStyle, msgEmojiIds),
       });
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, topupMsgYoo.usedPremiumEmojiPlaceholder, "text_topup_yookassa");
       return;
     }
     // Если только Crypto Pay
@@ -3322,6 +3461,7 @@ bot.on("message:text", async (ctx) => {
         entities: topupMsgCp.entities.length ? topupMsgCp.entities : undefined,
         reply_markup: payUrlMarkup(payment.payUrl, config?.botBackLabel ?? null, backStyle, msgEmojiIds),
       });
+      await notifyPremiumEmojiPlaceholderIfNeeded(ctx, topupMsgCp.usedPremiumEmojiPlaceholder, "text_topup_cryptopay");
       return;
     }
     const payment = await api.createPlategaPayment(token, {
@@ -3335,6 +3475,7 @@ bot.on("message:text", async (ctx) => {
       entities: topupMsg2.entities.length ? topupMsg2.entities : undefined,
       reply_markup: payUrlMarkup(payment.paymentUrl, config?.botBackLabel ?? null, backStyle, msgEmojiIds),
     });
+    await notifyPremiumEmojiPlaceholderIfNeeded(ctx, topupMsg2.usedPremiumEmojiPlaceholder, "text_topup_platega");
   } catch {
     // не число или ошибка — игнорируем
   }

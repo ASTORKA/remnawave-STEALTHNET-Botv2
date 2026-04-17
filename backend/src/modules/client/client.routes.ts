@@ -24,6 +24,7 @@ import {
   notifyAdminsAboutNewClient,
   notifyAdminsAboutNewTicket,
   notifyAdminGroupBotApiEntityError,
+  notifyAdminGroupPremiumEmojiPlaceholder,
 } from "../notification/telegram-notify.service.js";
 import { requireClientAuth } from "./client.middleware.js";
 import { remnaCreateUser, remnaUpdateUser, isRemnaConfigured, remnaGetUser, remnaGetUserByUsername, remnaGetUserByEmail, remnaGetUserByTelegramId, extractRemnaUuid, remnaUsernameFromClient, remnaGetUserHwidDevices, remnaDeleteUserHwidDevice } from "../remna/remna.client.js";
@@ -3629,6 +3630,22 @@ publicConfigRouter.post("/bot-report-telegram-error", async (req, res) => {
   const body = botReportTelegramErrorSchema.safeParse(req.body);
   if (!body.success) return res.status(400).json({ message: "Invalid input", errors: body.error.flatten() });
   await notifyAdminGroupBotApiEntityError(body.data);
+  return res.json({ ok: true });
+});
+
+const botReportPremiumPlaceholderSchema = z.object({
+  context: z.string().max(300),
+  chatId: z.number().int().optional(),
+  userId: z.number().int().optional(),
+});
+publicConfigRouter.post("/bot-report-premium-emoji-placeholder", async (req, res) => {
+  const config = await getSystemConfig();
+  const botToken = (config.telegramBotToken ?? "").trim();
+  const headerToken = typeof req.headers["x-telegram-bot-token"] === "string" ? req.headers["x-telegram-bot-token"].trim() : "";
+  if (!botToken || headerToken !== botToken) return res.status(401).json({ message: "Unauthorized" });
+  const body = botReportPremiumPlaceholderSchema.safeParse(req.body);
+  if (!body.success) return res.status(400).json({ message: "Invalid input", errors: body.error.flatten() });
+  await notifyAdminGroupPremiumEmojiPlaceholder(body.data);
   return res.json({ ok: true });
 });
 

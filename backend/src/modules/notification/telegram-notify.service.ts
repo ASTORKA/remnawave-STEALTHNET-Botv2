@@ -374,6 +374,29 @@ export async function notifyAdminGroupBotApiEntityError(params: {
   });
 }
 
+/** Уведомление: бот отправил пользователю текст с плейсхолдером 🙂 для премиум-эмодзи (tgEmojiId без unicode). Сообщение доставлено. */
+export async function notifyAdminGroupPremiumEmojiPlaceholder(params: {
+  context: string;
+  chatId?: number;
+  userId?: number;
+}): Promise<void> {
+  const config = await getSystemConfig();
+  const groupId = config.notificationTelegramGroupId?.trim();
+  if (!groupId) return;
+  const threadId = parsePositiveMessageThreadId(config.notificationTopicErrors ?? null);
+  const lines = [
+    `<b>Плейсхолдер премиум-эмодзи (🙂)</b>`,
+    `Бот <b>успешно</b> отправил пользователю сообщение; в тексте для <code>custom_emoji</code> использована заглушка «🙂» (в настройках эмодзи указан только <code>tgEmojiId</code> без <code>unicode</code>). Клиент мог видеть «🙂» вместо премиум-стикера.`,
+    ``,
+    `Контекст: <code>${escapeHtml(params.context.slice(0, 280))}</code>`,
+  ];
+  if (params.chatId != null) lines.push(`Чат: <code>${params.chatId}</code>`);
+  if (params.userId != null) lines.push(`from id: <code>${params.userId}</code>`);
+  await sendTelegramToUser(groupId, lines.join("\n"), threadId).catch((e) => {
+    console.warn("[Telegram notify] premium emoji placeholder notify failed", e);
+  });
+}
+
 function formatClientLabel(client: { email?: string | null; telegramUsername?: string | null; id?: string }): string {
   if (client.telegramUsername) return `@${client.telegramUsername}`;
   if (client.email?.trim()) return client.email.trim();
