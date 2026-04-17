@@ -23,6 +23,7 @@ import {
   notifyAdminsAboutClientTicketMessage,
   notifyAdminsAboutNewClient,
   notifyAdminsAboutNewTicket,
+  notifyAdminGroupBotApiEntityError,
 } from "../notification/telegram-notify.service.js";
 import { requireClientAuth } from "./client.middleware.js";
 import { remnaCreateUser, remnaUpdateUser, isRemnaConfigured, remnaGetUser, remnaGetUserByUsername, remnaGetUserByEmail, remnaGetUserByTelegramId, extractRemnaUuid, remnaUsernameFromClient, remnaGetUserHwidDevices, remnaDeleteUserHwidDevice } from "../remna/remna.client.js";
@@ -3612,6 +3613,23 @@ publicConfigRouter.post("/link-telegram-from-bot", async (req, res) => {
   });
   await prisma.pendingTelegramLink.deleteMany({ where: { id: pending.id } }).catch(() => {});
   return res.json({ message: "Telegram привязан" });
+});
+
+/** Сообщение в группу уведомлений, топик «Ошибки» — при сбоях Bot API (entities / custom_emoji и т.п.). Авторизация: токен бота. */
+const botReportTelegramErrorSchema = z.object({
+  method: z.string().max(120),
+  errorCode: z.number().int(),
+  description: z.string().max(4000),
+});
+publicConfigRouter.post("/bot-report-telegram-error", async (req, res) => {
+  const config = await getSystemConfig();
+  const botToken = (config.telegramBotToken ?? "").trim();
+  const headerToken = typeof req.headers["x-telegram-bot-token"] === "string" ? req.headers["x-telegram-bot-token"].trim() : "";
+  if (!botToken || headerToken !== botToken) return res.status(401).json({ message: "Unauthorized" });
+  const body = botReportTelegramErrorSchema.safeParse(req.body);
+  if (!body.success) return res.status(400).json({ message: "Invalid input", errors: body.error.flatten() });
+  await notifyAdminGroupBotApiEntityError(body.data);
+  return res.json({ ok: true });
 });
 
 /** Конфиг страницы подписки (приложения по платформам, тексты) — для кабинета /cabinet/subscribe */

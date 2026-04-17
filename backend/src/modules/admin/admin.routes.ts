@@ -1052,6 +1052,7 @@ const updateSettingsSchema = z.object({
   notificationTopicNewClients: z.string().max(50).nullable().optional(),
   notificationTopicPayments: z.string().max(50).nullable().optional(),
   notificationTopicTickets: z.string().max(50).nullable().optional(),
+  notificationTopicErrors: z.string().max(50).nullable().optional(),
   plategaMerchantId: z.string().max(200).nullable().optional(),
   plategaSecret: z.string().max(500).nullable().optional(),
   plategaMethods: z.string().max(2000).nullable().optional(),
@@ -1446,6 +1447,7 @@ adminRouter.patch("/settings", async (req, res) => {
     ["notificationTopicNewClients", "notification_topic_new_clients"],
     ["notificationTopicPayments", "notification_topic_payments"],
     ["notificationTopicTickets", "notification_topic_tickets"],
+    ["notificationTopicErrors", "notification_topic_errors"],
   ];
   for (const [key, dbKey] of topicKeys) {
     if (updates[key] !== undefined) {

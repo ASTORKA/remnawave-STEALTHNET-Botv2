@@ -721,3 +721,25 @@ export async function postBotAdminClientRemnaSquadRemove(telegramId: number, cli
   }
   return data as { ok: boolean; activeInternalSquads: string[] };
 }
+
+/** Уведомление в группу админов (топик «Ошибки») о сбое Bot API — не бросает наружу. */
+export async function reportBotTelegramApiEntityError(payload: {
+  method: string;
+  errorCode: number;
+  description: string;
+}): Promise<void> {
+  const botToken = process.env.BOT_TOKEN || "";
+  if (!API_URL || !botToken) return;
+  try {
+    await fetch(`${API_URL}/api/public/bot-report-telegram-error`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Token": botToken,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    /* ignore */
+  }
+}

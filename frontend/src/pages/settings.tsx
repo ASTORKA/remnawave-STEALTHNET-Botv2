@@ -567,6 +567,7 @@ export function SettingsPage() {
         notificationTopicNewClients: settings.notificationTopicNewClients ?? null,
         notificationTopicPayments: settings.notificationTopicPayments ?? null,
         notificationTopicTickets: settings.notificationTopicTickets ?? null,
+        notificationTopicErrors: settings.notificationTopicErrors ?? null,
         plategaMerchantId: settings.plategaMerchantId ?? null,
         plategaSecret: settings.plategaSecret && settings.plategaSecret !== "********" ? settings.plategaSecret : undefined,
         plategaMethods: settings.plategaMethods != null ? JSON.stringify(settings.plategaMethods) : undefined,
@@ -935,7 +936,7 @@ export function SettingsPage() {
                       <p className="text-xs text-muted-foreground">
                         Укажите ID топика (message_thread_id), чтобы уведомления разного типа приходили в разные темы группы. Оставьте пустым — уведомления пойдут в общий чат.
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">Новые клиенты</Label>
                           <Input
@@ -963,7 +964,19 @@ export function SettingsPage() {
                             className="h-8 text-sm"
                           />
                         </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Ошибки (бот)</Label>
+                          <Input
+                            value={settings.notificationTopicErrors ?? ""}
+                            onChange={(e) => setSettings((s) => (s ? { ...s, notificationTopicErrors: e.target.value.trim() || null } : s))}
+                            placeholder="ID топика «Ошибки»"
+                            className="h-8 text-sm"
+                          />
+                        </div>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        В топик «Ошибки» бот отправляет сообщение, если Telegram отклонил запрос из‑за текста, entities или премиум-эмодзи (например неверный custom_emoji_id). Создайте в группе тему с названием «Ошибки» и укажите её ID.
+                      </p>
                     </div>
                   )}
                 </div>

@@ -345,6 +345,35 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function parsePositiveMessageThreadId(raw: string | null | undefined): number | null {
+  const n = parseInt((raw ?? "").trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Уведомление в «Группу для уведомлений»: тема «Ошибки» (ID топика в настройках).
+ * Вызывается ботом при ошибках Bot API, связанных с текстом / entities / custom_emoji.
+ */
+export async function notifyAdminGroupBotApiEntityError(params: {
+  method: string;
+  errorCode: number;
+  description: string;
+}): Promise<void> {
+  const config = await getSystemConfig();
+  const groupId = config.notificationTelegramGroupId?.trim();
+  if (!groupId) return;
+  const threadId = parsePositiveMessageThreadId(config.notificationTopicErrors ?? null);
+  const desc = params.description.length > 3500 ? `${params.description.slice(0, 3500)}…` : params.description;
+  const html =
+    `<b>Ошибка Telegram Bot API</b> (текст / сущности / премиум-эмодзи)\n\n` +
+    `Метод: <code>${escapeHtml(params.method)}</code>\n` +
+    `Код: <code>${params.errorCode}</code>\n\n` +
+    `<code>${escapeHtml(desc)}</code>`;
+  await sendTelegramToUser(groupId, html, threadId).catch((e) => {
+    console.warn("[Telegram notify] bot API entity error notify failed", e);
+  });
+}
+
 function formatClientLabel(client: { email?: string | null; telegramUsername?: string | null; id?: string }): string {
   if (client.telegramUsername) return `@${client.telegramUsername}`;
   if (client.email?.trim()) return client.email.trim();

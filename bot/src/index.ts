@@ -5,7 +5,7 @@
  */
 
 import "dotenv/config";
-import { Bot, InputFile } from "grammy";
+import { Bot, GrammyError, InputFile } from "grammy";
 import { ProxyAgent as UndiciProxyAgent } from "undici";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import * as api from "./api.js";
@@ -96,6 +96,51 @@ async function createBotWithProxy(token: string): Promise<Bot> {
 }
 
 const bot = await createBotWithProxy(BOT_TOKEN);
+
+/** Ошибки разметки / премиум-эмодзи: Telegram отклоняет запрос (в отличие от «тихого» показа плейсхолдера 🙂). */
+const ENTITY_ERROR_NOTIFY_METHODS = new Set([
+  "sendMessage",
+  "editMessageText",
+  "editMessageCaption",
+  "sendPhoto",
+  "sendAnimation",
+  "sendVideo",
+  "sendDocument",
+  "copyMessage",
+  "editMessageMedia",
+  "sendPaidMedia",
+]);
+
+let lastEntityErrorNotifyAt = 0;
+const ENTITY_ERROR_NOTIFY_COOLDOWN_MS = 120_000;
+
+function shouldReportTelegramEntityEmojiError(err: GrammyError): boolean {
+  if (err.error_code !== 400) return false;
+  if (!ENTITY_ERROR_NOTIFY_METHODS.has(err.method)) return false;
+  const d = err.description.toLowerCase();
+  if (d.includes("entity") || d.includes("custom_emoji") || d.includes("parse entities")) return true;
+  if (d.includes("caption") && (d.includes("parse") || d.includes("entity"))) return true;
+  return false;
+}
+
+bot.api.config.use(async (prev, method, payload, signal) => {
+  try {
+    return await prev(method, payload, signal);
+  } catch (e: unknown) {
+    if (e instanceof GrammyError && shouldReportTelegramEntityEmojiError(e)) {
+      const now = Date.now();
+      if (now - lastEntityErrorNotifyAt >= ENTITY_ERROR_NOTIFY_COOLDOWN_MS) {
+        lastEntityErrorNotifyAt = now;
+        void api.reportBotTelegramApiEntityError({
+          method: e.method,
+          errorCode: e.error_code,
+          description: e.description,
+        });
+      }
+    }
+    throw e;
+  }
+});
 
 let BOT_USERNAME = "";
 

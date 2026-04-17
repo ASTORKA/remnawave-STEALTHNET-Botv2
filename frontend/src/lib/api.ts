@@ -1392,6 +1392,8 @@ export type UpdateSettingsPayload = {
   notificationTopicNewClients?: string | null;
   notificationTopicPayments?: string | null;
   notificationTopicTickets?: string | null;
+  /** ID топика форума «Ошибки» — уведомления бота о сбоях Bot API (entities / custom_emoji) */
+  notificationTopicErrors?: string | null;
   plategaMerchantId?: string | null;
   plategaSecret?: string | null;
   plategaMethods?: string | null;
@@ -1671,6 +1673,8 @@ export interface AdminSettings {
   notificationTopicNewClients?: string | null;
   notificationTopicPayments?: string | null;
   notificationTopicTickets?: string | null;
+  /** ID топика форума «Ошибки» — уведомления бота о сбоях Bot API (entities / custom_emoji) */
+  notificationTopicErrors?: string | null;
   plategaMerchantId?: string | null;
   plategaSecret?: string | null;
   plategaMethods?: { id: number; enabled: boolean; label: string; tgEmojiId?: string | null }[];
