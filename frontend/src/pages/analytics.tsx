@@ -122,6 +122,11 @@ export function AnalyticsPage() {
   const clientsWeekly = aggregateByWeek(data.clientsSeries);
   const trialsWeekly = aggregateByWeek(data.trialsSeries);
   const refCreditsWeekly = aggregateByWeek(data.refCreditsSeries);
+  const clientsByDay = Object.fromEntries((data.clientsSeries ?? []).map((p) => [p.date, p.value]));
+  const vpnConnectionsChart = (data.vpnConnectionsSeries ?? []).map((p) => ({
+    ...p,
+    newUsers: clientsByDay[p.date] ?? 0,
+  }));
 
   // Combine promo acts + usages for chart
   const promoWeekly = aggregateByWeekTwo(data.promoActsSeries, data.promoUsagesSeries, "Промо-ссылки", "Промокоды");
@@ -197,9 +202,9 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              {data.vpnConnectionsSeries?.length ? (
+              {vpnConnectionsChart.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data.vpnConnectionsSeries}>
+                  <ComposedChart data={vpnConnectionsChart}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
@@ -209,6 +214,7 @@ export function AnalyticsPage() {
                     <Bar yAxisId="left" dataKey="paid" name="Платящие" stackId="users" fill="#22c55e" radius={[4, 4, 0, 0]} />
                     <Bar yAxisId="left" dataKey="unpaid" name="Не платящие" stackId="users" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="total" name="Всего подключений" stroke="#6366f1" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="newUsers" name="Новые пользователи" stroke="#06b6d4" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
