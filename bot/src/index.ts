@@ -569,7 +569,6 @@ function applyCustomEmojiPlaceholders(
 ): RichCaption {
   if (!text) return { text, entities: [], usedPremiumEmojiPlaceholder: false };
   const entities: CustomEmojiEntity[] = [];
-  let usedPremiumEmojiPlaceholder = false;
   const re = /\{\{([A-Z0-9_]+)\}\}/g;
   let out = "";
   let lastIdx = 0;
@@ -579,9 +578,8 @@ function applyCustomEmojiPlaceholders(
     out += text.slice(lastIdx, match.index);
     const entry = botEmojis?.[key];
     const fallbackUnicode = DEFAULT_EMOJI_UNICODE[key];
-    const hadUnicode = Boolean(entry?.unicode?.trim());
+    /** 🙂 в UTF-8 + entity custom_emoji — штатный способ API для премиум-эмодзи без unicode; клиент видит стикер, не «🙂». Не считаем это сбоем. */
     const unicode = entry?.unicode?.trim() || (entry?.tgEmojiId ? DEFAULT_CUSTOM_EMOJI_CHAR : "") || fallbackUnicode || "";
-    if (entry?.tgEmojiId && !hadUnicode && unicode === DEFAULT_CUSTOM_EMOJI_CHAR) usedPremiumEmojiPlaceholder = true;
     if (unicode) {
       const offset = out.length;
       out += unicode;
@@ -594,7 +592,7 @@ function applyCustomEmojiPlaceholders(
     lastIdx = match.index + match[0].length;
   }
   out += text.slice(lastIdx);
-  return stripBoldTags(out, entities, usedPremiumEmojiPlaceholder);
+  return stripBoldTags(out, entities, false);
 }
 
 function stripBoldTags(

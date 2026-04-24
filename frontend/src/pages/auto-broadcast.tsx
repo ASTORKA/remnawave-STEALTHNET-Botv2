@@ -370,7 +370,7 @@ export function AutoBroadcastPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Отправлено: {rule.sentCount ?? 0} · Сейчас подходят: {eligibleCounts[rule.id] ?? "—"}
                     </p>
-                    {rule.triggerType === "subscription_expired" && rule.instantOnExpire && (
+                    {(rule.triggerType === "subscription_expired" || rule.triggerType === "subscription_ending_soon") && rule.instantOnExpire && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         Мгновенная отправка: включена (проверка каждую минуту)
                       </p>
@@ -437,7 +437,10 @@ export function AutoBroadcastPage() {
                         t === "subscription_ending_soon"
                           ? Math.max(1, Math.min(30, f.delayDays))
                           : f.delayDays,
-                      instantOnExpire: t === "subscription_expired" ? (f.instantOnExpire ?? false) : false,
+                      instantOnExpire:
+                        t === "subscription_expired" || t === "subscription_ending_soon"
+                          ? (f.instantOnExpire ?? false)
+                          : false,
                     }));
                   }}
                   >
@@ -487,7 +490,7 @@ export function AutoBroadcastPage() {
                   </select>
                 </div>
               </div>
-              {form.triggerType === "subscription_expired" && (
+              {(form.triggerType === "subscription_expired" || form.triggerType === "subscription_ending_soon") && (
                 <div className="rounded-lg border p-3 space-y-2">
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -496,11 +499,13 @@ export function AutoBroadcastPage() {
                       onChange={(e) => setForm((f) => ({ ...f, instantOnExpire: e.target.checked }))}
                       className="rounded border-input"
                     />
-                    Отправлять сразу при истечении подписки
+                    {form.triggerType === "subscription_expired"
+                      ? "Отправлять сразу при истечении подписки"
+                      : "Проверять и отправлять каждую минуту (за N дней до окончания)"}
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Если включено, правило дополнительно запускается каждую минуту и отправляет сообщение сразу
-                    после истечения подписки пользователя.
+                    Если включено, правило дополнительно запускается каждую минуту и отправляет сообщение
+                    сразу после наступления условия триггера.
                   </p>
                 </div>
               )}

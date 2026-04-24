@@ -584,12 +584,18 @@ export async function runAllRules(): Promise<RunRuleResult[]> {
 }
 
 /**
- * Запустить только правила "subscription_expired" в режиме instantOnExpire.
+ * Запустить правила подписок в режиме instantOnExpire:
+ * - subscription_expired
+ * - subscription_ending_soon
  * Используется отдельным частым воркером (например, раз в минуту), чтобы не ждать суточный cron.
  */
-export async function runInstantExpiredRules(): Promise<RunRuleResult[]> {
+export async function runInstantSubscriptionRules(): Promise<RunRuleResult[]> {
   const rules = await prisma.autoBroadcastRule.findMany({
-    where: { enabled: true, triggerType: "subscription_expired", instantOnExpire: true } as Record<string, unknown>,
+    where: {
+      enabled: true,
+      triggerType: { in: ["subscription_expired", "subscription_ending_soon"] },
+      instantOnExpire: true,
+    } as Record<string, unknown>,
     select: { id: true, name: true },
   });
 

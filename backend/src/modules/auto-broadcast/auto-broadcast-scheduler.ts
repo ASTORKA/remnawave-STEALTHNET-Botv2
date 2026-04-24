@@ -6,7 +6,7 @@
 
 import cron, { type ScheduledTask } from "node-cron";
 import { getSystemConfig } from "../client/client.service.js";
-import { runAllRules, runInstantExpiredRules } from "./auto-broadcast.service.js";
+import { runAllRules, runInstantSubscriptionRules } from "./auto-broadcast.service.js";
 import { env } from "../../config/env.js";
 
 const DEFAULT_CRON = "0 9 * * *"; // 9:00 каждый день (minute hour day month weekday)
@@ -61,19 +61,20 @@ export async function startAutoBroadcastScheduler(cronExpression?: string): Prom
     expr = config.autoBroadcastCron ?? env.AUTO_BROADCAST_CRON ?? DEFAULT_CRON;
   }
   currentTask = startWithExpression(expr);
-  // Отдельный частый воркер для правил "subscription_expired" с instantOnExpire=true
+  // Отдельный частый воркер для правил подписок
+  // ("subscription_expired"/"subscription_ending_soon") с instantOnExpire=true
   instantExpireTask = cron.schedule("*/1 * * * *", async () => {
     try {
-      const results = await runInstantExpiredRules();
+      const results = await runInstantSubscriptionRules();
       if (results.length === 0) return;
       const total = results.reduce((s, r) => s + r.sent, 0);
       const totalErrors = results.reduce((s, r) => s + r.errors.length, 0);
-      console.log(`[auto-broadcast] Instant-expire run: ${results.length} rule(s), ${total} sent, ${totalErrors} error(s)`);
+      console.log(`[auto-broadcast] Instant-subscription run: ${results.length} rule(s), ${total} sent, ${totalErrors} error(s)`);
     } catch (e) {
-      console.error("[auto-broadcast] Instant-expire run failed:", e);
+      console.error("[auto-broadcast] Instant-subscription run failed:", e);
     }
   });
-  console.log("[auto-broadcast] Instant-expire worker started: every minute");
+  console.log("[auto-broadcast] Instant-subscription worker started: every minute");
   return currentTask;
 }
 
