@@ -34,6 +34,7 @@ import {
   remnaResetUserTraffic,
   remnaGetUserByTelegramId,
   remnaGetUserByEmail,
+  remnaGetNodeUsersUsage,
   extractRemnaUuid,
   isRemnaConfigured,
 } from "../remna/remna.client.js";
@@ -2663,6 +2664,118 @@ function fillDaySeries(map: Record<string, number>, from: Date, to: Date): { dat
   return out;
 }
 
+type VpnConnectionsPoint = {
+  date: string;
+  total: number;
+  paid: number;
+  unpaid: number;
+};
+
+function formatDayUTC(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function dateRangeDays(from: Date, to: Date): string[] {
+  const out: string[] = [];
+  const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+  const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()));
+  while (d <= end) {
+    out.push(formatDayUTC(d));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+async function fetchAllRemnaUsers(maxPages = 20, pageSize = 500): Promise<Array<{ uuid?: string; username?: string }>> {
+  const users: Array<{ uuid?: string; username?: string }> = [];
+  for (let page = 0; page < maxPages; page++) {
+    const start = page * pageSize;
+    const result = await remnaGetUsers({ size: pageSize, start });
+    if (result.error || !result.data) break;
+
+    const payload = result.data as { response?: { users?: Array<{ uuid?: string; username?: string }>; total?: number } };
+    const pageUsers = payload.response?.users ?? [];
+    users.push(...pageUsers);
+
+    const total = payload.response?.total ?? users.length;
+    if (pageUsers.length < pageSize || users.length >= total) break;
+  }
+  return users;
+}
+
+async function buildVpnConnectionsSeries(
+  from: Date,
+  to: Date,
+): Promise<VpnConnectionsPoint[]> {
+  if (!isRemnaConfigured()) return [];
+
+  const [nodesResult, remnaUsers, clients, paidPayments] = await Promise.all([
+    remnaGetNodes(),
+    fetchAllRemnaUsers(),
+    prisma.client.findMany({ select: { id: true, remnawaveUuid: true } }),
+    prisma.payment.findMany({
+      where: { status: "PAID" },
+      select: { clientId: true },
+      distinct: ["clientId"],
+    }),
+  ]);
+
+  if (nodesResult.error || !nodesResult.data) return [];
+
+  const nodesPayload = nodesResult.data as { response?: Array<{ uuid?: string; isDisabled?: boolean }> };
+  const activeNodeUuids = (nodesPayload.response ?? [])
+    .filter((n) => n?.uuid && !n.isDisabled)
+    .map((n) => n.uuid as string);
+  if (activeNodeUuids.length === 0) return [];
+
+  const paidClientIdSet = new Set(paidPayments.map((p) => p.clientId));
+  const paidRemnaUuidSet = new Set(
+    clients.filter((c) => c.remnawaveUuid && paidClientIdSet.has(c.id)).map((c) => c.remnawaveUuid as string),
+  );
+
+  const usernameToUuid = new Map<string, string>();
+  for (const u of remnaUsers) {
+    if (u.username && u.uuid) usernameToUuid.set(u.username, u.uuid);
+  }
+
+  const days = dateRangeDays(from, to);
+  const series: VpnConnectionsPoint[] = [];
+
+  for (const day of days) {
+    const dayUsernames = new Set<string>();
+    const perNode = await Promise.all(
+      activeNodeUuids.map((nodeUuid) => remnaGetNodeUsersUsage(nodeUuid, day, day, 1000)),
+    );
+
+    for (const nodeResult of perNode) {
+      if (nodeResult.error || !nodeResult.data) continue;
+      const topUsers = nodeResult.data.response?.topUsers ?? [];
+      for (const tu of topUsers) {
+        if (tu?.username && typeof tu.total === "number" && tu.total > 0) {
+          dayUsernames.add(tu.username);
+        }
+      }
+    }
+
+    let paid = 0;
+    let unpaid = 0;
+    for (const username of dayUsernames) {
+      const uuid = usernameToUuid.get(username);
+      if (uuid && paidRemnaUuidSet.has(uuid)) paid++;
+      else unpaid++;
+    }
+
+    series.push({
+      date: day,
+      total: dayUsernames.size,
+      paid,
+      unpaid,
+    });
+  }
+
+  return series;
+}
+
 adminRouter.get("/analytics", async (_req, res) => {
   const now = new Date();
   const day1Ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -2670,12 +2783,17 @@ adminRouter.get("/analytics", async (_req, res) => {
   const day30Ago = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const day90Ago = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
+  const vpnConnectionsStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
   // ─── Все оплаченные платежи за 90 дней ───
-  const payments90 = await prisma.payment.findMany({
-    where: { status: "PAID", paidAt: { gte: day90Ago } },
-    select: { amount: true, paidAt: true, provider: true, tariffId: true, clientId: true },
-    orderBy: { paidAt: "asc" },
-  });
+  const [payments90, vpnConnectionsSeries] = await Promise.all([
+    prisma.payment.findMany({
+      where: { status: "PAID", paidAt: { gte: day90Ago } },
+      select: { amount: true, paidAt: true, provider: true, tariffId: true, clientId: true },
+      orderBy: { paidAt: "asc" },
+    }),
+    buildVpnConnectionsSeries(vpnConnectionsStart, now),
+  ]);
 
   const revenueByDay: Record<string, number> = {};
   const revenueByProvider: Record<string, number> = {};
@@ -2927,6 +3045,7 @@ adminRouter.get("/analytics", async (_req, res) => {
     promoActsSeries,
     promoUsagesSeries,
     refCreditsSeries,
+    vpnConnectionsSeries,
 
     // Таблицы / списки
     topTariffs,

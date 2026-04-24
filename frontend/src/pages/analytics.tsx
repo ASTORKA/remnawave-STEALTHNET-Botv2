@@ -56,6 +56,7 @@ interface AnalyticsData {
   promoActsSeries: { date: string; value: number }[];
   promoUsagesSeries: { date: string; value: number }[];
   refCreditsSeries: { date: string; value: number }[];
+  vpnConnectionsSeries: { date: string; total: number; paid: number; unpaid: number }[];
   topTariffs: { name: string; count: number; revenue: number }[];
   providerSeries: { provider: string; amount: number }[];
   topReferrers: { id: string; name: string; referrals: number; earnings: number; l1: number; l2: number; l3: number; credits: number }[];
@@ -185,6 +186,39 @@ export function AnalyticsPage() {
       </section>
 
       {/* ═══ ГРАФИКИ ═══ */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          Количество подключений к VPN (30 дн.)
+        </h2>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Пользователи, которые подключались и использовали VPN по дням</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              {data.vpnConnectionsSeries?.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={data.vpnConnectionsSeries}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="paid" name="Платящие" stackId="users" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                    <Bar yAxisId="left" dataKey="unpaid" name="Не платящие" stackId="users" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="total" name="Всего подключений" stroke="#6366f1" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-2">
 
         {/* Доход по неделям */}
