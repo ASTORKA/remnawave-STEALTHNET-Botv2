@@ -89,7 +89,7 @@ const SYSTEM_CONFIG_KEYS = [
   "bot_emojis", // JSON: { "TRIAL": { "unicode": "🎁", "tgEmojiId": "..." }, "PACKAGE": ... } — эмодзи кнопок/текста, TG ID для премиум
   "category_emojis", // JSON: { "ordinary": "📦", "premium": "⭐" } — эмодзи категорий по коду
   "subscription_page_config",
-  "support_link", "agreement_link", "offer_link", "instructions_link", // Поддержка: тех поддержка, соглашения, оферта, инструкции
+  "support_link", "support_button_url", "agreement_link", "offer_link", "instructions_link", // Поддержка: тех поддержка, кнопка, соглашения, оферта, инструкции
   "tickets_enabled", // Тикет-система: true/false
   "admin_front_notifications_enabled", // Всплывающие уведомления в админке: true/false
   "theme_accent", // Глобальная цветовая тема: default, blue, violet, rose, orange, green, emerald, cyan, amber, red, pink, indigo
@@ -602,6 +602,7 @@ export async function getSystemConfig() {
     autoRenewMaxRetries: parseInt(map.auto_renew_max_retries ?? "3", 10) || 3,
     yookassaRecurringEnabled: map.yookassa_recurring_enabled === "true" || map.yookassa_recurring_enabled === "1",
     supportLink: (map.support_link ?? "").trim() || null,
+    supportButtonUrl: (map.support_button_url ?? "").trim() || null,
     agreementLink: (map.agreement_link ?? "").trim() || null,
     offerLink: (map.offer_link ?? "").trim() || null,
     instructionsLink: (map.instructions_link ?? "").trim() || null,
@@ -1018,6 +1019,7 @@ export async function getPublicConfig() {
     referralPercentLevel2: full.referralPercentLevel2 ?? 0,
     referralPercentLevel3: full.referralPercentLevel3 ?? 0,
     supportLink: full.supportLink ?? null,
+    supportButtonUrl: full.supportButtonUrl ?? null,
     agreementLink: full.agreementLink ?? null,
     offerLink: full.offerLink ?? null,
     instructionsLink: full.instructionsLink ?? null,

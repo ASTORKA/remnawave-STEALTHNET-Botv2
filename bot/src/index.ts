@@ -1040,6 +1040,7 @@ async function composeMainMenuPresentation(
       botButtons: config?.botButtons ?? null,
       botBackLabel: config?.botBackLabel ?? null,
       hasSupportLinks,
+      supportButtonUrl: config?.supportButtonUrl ?? null,
       showTickets: config?.ticketsEnabled === true,
       showExtraOptions: config?.sellOptionsEnabled === true && (config?.sellOptions?.length ?? 0) > 0,
       buttonsPerRow: config?.botButtonsPerRow ?? 1,

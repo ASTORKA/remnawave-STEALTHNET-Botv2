@@ -275,6 +275,7 @@ export function SettingsPage() {
         })(),
         subscriptionPageConfig: (data as AdminSettings).subscriptionPageConfig ?? null,
         supportLink: (data as AdminSettings).supportLink ?? "",
+        supportButtonUrl: (data as AdminSettings).supportButtonUrl ?? "",
         agreementLink: (data as AdminSettings).agreementLink ?? "",
         offerLink: (data as AdminSettings).offerLink ?? "",
         instructionsLink: (data as AdminSettings).instructionsLink ?? "",
@@ -613,6 +614,7 @@ export function SettingsPage() {
         }),
         subscriptionPageConfig: settings.subscriptionPageConfig ?? undefined,
         supportLink: settings.supportLink ?? undefined,
+        supportButtonUrl: settings.supportButtonUrl?.trim() ? settings.supportButtonUrl.trim() : null,
         agreementLink: settings.agreementLink ?? undefined,
         offerLink: settings.offerLink ?? undefined,
         instructionsLink: settings.instructionsLink ?? undefined,
@@ -1309,9 +1311,18 @@ export function SettingsPage() {
                     <Label className="text-base font-medium">Поддержка</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Ссылки для кнопки «Поддержка» в боте. Внутри — 4 подпункта: Тех поддержка, Соглашения, Оферта, Инструкции. Если ссылка не задана — соответствующий пункт не показывается. Кнопка «Поддержка» в главном меню отображается только если заполнен хотя бы один пункт.
+                    Можно задать прямую ссылку для кнопки «Поддержка» в главном меню (например, Telegram-аккаунт), либо использовать подменю из 4 подпунктов: Тех поддержка, Соглашения, Оферта, Инструкции.
                   </p>
                   <div className="grid gap-3 sm:grid-cols-1">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Ссылка кнопки «Поддержка» (главное меню)</Label>
+                      <Input
+                        value={settings.supportButtonUrl ?? ""}
+                        onChange={(e) => setSettings((s) => (s ? { ...s, supportButtonUrl: e.target.value || undefined } : s))}
+                        placeholder="https://t.me/support_bot"
+                      />
+                      <p className="text-xs text-muted-foreground">Формат: https://t.me/{`{ник_бота_или_аккаунта}`}</p>
+                    </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Тех поддержка (бот или контакт)</Label>
                       <Input

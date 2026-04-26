@@ -1096,6 +1096,12 @@ const updateSettingsSchema = z.object({
   botPromoMainMenuButtonEmojiKey: z.string().max(40).nullable().optional(),
   subscriptionPageConfig: z.string().max(500000).nullable().optional(),
   supportLink: z.string().max(2000).nullable().optional(),
+  supportButtonUrl: z
+    .string()
+    .max(2000)
+    .regex(/^https:\/\/t\.me\/[A-Za-z0-9_]{5,}$/, "Support button URL must be https://t.me/{username}")
+    .nullable()
+    .optional(),
   agreementLink: z.string().max(2000).nullable().optional(),
   offerLink: z.string().max(2000).nullable().optional(),
   instructionsLink: z.string().max(2000).nullable().optional(),
@@ -1725,6 +1731,7 @@ adminRouter.patch("/settings", async (req, res) => {
   }
   for (const [key, settingKey] of [
     ["supportLink", "support_link"],
+    ["supportButtonUrl", "support_button_url"],
     ["agreementLink", "agreement_link"],
     ["offerLink", "offer_link"],
     ["instructionsLink", "instructions_link"],

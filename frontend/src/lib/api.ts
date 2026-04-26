@@ -1436,6 +1436,7 @@ export type UpdateSettingsPayload = {
   botPromoMainMenuButtonEmojiKey?: string | null;
   subscriptionPageConfig?: string | null;
   supportLink?: string | null;
+  supportButtonUrl?: string | null;
   agreementLink?: string | null;
   offerLink?: string | null;
   instructionsLink?: string | null;
@@ -1736,6 +1737,7 @@ export interface AdminSettings {
   subscriptionPageConfig?: string | null;
   /** Ссылки раздела «Поддержка» в боте (если пусто — кнопка не показывается) */
   supportLink?: string | null;
+  supportButtonUrl?: string | null;
   agreementLink?: string | null;
   offerLink?: string | null;
   instructionsLink?: string | null;

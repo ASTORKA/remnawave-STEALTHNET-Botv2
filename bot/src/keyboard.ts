@@ -111,6 +111,7 @@ export function mainMenu(opts: {
   botButtons?: BotButtonConfig[] | null;
   botBackLabel?: string | null;
   hasSupportLinks?: boolean;
+  supportButtonUrl?: string | null;
   showTickets?: boolean;
   showExtraOptions?: boolean;
   /** Кнопок в ряд: 1 или 2 (по умолчанию 1) */
@@ -133,7 +134,7 @@ export function mainMenu(opts: {
       if (b.id === "singbox" || b.id === "my_singbox") return opts.showSingbox === true;
       if (b.id === "cabinet") return !!opts.appUrl?.trim();
       if (b.id === "tickets") return opts.showTickets === true && !!opts.appUrl?.trim();
-      if (b.id === "support") return !!opts.hasSupportLinks;
+      if (b.id === "support") return !!opts.supportButtonUrl?.trim() || !!opts.hasSupportLinks;
       if (b.id === "extra_options") return opts.showExtraOptions === true;
       return true;
     })
@@ -164,6 +165,10 @@ export function mainMenu(opts: {
       const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/dashboard?support=1` } };
       if (iconId) w.icon_custom_emoji_id = iconId;
       items.push({ node: w, onePerRow });
+    } else if (b.id === "support" && opts.supportButtonUrl?.trim()) {
+      const u: UrlButton = { text: b.label, url: opts.supportButtonUrl.trim() };
+      if (iconId) u.icon_custom_emoji_id = iconId;
+      items.push({ node: u, onePerRow });
     } else if (MENU_IDS[b.id]) {
       items.push({ node: btn(b.label, MENU_IDS[b.id], toStyle(b.style), iconId), onePerRow });
     }

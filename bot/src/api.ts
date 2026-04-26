@@ -137,6 +137,7 @@ export async function getPublicConfig(): Promise<{
   referralPercentLevel2?: number;
   referralPercentLevel3?: number;
   supportLink?: string | null;
+  supportButtonUrl?: string | null;
   agreementLink?: string | null;
   offerLink?: string | null;
   instructionsLink?: string | null;

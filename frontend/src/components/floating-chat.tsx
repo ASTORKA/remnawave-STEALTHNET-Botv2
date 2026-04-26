@@ -15,7 +15,7 @@ type Message = {
   time: string;
 };
 
-type ChatType = "ai" | "support";
+type ChatType = "ai";
 
 type TelegramWebAppBridge = { openLink?: (url: string) => void };
 
@@ -551,24 +551,16 @@ export function FloatingChat() {
   const miniApp = isCabinetTelegramMiniApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeChat, setActiveChat] = useState<ChatType>(() =>
-    isCabinetTelegramMiniApp() ? "support" : config?.aiChatEnabled !== false ? "ai" : "support"
-  );
+  const [activeChat, setActiveChat] = useState<ChatType>("ai");
   const [hasOpenDialog, setHasOpenDialog] = useState(false);
   useEffect(() => {
     if (searchParams.get("support") !== "1" || !token) return;
     setIsOpen(true);
-    setActiveChat("support");
     const next = new URLSearchParams(searchParams);
     next.delete("support");
     setSearchParams(next, { replace: true });
   }, [token, searchParams, setSearchParams]);
-  useEffect(() => {
-    if (!aiChatEnabled && activeChat === "ai") setActiveChat("support");
-  }, [aiChatEnabled, activeChat]);
-  useEffect(() => {
-    if (miniApp && activeChat === "ai") setActiveChat("support");
-  }, [miniApp, activeChat]);
+  if (!aiChatEnabled) return null;
 
   const [aiChats, setAiChats] = useState<Message[]>(() => getInitialAiMessage("Сервис"));
   useEffect(() => {
@@ -706,7 +698,7 @@ export function FloatingChat() {
     setIsOpen,
     aiUnread,
     supportUnread,
-    showAiTab: aiChatEnabled && !miniApp,
+    showAiTab: false,
     isMiniApp: miniApp,
   };
 
@@ -733,7 +725,7 @@ export function FloatingChat() {
                 "flex flex-col overflow-hidden transition-all duration-500 ease-in-out"
               )}
             >
-              {activeChat === "ai" && aiChatEnabled ? (
+      {activeChat === "ai" ? (
                 <div className="flex flex-col flex-1 min-h-0 w-full">
                   {/* AI Messages */}
                   <div 
@@ -866,10 +858,7 @@ export function FloatingChat() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              if (!isOpen && miniApp) setActiveChat("support");
-              setIsOpen((v) => !v);
-            }}
+            onClick={() => setIsOpen((v) => !v)}
             className={cn(
               "relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full z-10",
               "bg-card/60 backdrop-blur-2xl border border-border/50 text-foreground transition-colors hover:bg-card/80",
