@@ -36,6 +36,10 @@ function resolveStyle(configured: ButtonStyle | undefined | null, fallback: Butt
   return configured;
 }
 
+function looksLikeSupportLabel(label: string): boolean {
+  return /поддерж|support/i.test(label);
+}
+
 const MENU_IDS: Record<string, string> = {
   tariffs: "menu:tariffs",
   proxy: "menu:proxy",
@@ -162,9 +166,15 @@ export function mainMenu(opts: {
         items.push({ node: w, onePerRow });
       }
     } else if (b.id === "tickets" && base) {
-      const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/dashboard?support=1` } };
-      if (iconId) w.icon_custom_emoji_id = iconId;
-      items.push({ node: w, onePerRow });
+      if (opts.supportButtonUrl?.trim() && looksLikeSupportLabel(b.label)) {
+        const u: UrlButton = { text: b.label, url: opts.supportButtonUrl.trim() };
+        if (iconId) u.icon_custom_emoji_id = iconId;
+        items.push({ node: u, onePerRow });
+      } else {
+        const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/dashboard?support=1` } };
+        if (iconId) w.icon_custom_emoji_id = iconId;
+        items.push({ node: w, onePerRow });
+      }
     } else if (b.id === "support" && opts.supportButtonUrl?.trim()) {
       const u: UrlButton = { text: b.label, url: opts.supportButtonUrl.trim() };
       if (iconId) u.icon_custom_emoji_id = iconId;

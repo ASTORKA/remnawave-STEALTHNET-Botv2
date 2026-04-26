@@ -53,28 +53,7 @@ function getInitialAiMessage(serviceName: string): Message[] {
 }
 
 const ChatSwitcher = ({ activeChat, setActiveChat, aiUnread, supportUnread, isFloating = false, showAiTab = true }: any) => {
-  if (!showAiTab) {
-    return (
-      <div className={cn(
-        "relative flex p-1 w-full sm:w-auto sm:min-w-[200px]",
-        isFloating
-          ? "bg-black/20 dark:bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 shadow-lg pointer-events-auto"
-          : "bg-black/20 backdrop-blur-sm border border-white/5 rounded-xl"
-      )}>
-        <button
-          onClick={() => setActiveChat("support")}
-          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold text-primary-foreground bg-primary relative z-10"
-        >
-          <Headset className="w-4 h-4" /> Поддержка
-          {supportUnread > 0 && (
-            <span className="ml-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-              {supportUnread}
-            </span>
-          )}
-        </button>
-      </div>
-    );
-  }
+  if (!showAiTab) return null;
   return (
   <div className={cn(
     "relative flex p-1 w-full sm:w-auto sm:min-w-[320px]",
@@ -560,7 +539,6 @@ export function FloatingChat() {
     next.delete("support");
     setSearchParams(next, { replace: true });
   }, [token, searchParams, setSearchParams]);
-  if (!aiChatEnabled) return null;
 
   const [aiChats, setAiChats] = useState<Message[]>(() => getInitialAiMessage("Сервис"));
   useEffect(() => {
@@ -577,11 +555,6 @@ export function FloatingChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [aiLoading, setAiLoading] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    setIsScrolled(e.currentTarget.scrollTop > 100);
-  };
 
   // Poll for support unread count
   const refreshUnread = () => {
@@ -628,7 +601,6 @@ export function FloatingChat() {
       if (activeChat === "ai") {
         setAiUnread(0);
       }
-      setIsScrolled(false);
       scrollToBottom();
     }
   }, [isOpen, activeChat, aiChats]);
@@ -702,6 +674,8 @@ export function FloatingChat() {
     isMiniApp: miniApp,
   };
 
+  if (!aiChatEnabled) return null;
+
   return (
     <>
       <div className={cn("fixed bottom-[calc(4.05rem+env(safe-area-inset-bottom))] right-3 z-[100] sm:bottom-6 sm:right-6", hasOpenDialog && !isOpen && "pointer-events-none opacity-0")}>
@@ -730,27 +704,9 @@ export function FloatingChat() {
                   {/* AI Messages */}
                   <div 
                     className="flex-1 overflow-y-auto min-h-0 bg-gradient-to-b from-transparent to-black/5 scroll-smooth custom-scrollbar flex flex-col relative"
-                    onScroll={handleScroll}
                   >
                     <ChatHeader {...headerProps} />
                     
-                    {/* Floating Switcher */}
-                    <div className="sticky top-4 z-30 flex justify-center pointer-events-none px-4 w-full h-0 overflow-visible">
-                      <AnimatePresence>
-                        {isScrolled && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.2 }}
-                            className="pointer-events-auto w-full sm:w-auto"
-                          >
-                            <ChatSwitcher {...headerProps} isFloating={true} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
                     <div className="p-4 space-y-4 flex-1">
                       <AnimatePresence mode="popLayout">
                         {aiChats.map((msg) => {
