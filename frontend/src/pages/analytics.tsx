@@ -357,17 +357,17 @@ export function AnalyticsPage() {
                         const total = Number(payload?.[0]?.value ?? 0);
                         const breakdown = selectedPromoGroupId === "__all" ? (promoUsageBreakdownByDay[day] ?? []) : [];
                         return (
-                          <div className="rounded-md border bg-background p-2 text-xs shadow-sm">
-                            <div className="font-medium mb-1">{day}</div>
-                            <div>Использований: {total}</div>
+                          <div className="rounded-md border border-white/20 bg-slate-950 p-2 text-xs text-white shadow-lg">
+                            <div className="mb-1 font-semibold text-white">{day}</div>
+                            <div className="text-white">Использований: {total}</div>
                             {selectedPromoGroupId === "__all" && breakdown.length > 0 && (
-                              <div className="mt-2 border-t pt-2 space-y-1 max-h-52 overflow-auto">
+                              <div className="mt-2 max-h-52 space-y-1 overflow-auto border-t border-white/20 pt-2">
                                 {breakdown.map((item) => (
                                   <div key={item.id} className="flex items-center justify-between gap-3">
-                                    <span className="text-muted-foreground truncate">
+                                    <span className="truncate text-white">
                                       {item.code ? `${item.name} (${item.code})` : item.name}
                                     </span>
-                                    <span className="font-medium">{item.activations}</span>
+                                    <span className="font-semibold text-white">{item.activations}</span>
                                   </div>
                                 ))}
                               </div>

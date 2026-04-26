@@ -161,9 +161,9 @@ export function mainMenu(opts: {
         if (iconId) u.icon_custom_emoji_id = iconId;
         items.push({ node: u, onePerRow });
       } else {
-        const w: WebAppButton = { text: b.label, web_app: { url: `${base}/cabinet/subscribe` } };
-        if (iconId) w.icon_custom_emoji_id = iconId;
-        items.push({ node: w, onePerRow });
+        const u: UrlButton = { text: b.label, url: `${base}/cabinet/subscribe` };
+        if (iconId) u.icon_custom_emoji_id = iconId;
+        items.push({ node: u, onePerRow });
       }
     } else if (b.id === "tickets" && base) {
       if (opts.supportButtonUrl?.trim() && looksLikeSupportLabel(b.label)) {
@@ -290,7 +290,7 @@ export function openSubscribePageMarkup(appUrl: string, backLabel?: string | nul
       ],
     };
   }
-  const connectBtn: WebAppButton = { text: "📲 Открыть страницу подключения", web_app: { url: `${base}/cabinet/subscribe` } };
+  const connectBtn: UrlButton = { text: "📲 Открыть страницу подключения", url: `${base}/cabinet/subscribe` };
   if (emojiIds?.connect) connectBtn.icon_custom_emoji_id = emojiIds.connect;
   return {
     inline_keyboard: [
