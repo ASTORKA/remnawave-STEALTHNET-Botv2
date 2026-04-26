@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/auth";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +62,20 @@ interface AnalyticsData {
     vpnConversion: number;
     paymentConversion: number;
   }[];
+  promoLinksConversionByGroup: {
+    promoGroupId: string;
+    name: string;
+    code: string | null;
+    totalActivations: number;
+    series: {
+      date: string;
+      activations: number;
+      connected: number;
+      paid: number;
+      vpnConversion: number;
+      paymentConversion: number;
+    }[];
+  }[];
   promoUsagesSeries: { date: string; value: number }[];
   refCreditsSeries: { date: string; value: number }[];
   vpnConnectionsSeries: { date: string; total: number; paid: number; unpaid: number }[];
@@ -107,6 +121,7 @@ export function AnalyticsPage() {
   const token = state.accessToken;
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPromoGroupId, setSelectedPromoGroupId] = useState("__all");
 
   useEffect(() => {
     if (!token) return;
@@ -138,6 +153,10 @@ export function AnalyticsPage() {
 
   // Combine promo acts + usages for chart
   const promoWeekly = aggregateByWeekTwo(data.promoActsSeries, data.promoUsagesSeries, "Промо-ссылки", "Промокоды");
+  const promoSeriesForChart = useMemo(() => {
+    if (selectedPromoGroupId === "__all") return data.promoLinksConversionSeries ?? [];
+    return data.promoLinksConversionByGroup?.find((g) => g.promoGroupId === selectedPromoGroupId)?.series ?? [];
+  }, [data.promoLinksConversionSeries, data.promoLinksConversionByGroup, selectedPromoGroupId]);
 
   return (
     <div className="space-y-8">
@@ -223,6 +242,60 @@ export function AnalyticsPage() {
                     <Bar yAxisId="left" dataKey="unpaid" name="Не платящие" stackId="users" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="total" name="Всего подключений" stroke="#6366f1" strokeWidth={2} dot={false} />
                     <Line yAxisId="right" type="monotone" dataKey="newUsers" name="Новые пользователи" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Gift className="h-5 w-5 text-primary" />
+          Промоссылки: использование и конверсия (90 дн.)
+        </h2>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-base">Эффективность промоссылок по дням</CardTitle>
+              <select
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={selectedPromoGroupId}
+                onChange={(e) => setSelectedPromoGroupId(e.target.value)}
+              >
+                <option value="__all">Все промоссылки</option>
+                {(data.promoLinksConversionByGroup ?? []).map((g) => (
+                  <option key={g.promoGroupId} value={g.promoGroupId}>
+                    {g.code ? `${g.name} (${g.code})` : g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              {promoSeriesForChart.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={promoSeriesForChart}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === "Конверсия в VPN" || name === "Конверсия в оплату") {
+                          return [`${Number(value ?? 0).toFixed(1)}%`, name];
+                        }
+                        return [Number(value ?? 0), name];
+                      }}
+                    />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="vpnConversion" name="Конверсия в VPN" stroke="#22c55e" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="paymentConversion" name="Конверсия в оплату" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -480,40 +553,6 @@ export function AnalyticsPage() {
           <Gift className="h-5 w-5 text-primary" />
           Промо-статистика
         </h2>
-        <Card className="mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Промоссылки: использования и конверсия по дням (90 дн.)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              {data.promoLinksConversionSeries?.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data.promoLinksConversionSeries}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === "Конверсия в VPN" || name === "Конверсия в оплату") {
-                          return [`${Number(value ?? 0).toFixed(1)}%`, name];
-                        }
-                        return [Number(value ?? 0), name];
-                      }}
-                    />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    <Line yAxisId="right" type="monotone" dataKey="vpnConversion" name="Конверсия в VPN" stroke="#22c55e" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="paymentConversion" name="Конверсия в оплату" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <NoData />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mb-4">
           <MetricCard icon={Gift} label="Промо-ссылки активаций" value={fmt(s.promoActivations)} color="text-violet-500" />
           <MetricCard icon={Tag} label="Промокоды использований" value={fmt(s.promoCodeUsages)} color="text-cyan-500" />

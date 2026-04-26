@@ -34,6 +34,7 @@ import {
   remnaResetUserTraffic,
   remnaGetUserByTelegramId,
   remnaGetUserByEmail,
+  remnaGetUserHwidDevices,
   remnaGetNodeUsersUsage,
   extractRemnaUuid,
   isRemnaConfigured,
@@ -2986,10 +2987,46 @@ adminRouter.get("/analytics", async (_req, res) => {
     where: { createdAt: { gte: day90Ago } },
     select: {
       createdAt: true,
+      promoGroupId: true,
       clientId: true,
-      client: { select: { remnawaveUuid: true } },
     },
   });
+  const promoGroupsAll = await prisma.promoGroup.findMany({
+    select: { id: true, name: true, code: true },
+  });
+  const promoGroupMap = new Map(promoGroupsAll.map((g) => [g.id, g]));
+  const promoClientIds = Array.from(new Set(promoActs90.map((a) => a.clientId)));
+  const promoClients = promoClientIds.length > 0
+    ? await prisma.client.findMany({
+        where: { id: { in: promoClientIds } },
+        select: { id: true, remnawaveUuid: true },
+      })
+    : [];
+  const remnaUuidByClientId = new Map(
+    promoClients.filter((c) => c.remnawaveUuid).map((c) => [c.id, c.remnawaveUuid as string]),
+  );
+  const connectedOnceClientIds = new Set<string>();
+  if (isRemnaConfigured() && remnaUuidByClientId.size > 0) {
+    const pairs = Array.from(remnaUuidByClientId.entries());
+    const batchSize = 10;
+    for (let i = 0; i < pairs.length; i += batchSize) {
+      const batch = pairs.slice(i, i + batchSize);
+      const results = await Promise.all(batch.map(async ([clientId, userUuid]) => {
+        const remna = await remnaGetUserHwidDevices(userUuid);
+        if (remna.error || !remna.data) return { clientId, connected: false };
+        const payload = remna.data as { response?: { total?: number; devices?: Array<unknown> } } | undefined;
+        const total = typeof payload?.response?.total === "number"
+          ? payload.response.total
+          : Array.isArray(payload?.response?.devices)
+            ? payload.response.devices.length
+            : 0;
+        return { clientId, connected: total > 0 };
+      }));
+      for (const r of results) {
+        if (r.connected) connectedOnceClientIds.add(r.clientId);
+      }
+    }
+  }
   const promoActsByDay: Record<string, number> = {};
   const promoConnectedByDay: Record<string, number> = {};
   const promoPaidByDay: Record<string, number> = {};
@@ -3000,14 +3037,35 @@ adminRouter.get("/analytics", async (_req, res) => {
       distinct: ["clientId"],
     })).map((p) => p.clientId),
   );
+  const promoByGroupMaps: Record<
+    string,
+    { activations: Record<string, number>; connected: Record<string, number>; paid: Record<string, number> }
+  > = {};
+  function ensureGroupMaps(groupId: string) {
+    if (!promoByGroupMaps[groupId]) {
+      promoByGroupMaps[groupId] = { activations: {}, connected: {}, paid: {} };
+    }
+    return promoByGroupMaps[groupId];
+  }
   for (const a of promoActs90) {
     const day = a.createdAt.toISOString().slice(0, 10);
     promoActsByDay[day] = (promoActsByDay[day] ?? 0) + 1;
-    if (a.client?.remnawaveUuid) {
+    if (connectedOnceClientIds.has(a.clientId)) {
       promoConnectedByDay[day] = (promoConnectedByDay[day] ?? 0) + 1;
     }
     if (paidPromoClientIds.has(a.clientId)) {
       promoPaidByDay[day] = (promoPaidByDay[day] ?? 0) + 1;
+    }
+
+    if (a.promoGroupId) {
+      const groupMaps = ensureGroupMaps(a.promoGroupId);
+      groupMaps.activations[day] = (groupMaps.activations[day] ?? 0) + 1;
+      if (connectedOnceClientIds.has(a.clientId)) {
+        groupMaps.connected[day] = (groupMaps.connected[day] ?? 0) + 1;
+      }
+      if (paidPromoClientIds.has(a.clientId)) {
+        groupMaps.paid[day] = (groupMaps.paid[day] ?? 0) + 1;
+      }
     }
   }
   const promoActsSeries = fillDaySeries(promoActsByDay, day90Ago, now);
@@ -3024,6 +3082,31 @@ adminRouter.get("/analytics", async (_req, res) => {
       paymentConversion: base > 0 ? Math.round((paid / base) * 1000) / 10 : 0,
     };
   });
+  const promoLinksConversionByGroup = Object.entries(promoByGroupMaps)
+    .map(([groupId, maps]) => {
+      const baseSeries = fillDaySeries(maps.activations, day90Ago, now);
+      const totalActivations = baseSeries.reduce((sum, p) => sum + p.value, 0);
+      return {
+        promoGroupId: groupId,
+        name: promoGroupMap.get(groupId)?.name ?? groupId,
+        code: promoGroupMap.get(groupId)?.code ?? null,
+        totalActivations,
+        series: baseSeries.map((p) => {
+          const connected = maps.connected[p.date] ?? 0;
+          const paid = maps.paid[p.date] ?? 0;
+          const base = p.value;
+          return {
+            date: p.date,
+            activations: base,
+            connected,
+            paid,
+            vpnConversion: base > 0 ? Math.round((connected / base) * 1000) / 10 : 0,
+            paymentConversion: base > 0 ? Math.round((paid / base) * 1000) / 10 : 0,
+          };
+        }),
+      };
+    })
+    .sort((a, b) => b.totalActivations - a.totalActivations);
 
   // Промокоды использований по дням
   const promoUsages90 = await prisma.promoCodeUsage.findMany({
@@ -3076,6 +3159,7 @@ adminRouter.get("/analytics", async (_req, res) => {
     trialsSeries,
     promoActsSeries,
     promoLinksConversionSeries,
+    promoLinksConversionByGroup,
     promoUsagesSeries,
     refCreditsSeries,
     vpnConnectionsSeries,
