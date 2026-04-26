@@ -54,6 +54,14 @@ interface AnalyticsData {
   clientsSeries: { date: string; value: number }[];
   trialsSeries: { date: string; value: number }[];
   promoActsSeries: { date: string; value: number }[];
+  promoLinksConversionSeries: {
+    date: string;
+    activations: number;
+    connected: number;
+    paid: number;
+    vpnConversion: number;
+    paymentConversion: number;
+  }[];
   promoUsagesSeries: { date: string; value: number }[];
   refCreditsSeries: { date: string; value: number }[];
   vpnConnectionsSeries: { date: string; total: number; paid: number; unpaid: number }[];
@@ -472,6 +480,40 @@ export function AnalyticsPage() {
           <Gift className="h-5 w-5 text-primary" />
           Промо-статистика
         </h2>
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Промоссылки: использования и конверсия по дням (90 дн.)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              {data.promoLinksConversionSeries?.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={data.promoLinksConversionSeries}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === "Конверсия в VPN" || name === "Конверсия в оплату") {
+                          return [`${Number(value ?? 0).toFixed(1)}%`, name];
+                        }
+                        return [Number(value ?? 0), name];
+                      }}
+                    />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="vpnConversion" name="Конверсия в VPN" stroke="#22c55e" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="paymentConversion" name="Конверсия в оплату" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mb-4">
           <MetricCard icon={Gift} label="Промо-ссылки активаций" value={fmt(s.promoActivations)} color="text-violet-500" />
           <MetricCard icon={Tag} label="Промокоды использований" value={fmt(s.promoCodeUsages)} color="text-cyan-500" />

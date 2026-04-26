@@ -2984,14 +2984,46 @@ adminRouter.get("/analytics", async (_req, res) => {
   // Промо активации по дням
   const promoActs90 = await prisma.promoActivation.findMany({
     where: { createdAt: { gte: day90Ago } },
-    select: { createdAt: true },
+    select: {
+      createdAt: true,
+      clientId: true,
+      client: { select: { remnawaveUuid: true } },
+    },
   });
   const promoActsByDay: Record<string, number> = {};
+  const promoConnectedByDay: Record<string, number> = {};
+  const promoPaidByDay: Record<string, number> = {};
+  const paidPromoClientIds = new Set(
+    (await prisma.payment.findMany({
+      where: { status: "PAID" },
+      select: { clientId: true },
+      distinct: ["clientId"],
+    })).map((p) => p.clientId),
+  );
   for (const a of promoActs90) {
     const day = a.createdAt.toISOString().slice(0, 10);
     promoActsByDay[day] = (promoActsByDay[day] ?? 0) + 1;
+    if (a.client?.remnawaveUuid) {
+      promoConnectedByDay[day] = (promoConnectedByDay[day] ?? 0) + 1;
+    }
+    if (paidPromoClientIds.has(a.clientId)) {
+      promoPaidByDay[day] = (promoPaidByDay[day] ?? 0) + 1;
+    }
   }
   const promoActsSeries = fillDaySeries(promoActsByDay, day90Ago, now);
+  const promoLinksConversionSeries = promoActsSeries.map((p) => {
+    const connected = promoConnectedByDay[p.date] ?? 0;
+    const paid = promoPaidByDay[p.date] ?? 0;
+    const base = p.value;
+    return {
+      date: p.date,
+      activations: base,
+      connected,
+      paid,
+      vpnConversion: base > 0 ? Math.round((connected / base) * 1000) / 10 : 0,
+      paymentConversion: base > 0 ? Math.round((paid / base) * 1000) / 10 : 0,
+    };
+  });
 
   // Промокоды использований по дням
   const promoUsages90 = await prisma.promoCodeUsage.findMany({
@@ -3043,6 +3075,7 @@ adminRouter.get("/analytics", async (_req, res) => {
     clientsSeries,
     trialsSeries,
     promoActsSeries,
+    promoLinksConversionSeries,
     promoUsagesSeries,
     refCreditsSeries,
     vpnConnectionsSeries,
