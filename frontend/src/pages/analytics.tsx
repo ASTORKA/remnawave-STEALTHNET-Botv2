@@ -84,6 +84,7 @@ interface AnalyticsData {
     vpnConnectedCount: number;
     paidUsersCount: number;
     paymentsCount: number;
+    vpnConversion: number;
     paymentConversion: number;
   }[];
   promoUsagesSeries: { date: string; value: number }[];
@@ -132,6 +133,28 @@ export function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPromoGroupId, setSelectedPromoGroupId] = useState("__all");
+  const [highlightedPromoIds, setHighlightedPromoIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("analytics.promo.highlightedIds");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        setHighlightedPromoIds(parsed.filter((v): v is string => typeof v === "string"));
+      }
+    } catch {
+      // ignore localStorage parse errors
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("analytics.promo.highlightedIds", JSON.stringify(highlightedPromoIds));
+    } catch {
+      // ignore localStorage write errors
+    }
+  }, [highlightedPromoIds]);
 
   useEffect(() => {
     if (!token) return;
@@ -167,6 +190,9 @@ export function AnalyticsPage() {
     selectedPromoGroupId === "__all"
       ? (data.promoLinksConversionSeries ?? [])
       : (data.promoLinksConversionByGroup?.find((g) => g.promoGroupId === selectedPromoGroupId)?.series ?? []);
+  function togglePromoHighlight(id: string) {
+    setHighlightedPromoIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   return (
     <div className="space-y-8">
@@ -293,24 +319,70 @@ export function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === "Конверсия в VPN" || name === "Конверсия в оплату") {
-                          return [`${Number(value ?? 0).toFixed(1)}%`, name];
-                        }
-                        return [Number(value ?? 0), name];
-                      }}
-                    />
+                    <Tooltip formatter={(value, name) => [Number(value ?? 0), name]} />
                     <Legend />
                     <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    <Line yAxisId="right" type="monotone" dataKey="vpnConversion" name="Конверсия в VPN" stroke="#22c55e" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
                 <NoData />
               )}
             </div>
+          </CardContent>
+        </Card>
+        <Card className="mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Промоссылки - конверсия в оплату (все время)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {!data.promoPaymentTableByGroup?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Нет данных</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Выделить</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Промоссылка</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Код</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Использований</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Подключились к VPN</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Конверсия в VPN</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Оплат</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Конверсия в оплату</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.promoPaymentTableByGroup.map((row) => {
+                      const highlighted = highlightedPromoIds.includes(row.promoGroupId);
+                      return (
+                        <tr
+                          key={row.promoGroupId}
+                          className={`border-b hover:bg-muted/30 ${highlighted ? "bg-yellow-500/15" : ""}`}
+                        >
+                          <td className="px-4 py-2">
+                            <button
+                              type="button"
+                              className={`rounded px-2 py-0.5 text-xs border ${highlighted ? "bg-yellow-500/30 border-yellow-500/60" : "bg-background border-input"}`}
+                              onClick={() => togglePromoHighlight(row.promoGroupId)}
+                            >
+                              {highlighted ? "Снять" : "Выделить"}
+                            </button>
+                          </td>
+                          <td className="px-4 py-2">{row.name}</td>
+                          <td className="px-4 py-2 font-mono text-xs">{row.code}</td>
+                          <td className="px-4 py-2 text-right">{fmt(row.usageCount)}</td>
+                          <td className="px-4 py-2 text-right">{fmt(row.vpnConnectedCount)}</td>
+                          <td className="px-4 py-2 text-right">{row.vpnConversion.toFixed(1)}%</td>
+                          <td className="px-4 py-2 text-right">{fmt(row.paymentsCount)}</td>
+                          <td className="px-4 py-2 text-right font-medium">{row.paymentConversion.toFixed(1)}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -645,43 +717,6 @@ export function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-        <Card className="mt-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Промоссылки - конверсия в оплату (все время)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {!data.promoPaymentTableByGroup?.length ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Нет данных</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Промоссылка</th>
-                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Код</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Использований</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Подключились к VPN</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Оплат</th>
-                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Конверсия в оплату</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.promoPaymentTableByGroup.map((row) => (
-                      <tr key={row.promoGroupId} className="border-b hover:bg-muted/30">
-                        <td className="px-4 py-2">{row.name}</td>
-                        <td className="px-4 py-2 font-mono text-xs">{row.code}</td>
-                        <td className="px-4 py-2 text-right">{fmt(row.usageCount)}</td>
-                        <td className="px-4 py-2 text-right">{fmt(row.vpnConnectedCount)}</td>
-                        <td className="px-4 py-2 text-right">{fmt(row.paymentsCount)}</td>
-                        <td className="px-4 py-2 text-right font-medium">{row.paymentConversion.toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </section>
     </div>
   );

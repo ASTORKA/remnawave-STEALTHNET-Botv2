@@ -2798,51 +2798,6 @@ async function buildVpnConnectionsSeries(
   return series;
 }
 
-async function buildVpnConnectionsSeriesFast(
-  from: Date,
-  to: Date,
-): Promise<VpnConnectionsPoint[]> {
-  if (!isRemnaConfigured()) return [];
-
-  const [remnaUsers, clients, paidPayments] = await Promise.all([
-    fetchAllRemnaUsers(),
-    prisma.client.findMany({ select: { id: true, remnawaveUuid: true } }),
-    prisma.payment.findMany({
-      where: { status: "PAID" },
-      select: { clientId: true },
-      distinct: ["clientId"],
-    }),
-  ]);
-
-  const paidClientIdSet = new Set(paidPayments.map((p) => p.clientId));
-  const paidRemnaUuidSet = new Set(
-    clients.filter((c) => c.remnawaveUuid && paidClientIdSet.has(c.id)).map((c) => c.remnawaveUuid as string),
-  );
-
-  const daySet = new Set(dateRangeDays(from, to));
-  const map = new Map<string, { total: number; paid: number; unpaid: number }>();
-  for (const day of daySet) map.set(day, { total: 0, paid: 0, unpaid: 0 });
-
-  for (const u of remnaUsers) {
-    const onlineAt = u.userTraffic?.onlineAt;
-    if (!onlineAt) continue;
-    const day = onlineAt.slice(0, 10);
-    if (!daySet.has(day)) continue;
-    const point = map.get(day);
-    if (!point) continue;
-    point.total += 1;
-    if (u.uuid && paidRemnaUuidSet.has(u.uuid)) point.paid += 1;
-    else point.unpaid += 1;
-  }
-
-  return Array.from(map.entries()).map(([date, v]) => ({
-    date,
-    total: v.total,
-    paid: v.paid,
-    unpaid: v.unpaid,
-  }));
-}
-
 adminRouter.get("/analytics", async (_req, res) => {
   const now = new Date();
   const day1Ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -2853,17 +2808,14 @@ adminRouter.get("/analytics", async (_req, res) => {
   const vpnConnectionsStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // ─── Все оплаченные платежи за 90 дней ───
-  const [payments90, vpnConnectionsSeriesRaw] = await Promise.all([
+  const [payments90, vpnConnectionsSeries] = await Promise.all([
     prisma.payment.findMany({
       where: { status: "PAID", paidAt: { gte: day90Ago } },
       select: { amount: true, paidAt: true, provider: true, tariffId: true, clientId: true },
       orderBy: { paidAt: "asc" },
     }),
-    withTimeout(buildVpnConnectionsSeries(vpnConnectionsStart, now), 8000, [] as VpnConnectionsPoint[]),
+    withTimeout(buildVpnConnectionsSeries(vpnConnectionsStart, now), 20000, [] as VpnConnectionsPoint[]),
   ]);
-  const vpnConnectionsSeries = vpnConnectionsSeriesRaw.length > 0
-    ? vpnConnectionsSeriesRaw
-    : await withTimeout(buildVpnConnectionsSeriesFast(vpnConnectionsStart, now), 5000, [] as VpnConnectionsPoint[]);
 
   const revenueByDay: Record<string, number> = {};
   const revenueByProvider: Record<string, number> = {};
@@ -3203,6 +3155,7 @@ adminRouter.get("/analytics", async (_req, res) => {
       vpnConnectedCount: connectedCount,
       paidUsersCount,
       paymentsCount,
+      vpnConversion: usageCount > 0 ? Math.round((connectedCount / usageCount) * 1000) / 10 : 0,
       paymentConversion,
     };
   }).sort((a, b) => b.paymentConversion - a.paymentConversion);
