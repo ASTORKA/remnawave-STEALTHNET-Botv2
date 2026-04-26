@@ -190,6 +190,28 @@ export function AnalyticsPage() {
     selectedPromoGroupId === "__all"
       ? (data.promoLinksConversionSeries ?? [])
       : (data.promoLinksConversionByGroup?.find((g) => g.promoGroupId === selectedPromoGroupId)?.series ?? []);
+  const promoUsageBreakdownByDay: Record<string, { id: string; name: string; code: string | null; activations: number }[]> = {};
+  for (const group of data.promoLinksConversionByGroup ?? []) {
+    for (const point of group.series ?? []) {
+      if ((point.activations ?? 0) <= 0) continue;
+      if (!promoUsageBreakdownByDay[point.date]) promoUsageBreakdownByDay[point.date] = [];
+      promoUsageBreakdownByDay[point.date].push({
+        id: group.promoGroupId,
+        name: group.name,
+        code: group.code,
+        activations: point.activations,
+      });
+    }
+  }
+  for (const day of Object.keys(promoUsageBreakdownByDay)) {
+    promoUsageBreakdownByDay[day].sort((a, b) => b.activations - a.activations);
+  }
+  const promoPaymentTableSorted = [...(data.promoPaymentTableByGroup ?? [])].sort((a, b) => {
+    const aHighlighted = highlightedPromoIds.includes(a.promoGroupId) ? 1 : 0;
+    const bHighlighted = highlightedPromoIds.includes(b.promoGroupId) ? 1 : 0;
+    if (aHighlighted !== bHighlighted) return bHighlighted - aHighlighted;
+    return b.usageCount - a.usageCount;
+  });
   function togglePromoHighlight(id: string) {
     setHighlightedPromoIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
@@ -319,7 +341,33 @@ export function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
-                    <Tooltip formatter={(value, name) => [Number(value ?? 0), name]} />
+                    <Tooltip
+                      formatter={(value, name) => [Number(value ?? 0), name]}
+                      content={({ active, payload, label }) => {
+                        if (!active) return null;
+                        const day = String(label ?? "");
+                        const total = Number(payload?.[0]?.value ?? 0);
+                        const breakdown = selectedPromoGroupId === "__all" ? (promoUsageBreakdownByDay[day] ?? []) : [];
+                        return (
+                          <div className="rounded-md border bg-background p-2 text-xs shadow-sm">
+                            <div className="font-medium mb-1">{day}</div>
+                            <div>Использований: {total}</div>
+                            {selectedPromoGroupId === "__all" && breakdown.length > 0 && (
+                              <div className="mt-2 border-t pt-2 space-y-1 max-h-52 overflow-auto">
+                                {breakdown.map((item) => (
+                                  <div key={item.id} className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground truncate">
+                                      {item.code ? `${item.name} (${item.code})` : item.name}
+                                    </span>
+                                    <span className="font-medium">{item.activations}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }}
+                    />
                     <Legend />
                     <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                   </ComposedChart>
@@ -353,7 +401,7 @@ export function AnalyticsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.promoPaymentTableByGroup.map((row) => {
+                    {promoPaymentTableSorted.map((row) => {
                       const highlighted = highlightedPromoIds.includes(row.promoGroupId);
                       return (
                         <tr
