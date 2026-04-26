@@ -34,7 +34,6 @@ import {
   remnaResetUserTraffic,
   remnaGetUserByTelegramId,
   remnaGetUserByEmail,
-  remnaGetUserHwidDevices,
   remnaGetNodeUsersUsage,
   extractRemnaUuid,
   isRemnaConfigured,
@@ -2672,6 +2671,16 @@ type VpnConnectionsPoint = {
   unpaid: number;
 };
 
+type RemnaUserLite = {
+  uuid?: string;
+  username?: string;
+  userTraffic?: {
+    usedTrafficBytes?: number;
+    lifetimeUsedTrafficBytes?: number;
+    onlineAt?: string | null;
+  };
+};
+
 function formatDayUTC(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -2687,8 +2696,8 @@ function dateRangeDays(from: Date, to: Date): string[] {
   return out;
 }
 
-async function fetchAllRemnaUsers(maxPages = 20, pageSize = 500): Promise<Array<{ uuid?: string; username?: string }>> {
-  const users: Array<{ uuid?: string; username?: string }> = [];
+async function fetchAllRemnaUsers(maxPages = 20, pageSize = 500): Promise<RemnaUserLite[]> {
+  const users: RemnaUserLite[] = [];
   for (let page = 0; page < maxPages; page++) {
     const start = page * pageSize;
     const result = await remnaGetUsers({ size: pageSize, start });
@@ -2702,6 +2711,18 @@ async function fetchAllRemnaUsers(maxPages = 20, pageSize = 500): Promise<Array<
     if (pageUsers.length < pageSize || users.length >= total) break;
   }
   return users;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function buildVpnConnectionsSeries(
@@ -2793,7 +2814,7 @@ adminRouter.get("/analytics", async (_req, res) => {
       select: { amount: true, paidAt: true, provider: true, tariffId: true, clientId: true },
       orderBy: { paidAt: "asc" },
     }),
-    buildVpnConnectionsSeries(vpnConnectionsStart, now),
+    withTimeout(buildVpnConnectionsSeries(vpnConnectionsStart, now), 8000, [] as VpnConnectionsPoint[]),
   ]);
 
   const revenueByDay: Record<string, number> = {};
@@ -3007,24 +3028,15 @@ adminRouter.get("/analytics", async (_req, res) => {
   );
   const connectedOnceClientIds = new Set<string>();
   if (isRemnaConfigured() && remnaUuidByClientId.size > 0) {
-    const pairs = Array.from(remnaUuidByClientId.entries());
-    const batchSize = 10;
-    for (let i = 0; i < pairs.length; i += batchSize) {
-      const batch = pairs.slice(i, i + batchSize);
-      const results = await Promise.all(batch.map(async ([clientId, userUuid]) => {
-        const remna = await remnaGetUserHwidDevices(userUuid);
-        if (remna.error || !remna.data) return { clientId, connected: false };
-        const payload = remna.data as { response?: { total?: number; devices?: Array<unknown> } } | undefined;
-        const total = typeof payload?.response?.total === "number"
-          ? payload.response.total
-          : Array.isArray(payload?.response?.devices)
-            ? payload.response.devices.length
-            : 0;
-        return { clientId, connected: total > 0 };
-      }));
-      for (const r of results) {
-        if (r.connected) connectedOnceClientIds.add(r.clientId);
-      }
+    const remnaUsers = await withTimeout(fetchAllRemnaUsers(), 5000, [] as RemnaUserLite[]);
+    const connectedUuids = new Set(
+      remnaUsers
+        .filter((u) => (u.userTraffic?.lifetimeUsedTrafficBytes ?? 0) > 0)
+        .map((u) => u.uuid)
+        .filter((u): u is string => Boolean(u)),
+    );
+    for (const [clientId, remnaUuid] of remnaUuidByClientId.entries()) {
+      if (connectedUuids.has(remnaUuid)) connectedOnceClientIds.add(clientId);
     }
   }
   const promoActsByDay: Record<string, number> = {};
