@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,10 +153,10 @@ export function AnalyticsPage() {
 
   // Combine promo acts + usages for chart
   const promoWeekly = aggregateByWeekTwo(data.promoActsSeries, data.promoUsagesSeries, "Промо-ссылки", "Промокоды");
-  const promoSeriesForChart = useMemo(() => {
-    if (selectedPromoGroupId === "__all") return data.promoLinksConversionSeries ?? [];
-    return data.promoLinksConversionByGroup?.find((g) => g.promoGroupId === selectedPromoGroupId)?.series ?? [];
-  }, [data.promoLinksConversionSeries, data.promoLinksConversionByGroup, selectedPromoGroupId]);
+  const promoSeriesForChart =
+    selectedPromoGroupId === "__all"
+      ? (data.promoLinksConversionSeries ?? [])
+      : (data.promoLinksConversionByGroup?.find((g) => g.promoGroupId === selectedPromoGroupId)?.series ?? []);
 
   return (
     <div className="space-y-8">
