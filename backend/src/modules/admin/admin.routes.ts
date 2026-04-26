@@ -2798,6 +2798,51 @@ async function buildVpnConnectionsSeries(
   return series;
 }
 
+async function buildVpnConnectionsSeriesFast(
+  from: Date,
+  to: Date,
+): Promise<VpnConnectionsPoint[]> {
+  if (!isRemnaConfigured()) return [];
+
+  const [remnaUsers, clients, paidPayments] = await Promise.all([
+    fetchAllRemnaUsers(),
+    prisma.client.findMany({ select: { id: true, remnawaveUuid: true } }),
+    prisma.payment.findMany({
+      where: { status: "PAID" },
+      select: { clientId: true },
+      distinct: ["clientId"],
+    }),
+  ]);
+
+  const paidClientIdSet = new Set(paidPayments.map((p) => p.clientId));
+  const paidRemnaUuidSet = new Set(
+    clients.filter((c) => c.remnawaveUuid && paidClientIdSet.has(c.id)).map((c) => c.remnawaveUuid as string),
+  );
+
+  const daySet = new Set(dateRangeDays(from, to));
+  const map = new Map<string, { total: number; paid: number; unpaid: number }>();
+  for (const day of daySet) map.set(day, { total: 0, paid: 0, unpaid: 0 });
+
+  for (const u of remnaUsers) {
+    const onlineAt = u.userTraffic?.onlineAt;
+    if (!onlineAt) continue;
+    const day = onlineAt.slice(0, 10);
+    if (!daySet.has(day)) continue;
+    const point = map.get(day);
+    if (!point) continue;
+    point.total += 1;
+    if (u.uuid && paidRemnaUuidSet.has(u.uuid)) point.paid += 1;
+    else point.unpaid += 1;
+  }
+
+  return Array.from(map.entries()).map(([date, v]) => ({
+    date,
+    total: v.total,
+    paid: v.paid,
+    unpaid: v.unpaid,
+  }));
+}
+
 adminRouter.get("/analytics", async (_req, res) => {
   const now = new Date();
   const day1Ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -2808,7 +2853,7 @@ adminRouter.get("/analytics", async (_req, res) => {
   const vpnConnectionsStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // ─── Все оплаченные платежи за 90 дней ───
-  const [payments90, vpnConnectionsSeries] = await Promise.all([
+  const [payments90, vpnConnectionsSeriesRaw] = await Promise.all([
     prisma.payment.findMany({
       where: { status: "PAID", paidAt: { gte: day90Ago } },
       select: { amount: true, paidAt: true, provider: true, tariffId: true, clientId: true },
@@ -2816,6 +2861,9 @@ adminRouter.get("/analytics", async (_req, res) => {
     }),
     withTimeout(buildVpnConnectionsSeries(vpnConnectionsStart, now), 8000, [] as VpnConnectionsPoint[]),
   ]);
+  const vpnConnectionsSeries = vpnConnectionsSeriesRaw.length > 0
+    ? vpnConnectionsSeriesRaw
+    : await withTimeout(buildVpnConnectionsSeriesFast(vpnConnectionsStart, now), 5000, [] as VpnConnectionsPoint[]);
 
   const revenueByDay: Record<string, number> = {};
   const revenueByProvider: Record<string, number> = {};
@@ -3004,8 +3052,7 @@ adminRouter.get("/analytics", async (_req, res) => {
   });
 
   // Промо активации по дням
-  const promoActs90 = await prisma.promoActivation.findMany({
-    where: { createdAt: { gte: day90Ago } },
+  const promoActsAll = await prisma.promoActivation.findMany({
     select: {
       createdAt: true,
       promoGroupId: true,
@@ -3016,7 +3063,7 @@ adminRouter.get("/analytics", async (_req, res) => {
     select: { id: true, name: true, code: true },
   });
   const promoGroupMap = new Map(promoGroupsAll.map((g) => [g.id, g]));
-  const promoClientIds = Array.from(new Set(promoActs90.map((a) => a.clientId)));
+  const promoClientIds = Array.from(new Set(promoActsAll.map((a) => a.clientId)));
   const promoClients = promoClientIds.length > 0
     ? await prisma.client.findMany({
         where: { id: { in: promoClientIds } },
@@ -3059,24 +3106,28 @@ adminRouter.get("/analytics", async (_req, res) => {
     }
     return promoByGroupMaps[groupId];
   }
-  for (const a of promoActs90) {
+  for (const a of promoActsAll) {
     const day = a.createdAt.toISOString().slice(0, 10);
-    promoActsByDay[day] = (promoActsByDay[day] ?? 0) + 1;
-    if (connectedOnceClientIds.has(a.clientId)) {
-      promoConnectedByDay[day] = (promoConnectedByDay[day] ?? 0) + 1;
-    }
-    if (paidPromoClientIds.has(a.clientId)) {
-      promoPaidByDay[day] = (promoPaidByDay[day] ?? 0) + 1;
+    if (a.createdAt >= day90Ago) {
+      promoActsByDay[day] = (promoActsByDay[day] ?? 0) + 1;
+      if (connectedOnceClientIds.has(a.clientId)) {
+        promoConnectedByDay[day] = (promoConnectedByDay[day] ?? 0) + 1;
+      }
+      if (paidPromoClientIds.has(a.clientId)) {
+        promoPaidByDay[day] = (promoPaidByDay[day] ?? 0) + 1;
+      }
     }
 
     if (a.promoGroupId) {
       const groupMaps = ensureGroupMaps(a.promoGroupId);
-      groupMaps.activations[day] = (groupMaps.activations[day] ?? 0) + 1;
-      if (connectedOnceClientIds.has(a.clientId)) {
-        groupMaps.connected[day] = (groupMaps.connected[day] ?? 0) + 1;
-      }
-      if (paidPromoClientIds.has(a.clientId)) {
-        groupMaps.paid[day] = (groupMaps.paid[day] ?? 0) + 1;
+      if (a.createdAt >= day90Ago) {
+        groupMaps.activations[day] = (groupMaps.activations[day] ?? 0) + 1;
+        if (connectedOnceClientIds.has(a.clientId)) {
+          groupMaps.connected[day] = (groupMaps.connected[day] ?? 0) + 1;
+        }
+        if (paidPromoClientIds.has(a.clientId)) {
+          groupMaps.paid[day] = (groupMaps.paid[day] ?? 0) + 1;
+        }
       }
     }
   }
@@ -3119,6 +3170,42 @@ adminRouter.get("/analytics", async (_req, res) => {
       };
     })
     .sort((a, b) => b.totalActivations - a.totalActivations);
+  const promoPaymentsAll = await prisma.payment.findMany({
+    where: {
+      status: "PAID",
+      clientId: { in: promoClientIds },
+    },
+    select: { clientId: true },
+  });
+  const paymentsCountByClientId: Record<string, number> = {};
+  for (const p of promoPaymentsAll) {
+    paymentsCountByClientId[p.clientId] = (paymentsCountByClientId[p.clientId] ?? 0) + 1;
+  }
+  const promoPaymentTableByGroup = promoGroupsAll.map((g) => {
+    const activations = promoActsAll.filter((a) => a.promoGroupId === g.id);
+    const usedClientIds = activations.map((a) => a.clientId);
+    const usedSet = new Set(usedClientIds);
+    let connectedCount = 0;
+    let paidUsersCount = 0;
+    let paymentsCount = 0;
+    for (const clientId of usedSet) {
+      if (connectedOnceClientIds.has(clientId)) connectedCount++;
+      if (paidPromoClientIds.has(clientId)) paidUsersCount++;
+      paymentsCount += paymentsCountByClientId[clientId] ?? 0;
+    }
+    const usageCount = activations.length;
+    const paymentConversion = usageCount > 0 ? Math.round((paidUsersCount / usageCount) * 1000) / 10 : 0;
+    return {
+      promoGroupId: g.id,
+      name: g.name,
+      code: g.code,
+      usageCount,
+      vpnConnectedCount: connectedCount,
+      paidUsersCount,
+      paymentsCount,
+      paymentConversion,
+    };
+  }).sort((a, b) => b.paymentConversion - a.paymentConversion);
 
   // Промокоды использований по дням
   const promoUsages90 = await prisma.promoCodeUsage.findMany({
@@ -3172,6 +3259,7 @@ adminRouter.get("/analytics", async (_req, res) => {
     promoActsSeries,
     promoLinksConversionSeries,
     promoLinksConversionByGroup,
+    promoPaymentTableByGroup,
     promoUsagesSeries,
     refCreditsSeries,
     vpnConnectionsSeries,

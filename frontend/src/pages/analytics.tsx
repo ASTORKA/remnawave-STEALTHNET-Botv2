@@ -76,6 +76,16 @@ interface AnalyticsData {
       paymentConversion: number;
     }[];
   }[];
+  promoPaymentTableByGroup: {
+    promoGroupId: string;
+    name: string;
+    code: string;
+    usageCount: number;
+    vpnConnectedCount: number;
+    paidUsersCount: number;
+    paymentsCount: number;
+    paymentConversion: number;
+  }[];
   promoUsagesSeries: { date: string; value: number }[];
   refCreditsSeries: { date: string; value: number }[];
   vpnConnectionsSeries: { date: string; total: number; paid: number; unpaid: number }[];
@@ -295,7 +305,6 @@ export function AnalyticsPage() {
                     <Legend />
                     <Bar yAxisId="left" dataKey="activations" name="Использования промоссылок" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="vpnConversion" name="Конверсия в VPN" stroke="#22c55e" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="paymentConversion" name="Конверсия в оплату" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : (
@@ -636,6 +645,43 @@ export function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
+        <Card className="mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Промоссылки - конверсия в оплату (все время)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {!data.promoPaymentTableByGroup?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Нет данных</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Промоссылка</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Код</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Использований</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Подключились к VPN</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Оплат</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">Конверсия в оплату</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.promoPaymentTableByGroup.map((row) => (
+                      <tr key={row.promoGroupId} className="border-b hover:bg-muted/30">
+                        <td className="px-4 py-2">{row.name}</td>
+                        <td className="px-4 py-2 font-mono text-xs">{row.code}</td>
+                        <td className="px-4 py-2 text-right">{fmt(row.usageCount)}</td>
+                        <td className="px-4 py-2 text-right">{fmt(row.vpnConnectedCount)}</td>
+                        <td className="px-4 py-2 text-right">{fmt(row.paymentsCount)}</td>
+                        <td className="px-4 py-2 text-right font-medium">{row.paymentConversion.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
