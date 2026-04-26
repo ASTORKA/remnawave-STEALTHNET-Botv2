@@ -11,7 +11,6 @@ import { GlassSelect } from "@/components/ui/glass-select";
 import { LayoutDashboard, Package, User, LogOut, Shield, Users, Sun, Moon, PlusCircle, Globe, KeyRound, MessageSquare, Palette, Monitor, Check, Loader2, Settings, Layers, MoreHorizontal, ChevronDown, Wallet } from "lucide-react";
 import { useTheme, ACCENT_PALETTES, type ThemeMode, type ThemeAccent } from "@/contexts/theme";
 import { cn } from "@/lib/utils";
-import { FloatingChat } from "@/components/floating-chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function formatMoney(amount: number, currency: string) {
@@ -427,7 +426,6 @@ function MobileCabinetShell() {
         <div className="cabinet-ambient__grain" />
         <div className="cabinet-ambient__vignette" />
       </div>
-      <FloatingChat />
       <main
         className={cn(
           "mx-auto flex w-full min-w-0 flex-1 flex-col items-stretch px-3 pb-2 transition-all duration-300 sm:px-5",
@@ -574,7 +572,6 @@ function CabinetShell() {
 
   return (
     <div className="min-h-svh flex flex-col bg-transparent">
-      <FloatingChat />
       <header className="sticky top-0 z-50 border-b border-border shadow-sm transition-all duration-300">
         <div className="absolute inset-0 bg-card/40 backdrop-blur-xl -z-10 pointer-events-none" />
         <div className="relative w-full max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-4">

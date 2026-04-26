@@ -295,7 +295,15 @@ export function AnalyticsPage() {
                     <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} className="text-muted-foreground" allowDecimals={false} />
                     <Tooltip />
-                    <Legend />
+                    <Legend
+                      wrapperStyle={{
+                        backgroundColor: "#0f172a",
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        border: "1px solid rgba(255,255,255,0.16)",
+                      }}
+                      formatter={(value) => <span style={{ color: "#ffffff" }}>{value}</span>}
+                    />
                     <Bar yAxisId="left" dataKey="paid" name="Платящие" stackId="users" fill="#22c55e" radius={[4, 4, 0, 0]} />
                     <Bar yAxisId="left" dataKey="unpaid" name="Не платящие" stackId="users" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     <Line yAxisId="right" type="monotone" dataKey="total" name="Всего подключений" stroke="#6366f1" strokeWidth={2} dot={false} />
